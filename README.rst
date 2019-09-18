@@ -30,7 +30,18 @@ Python Surface Hopping Code
 Features
 --------
 
-* TODO
+
+
+
+TASKS
+-----
+
+Johannes:
+---------
+
+Max:
+----
+ 
 
 Credits
 -------
