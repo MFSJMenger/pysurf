@@ -27,10 +27,20 @@ Python Surface Hopping Code
 * Documentation: https://pysurf.readthedocs.io.
 
 
-Features
---------
+PYSURF
+------
 
+General:
+________
 
+ * Python 3.6+
+ * Testing: pytest
+ * Log: logging module
+ * flake8 to varify pep8 standard
+
+DB:
+___
+ * Format: NetCDF 
 
 
 TASKS
@@ -38,6 +48,7 @@ TASKS
 
 Johannes:
 ---------
+ 
 
 Max:
 ----
