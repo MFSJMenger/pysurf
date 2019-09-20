@@ -7,8 +7,8 @@ Welcome to pysurf's documentation!
 
    readme
    installation
+   code/code
    usage
-   modules
    contributing
    authors
    history
