@@ -13,4 +13,3 @@ def exists_and_isfile(filename):
             raise Exception("Object '%s' exisits but is not a file!")
 
     return False
-        

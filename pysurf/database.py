@@ -9,7 +9,7 @@ class Database(object):
         """Initialize new Database,
         if db exisits:
            load existing database
-           check that the settings of the old database 
+           check that the settings of the old database
            are the same with the once used in the loading
            routine
         else:
@@ -25,6 +25,6 @@ class Database(object):
         pass
 
     def _load_database(self, filename, settings):
-        """Load an existing database and check 
+        """Load an existing database and check
            that it is compatable with the existing one"""
         pass
