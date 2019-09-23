@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from ..random import RandomNumberGenerator
 
 
 class SurfaceHoppingBase(ABC):
@@ -12,4 +13,23 @@ class SurfaceHoppingBase(ABC):
 
         """
         pass
+
+    @abstractmethod
+    def _restart_trajectory(self):
+        """method to restart a trajectory"""
+        pass
+
+    @abstractmethod
+    def _init_trajectory(self):
+        """method to initialize a trajectory"""
+        pass
+    
+    @abstractmethod
+    def init_system(self):
+
+    def run_vv(iactive, nsteps, random_seed):
+
+        random = RandomNumberGenerator(random_seed)
+
+        for istep in range(nsteps):
 
