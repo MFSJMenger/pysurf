@@ -1,0 +1,7 @@
+[MAIN]
+mode = model
+
+
+[MODEL]
+module = ../model/pyrmini.py
+class = PyrMini
