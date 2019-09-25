@@ -1,4 +1,7 @@
 """Tools to store information on the Variables and Dimensions in the Database"""
+import netCDF4
+
+from ..utils.osutils import exists_and_isfile
 
 
 class DBVariable(object):
@@ -19,13 +22,13 @@ class DBVariable(object):
 
 def get_variable_info(db, key):
     """Get the info of a variable as a namedtuple"""
-    variable = db[key]
+    variable = db.variables[key]
     return DBVariable(variable.datatype, variable.dimensions)
 
 
 def get_dimension_info(db, key):
     """Get the info of a dimension"""
-    dim = db[key]
+    dim = db.dimensions[key]
     if dim.isunlimited():
         return 'unlimited'
     else:
@@ -50,8 +53,8 @@ class DatabaseRepresentation(object):
     @classmethod
     def from_db(cls, db):
         """Create DatabaseRepresentation from a database set"""
-        variables = {key: get_variable_info(db.variables, key) for key in db.variables.keys()}
-        dimensions = {key: get_dimension_info(db.dimensions, key) for key in db.dimensions.keys()}
+        variables = {key: get_variable_info(db, key) for key in db.variables.keys()}
+        dimensions = {key: get_dimension_info(db, key) for key in db.dimensions.keys()}
         return cls({'variables': variables, 'dimensions': dimensions})
     
     def _parse(self, settings):
@@ -80,8 +83,16 @@ class DatabaseRepresentation(object):
         
     def create_database(self, filename):
         """Create the database from the representation"""
-        self._db, self._handle = create_dataset(filename, settings)
+        if self._created is True:
+            return self._db, self._handle
+
+        if exists_and_isfile(filename):
+            self._db, self._handle = self._load_database(filename)
+        else:
+            self._db, self._handle = self._init_database(filename)
+        # 
         self._created = True
+        return self._db, self._handle
 
     def __eq__(self, rhs):
         """"Compare two representations"""
@@ -100,3 +111,35 @@ class DatabaseRepresentation(object):
         if not all(rhs['variables'][var_name] == self['variables'][var_name] for var_name in rhs['variables'].keys()):
             return False
         return True
+
+    def _init_database(self, filename):
+        """Create a new database"""
+        return create_dataset(filename, self)
+
+    def _load_database(self, filename):
+        """Load an existing database and check
+           that it is compatable with the existing one"""
+        db = load_database(filename)
+        ref = DatabaseRepresentation.from_db(db)
+        if ref != self:
+            raise Exception('Database is not in agreement with ask settings!')
+        return db, db.variables
+
+
+def create_dataset(filename, settings):
+    # 
+    nc = netCDF4.Dataset(filename, 'w')
+    # create dimensions
+    for dim_name, dim in settings['dimensions'].items():
+        if dim == 'unlimited':
+            dim = None
+        nc.createDimension(dim_name, dim)
+    # create variables
+    handle = {}
+    for var_name, variable in settings['variables'].items():
+        handle[var_name] = nc.createVariable(var_name, variable.type, variable.dimensions)
+    return nc, handle 
+
+
+def load_database(filename, io_options='a'):
+    return netCDF4.Dataset(filename, io_options)

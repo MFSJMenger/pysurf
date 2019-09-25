@@ -1,10 +1,22 @@
-import netCDF4
-
 from .dbtools import DatabaseRepresentation
-from ..utils.osutils import exists_and_isfile
 
 
 class Database(object):
+    """"Core Database, can store data given by the DatabaseRepresentation
+    
+    database is automatically build using a settings dictionary:
+
+    dct = { 'dimensions': {
+                 'frame': 'unlimited',
+                 'natoms': 3,
+                 'three': 3,
+                 }, 
+             'variables': {
+                'coords': DBVariable(np.double, ('frame', 'natoms', 'three')),
+             }
+          }
+    
+    """
 
     __slots__ = ('filename', '_rep', '_db', '_handle', 'closed')
 
@@ -21,11 +33,9 @@ class Database(object):
         #
         self.filename = filename
         self._rep = DatabaseRepresentation(settings)
+        #
+        self._db, self._handle = self._rep.create_database(filename)
         # 
-        if exists_and_isfile(filename):
-            self._db, self._handle = self._load_database(filename)
-        else:
-            self._db, self._handle = self._init_database(filename)
         self.closed = False
 
     def __getattr__(self, key):
@@ -50,35 +60,3 @@ class Database(object):
 
     def __del__(self):
         self.close()
-
-    def _init_database(self, filename):
-        """Create a new database"""
-        return create_dataset(filename, self._rep)
-
-    def _load_database(self, filename):
-        """Load an existing database and check
-           that it is compatable with the existing one"""
-        db = load_database(filename)
-        ref = DatabaseRepresentation.from_db(db)
-        if ref != self._rep:
-            raise Exception('Database is not in agreement with ask settings!')
-        return db, db.variables
-
-
-def create_dataset(filename, settings):
-    # 
-    nc = netCDF4.Dataset(filename, 'w')
-    # create dimensions
-    for dim_name, dim in settings['dimensions'].items():
-        if dim == 'unlimited':
-            dim = None
-        nc.createDimension(dim_name, dim)
-    # create variables
-    handle = {}
-    for var_name, variable in settings['variables'].items():
-        handle[var_name] = nc.createVariable(var_name, variable.type, variable.dimensions)
-    return nc, handle 
-
-
-def load_database(filename, io_options='a'):
-    return netCDF4.Dataset(filename, io_options)
