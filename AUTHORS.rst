@@ -6,7 +6,7 @@ Development Lead
 ----------------
 
 * Maximilian Menger <menger.maximilian@gmail.com>
-* Johannes Ehrmaier <menger.maximilian@gmail.com>
+* Johannes Ehrmaier <johannes.ehrmaier@tum.de>
 
 Contributors
 ------------
