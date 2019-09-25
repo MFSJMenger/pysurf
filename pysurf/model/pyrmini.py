@@ -46,6 +46,7 @@ class PyrMini(Model):
         """
         diab_en = self.diab_en(coord)
         adiab_en = np.linalg.eig(diab_en)[0]
+        adiab_en = np.sort(adiab_en)
         return adiab_en
 
     def diab_en(self, coord):

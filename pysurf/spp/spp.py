@@ -17,10 +17,10 @@ class SurfacePointProvider():
             in the coordinate space.
         """
 
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger('spp')
         self.logger.setLevel(logging.INFO)
         # create a file handler
-        handler = logging.FileHandler('spp.log')
+        handler = logging.FileHandler(filename='spp.log', mode='w')
         handler.setLevel(logging.INFO)
         # create a logging format
         formatter = logging.Formatter('%(asctime)s - %(name)s - '
