@@ -8,6 +8,7 @@ Welcome to pysurf's documentation!
    readme
    installation
    module/spp
+   module/database
    usage
    contributing
    authors
