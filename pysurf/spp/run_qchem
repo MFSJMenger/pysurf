@@ -1,0 +1,5 @@
+echo 'start QM calculation'
+
+qchem -nt 4 $1 $1.out >> $1.log
+
+cd ../

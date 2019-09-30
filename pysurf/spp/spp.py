@@ -4,6 +4,8 @@ import numpy as np
 import importlib
 import logging
 
+from .interface.interface import Interface
+
 
 class SurfacePointProvider():
     """ The Surface Point Provider is the main interface providing the
@@ -33,16 +35,24 @@ class SurfacePointProvider():
         self.config = configparser.ConfigParser()
         if os.path.isfile(inputfile):
             self.config.read(inputfile)
+            inputfile_full = os.path.abspath(inputfile)
+            self.path = os.path.dirname(inputfile_full)
+            self.config['MAIN']['path'] = self.path
         else:
             self.logger.error('Inputfile '
                               + inputfile + ' for SurfacePointProvider '
                               + 'not found!')
             exit()
+        if 'mode' in self.config['MAIN'].keys():
+            self.mode = self.config['MAIN']['mode']
+        else:
+            self.logger.error('Mode has to be provided in main section')
+            exit()
 
         """ If a model is used, import the model according to the user
             input and provide an instance in the variable self.user_inst
         """
-        if self.config['MAIN']['mode'] == 'model':
+        if self.mode == 'model':
             self.logger.info('Using a model to generate the PES')
 
             try:
@@ -62,6 +72,17 @@ class SurfacePointProvider():
                                   + self.config['MODEL']['class'])
                 exit()
             self.usr_inst = usr_class()
+        elif self.mode == 'ab initio':
+            self.logger.info('Ab initio calculations are used to '
+                             + 'generate the PES')
+            # read reference geometry from inputfile
+            self.refgeo = self.get_refgeo()
+            if 'database' in self.config['MAIN'].keys():
+                self.db = self.config['MAIN']['database']
+                self.logger.info('Using database: '
+                                 + self.db)
+            else:
+                self.db = False
 
     def get(self, coord):
         """ The get method is the method which should be called by
@@ -69,10 +90,48 @@ class SurfacePointProvider():
             input it takes the coordinates and gives back the
             information at this specific position.
         """
-        if self.config['MAIN']['mode'] == 'model':
+        if self.mode == 'model':
             return self.usr_inst.get(coord)
+        elif self.mode == 'ab initio':
+            if self.db is False:
+                return self.qm_get(coord)
+            else:
+                self.logger.error('DB not yet implemented!')
+                exit()
+
+    def qm_get(self, coord):
+        try:
+            self.config['AB INITIO']['path'] = self.path
+            interface = Interface(self.config['AB INITIO'],
+                                  self.logger, self.refgeo)
+        except KeyError:
+            self.logger.error('No AB INITIO section in '
+                              + 'the inputfile!')
+            exit()
+        return interface.get(coord)
+
+    def get_refgeo(self):
+        if 'reference geometry' not in self.config['AB INITIO'].keys():
+            self.logger.error('no reference geometry file provided!')
+            exit()
+        atoms = []
+        coords = []
+        refgeo_path = os.path.join(self.path,
+                                   self.config['AB INITIO']
+                                   ['reference geometry'])
+        with open(refgeo_path) as infile:
+            infile.readline()
+            infile.readline()
+            for line in infile:
+                split_line = line.split()
+                if len(split_line) == 4:
+                    atoms += [split_line[0]]
+                    coords += [[float(c) for c in split_line[1:]]]
+        return {'atoms': atoms, 'coord': np.array(coords)}
 
 
 if __name__ == "__main__":
-    spp = SurfacePointProvider('./test.inp')
-    print(spp.get(np.array([0.0, 0.0, 0.0])))
+    # spp = SurfacePointProvider('./test.inp')
+    # print(spp.get(np.array([0.0, 0.0, 0.0])))
+    spp = SurfacePointProvider('./test_abinit.inp')
+    print(spp.get(spp.refgeo['ref geo']))
