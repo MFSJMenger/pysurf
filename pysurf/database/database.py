@@ -18,7 +18,7 @@ class Database(object):
     
     """
 
-    __slots__ = ('filename', '_rep', '_db', '_handle', 'closed')
+    __slots__ = ('filename', '_rep', '_db', '_handle', 'closed', '_icurrent')
 
     def __init__(self, filename, settings):
         """Initialize new Database,
@@ -37,6 +37,8 @@ class Database(object):
         self._db, self._handle = self._rep.create_database(filename)
         # 
         self.closed = False
+        #
+        self._icurrent = None
 
     def __getattr__(self, key):
         if key in self._handle:
@@ -47,11 +49,29 @@ class Database(object):
         if key in self._db.dimensions.keys():
             return self._db.dimensions[key].size
 
+    @property
+    def increase(self):
+        self._icurrent += 1
+
     def append(self, key, value):
+        """Append only for unlimited variables!"""
         variable = self._handle[key]
         unlimited = variable.get_dims()[0]
         assert(unlimited.isunlimited())
-        variable[unlimited.size, :] = value
+        if self._icurrent is None:
+            self._icurrent = unlimited.size
+        variable[self._icurrent, :] = value
+
+    def set(self, key, value, ivalue=None):
+        """set a given variable"""
+        variable = self._handle[key]
+        if variable.get_dims()[0].isunlimited(): 
+            if ivalue is None:
+                self.append(key, value)
+            else:
+                variable[ivalue, :] = value
+        else:
+            variable[:] = value
 
     def close(self):
         if self.closed is False:
