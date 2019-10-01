@@ -5,7 +5,7 @@ import importlib
 import logging
 
 from .interface.interface import Interface
-
+from ..utils.chemutils import atomic_masses
 
 class SurfacePointProvider():
     """ The Surface Point Provider is the main interface providing the
@@ -110,7 +110,10 @@ class SurfacePointProvider():
             self.logger.error('No AB INITIO section in '
                               + 'the inputfile!')
             exit()
-        return interface.get(coord)
+        res = interface.get(coord)
+        masses = self.get_masses()
+        res['mass'] = masses
+        return res
 
     def get_refgeo(self):
         if 'reference geometry' not in self.config['AB INITIO'].keys():
@@ -129,7 +132,18 @@ class SurfacePointProvider():
                 if len(split_line) == 4:
                     atoms += [split_line[0]]
                     coords += [[float(c) for c in split_line[1:]]]
+        for i in range(len(atoms)):
+            atom = atoms[i]
+            atom = atom[0].upper() + atom[1:].lower()
+            atoms[i] = atom
+
         return {'atoms': atoms, 'coord': np.array(coords)}
+
+    def get_masses(self):
+        masses = []
+        for i in range(len(self.refgeo['atoms'])):
+            masses += [atomic_masses[self.refgeo['atoms'][i]]]
+        return np.array(masses)
 
 
 if __name__ == "__main__":
