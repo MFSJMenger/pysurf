@@ -56,7 +56,9 @@ class SurfacePointProvider():
             self.logger.info('Using a model to generate the PES')
 
             try:
-                path = os.path.abspath(self.config['MODEL']['module'])
+                # get absolute path for model
+                path = os.path.join(self.path, self.config['MODEL']['module'])
+                path = os.path.realpath(path)
                 self.logger.info('The model is given as: ' + path)
                 spec = importlib.util.spec_from_file_location("", path)
                 usr_module = importlib.util.module_from_spec(spec)
