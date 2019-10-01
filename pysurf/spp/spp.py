@@ -6,6 +6,9 @@ import logging
 
 from .interface.interface import Interface
 from ..utils.chemutils import atomic_masses
+from ..database.database import Database
+from ..database.dbtools import DBVariable
+
 
 class SurfacePointProvider():
     """ The Surface Point Provider is the main interface providing the
@@ -74,15 +77,33 @@ class SurfacePointProvider():
                                   + self.config['MODEL']['class'])
                 exit()
             self.usr_inst = usr_class()
+
+        #If an ab initio calculation is used
+        #    and if a database is used
         elif self.mode == 'ab initio':
             self.logger.info('Ab initio calculations are used to '
                              + 'generate the PES')
             # read reference geometry from inputfile
             self.refgeo = self.get_refgeo()
-            if 'database' in self.config['MAIN'].keys():
-                self.db = self.config['MAIN']['database']
+            self.natoms = len(self.refgeo['atoms'])
+            if 'number of states' in self.config['AB INITIO'].keys():
+                try:
+                    self.nstates = int(self.config['AB INITIO']
+                                       ['number of states'])
+                except ValueError:
+                    self.logger.error('Number of states is not an'
+                                      + 'integer value!')
+                    exit()
+            else:
+                self.logger.error('Number of states not specified'
+                                   + 'in inputfile!')
+                exit()
+            if 'database' in self.config['AB INITIO'].keys():
+                self.dbpath = os.path.join(self.path, self.config['AB INITIO']['database'])
+                self.dbpath = os.path.realpath(self.dbpath)
                 self.logger.info('Using database: '
-                                 + self.db)
+                                 + self.dbpath)
+                self.db = self.create_db(filename=self.dbpath)
             else:
                 self.db = False
 
@@ -92,14 +113,23 @@ class SurfacePointProvider():
             input it takes the coordinates and gives back the
             information at this specific position.
         """
+        # if a model is used
         if self.mode == 'model':
             return self.usr_inst.get(coord)
+
+        # if ab initio method and/or db is used
         elif self.mode == 'ab initio':
+            # without database
             if self.db is False:
                 return self.qm_get(coord)
+            # using database
             else:
-                self.logger.error('DB not yet implemented!')
-                exit()
+                res = self.qm_get(coord)
+                db.increase
+                db.append('coord', coord)
+                db.append('gradient', res['gradient'])
+                db.append('energy', res['energy'])
+                return res
 
     def qm_get(self, coord):
         try:
@@ -144,6 +174,26 @@ class SurfacePointProvider():
         for i in range(len(self.refgeo['atoms'])):
             masses += [atomic_masses[self.refgeo['atoms'][i]]]
         return np.array(masses)
+
+    def create_db(self, filename='db.dat'):
+        dct = {'dimensions': {
+                              'frame': 'unlimited',
+                              'natoms': self.natoms,
+                              'nstates': self.nstates,
+                              'three': 3,
+                              'one': 1},
+                'variables': {
+                               'coord': DBVariable(np.double,
+                                        ('frame', 'natoms', 'three')),
+                               'gradient': DBVariable(np.double,
+                                        ('frame', 'natoms', 'three')),
+                               'energy': DBVariable(np.double,
+                                        ('frame', 'nstates'))}
+                }
+        db = Database(filename, dct)
+        return db
+
+
 
 
 if __name__ == "__main__":
