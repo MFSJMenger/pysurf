@@ -40,7 +40,6 @@ class Database(object):
         # 
         self._icurrent = None
 
-
     def __getitem__(self, key):
         return self._handle.get(key, None)
 
@@ -65,12 +64,24 @@ class Database(object):
         self._icurrent += 1
 
     def append(self, key, value):
+        """Append only for unlimited variables!"""
         variable = self._handle[key]
         unlimited = variable.get_dims()[0]
         assert(unlimited.isunlimited())
         if self._icurrent is None:
             self._icurrent = unlimited.size
         variable[self._icurrent, :] = value
+
+    def set(self, key, value, ivalue=None):
+        """set a given variable"""
+        variable = self._handle[key]
+        if variable.get_dims()[0].isunlimited(): 
+            if ivalue is None:
+                self.append(key, value)
+            else:
+                variable[ivalue, :] = value
+        else:
+            variable[:] = value
 
     def close(self):
         if self.closed is False:
