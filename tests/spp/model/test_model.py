@@ -12,4 +12,3 @@ def input_filename():
 def test_model(input_filename):
     spp = SurfacePointProvider(input_filename)
     print(spp.get(np.array([0.0,0.0,0.0])))
-

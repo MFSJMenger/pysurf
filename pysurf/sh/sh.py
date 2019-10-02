@@ -1,5 +1,5 @@
 import numpy as np
-from ..random import RandomNumberGenerator
+from ..random.shrandom import RandomNumberGeneratorNP
 
 
 def vv_xstep(crd, v, a, dt):
@@ -87,7 +87,7 @@ class LandauZener(object):
                                        e_prev_step, e_two_step_prev)
 
 
-def landau_zener_surfacehopping(iactive, nsteps, random_seed, interface):
+def landau_zener_surfacehopping(iactive, nsteps, random_seed, inp):
 
     random = RandomNumberGenerator(random_seed)
 
