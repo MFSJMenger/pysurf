@@ -125,10 +125,10 @@ class SurfacePointProvider():
             # using database
             else:
                 res = self.qm_get(coord)
-                db.increase
-                db.append('coord', coord)
-                db.append('gradient', res['gradient'])
-                db.append('energy', res['energy'])
+#                self.db.increase
+                self.db.append('coord', coord)
+                self.db.append('gradient', res['gradient'])
+                self.db.append('energy', res['energy'])
                 return res
 
     def qm_get(self, coord):

@@ -10,4 +10,4 @@ def input_filename():
 
 def test_abinit_calc(input_filename):
     spp = SurfacePointProvider(input_filename)
-    print(spp.db.get('coord',1))
+    print(spp.get(spp.refgeo['coord']))
