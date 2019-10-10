@@ -1,0 +1,16 @@
+[MAIN]
+mode = ab initio
+logging = debug
+
+[AB INITIO]
+program = model
+module = ../../../pysurf/model/test_db.py
+class = TestDB
+reference geometry = ref_geo.xyz
+run_script = run_qchem
+number of states = 2
+reference energy = 0.0
+simulate = false
+database = db.dat
+interpolation = linear
+max distances interpolation = 0.25
