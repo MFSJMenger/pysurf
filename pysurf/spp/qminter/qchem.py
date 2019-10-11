@@ -22,6 +22,10 @@ class QChem():
             self.properties = split_str(config['properties'])
         else:
             self.properties = ['energy', 'gradient']
+        try:
+            self.method = config['method']
+        except KeyError:
+            self.method = 'dft'
 
     def get(self, request):
         """ get is the method that should be used by the interface.
@@ -93,11 +97,22 @@ class QChem():
             exit()
         with open(filename) as infile:
             res = infile.readlines()
-        en = self.read_energies(res)
-        grad = self.read_gradients(res)
-        return {'energy': en, 'gradient': grad}
+        ret = {}
+        if self.method == 'dft':
+            if 'energy' in self.properties:
+                ret['energy'] = self.read_energies_dft(res)
+            if 'gradient' in self.properties:
+                ret['gradient'] = self.read_gradients_dft(res)
 
-    def read_energies(self, res):
+        if self.method == 'adc':
+            if 'energy' in self.properties:
+                ret['energy'] = self.read_energies_adc(res)
+            if 'gradient' in self.properties:
+                ret['gradient'] = self.read_gradients_adc(res)
+
+        return ret
+
+    def read_energies_dft(self, res):
         en = np.zeros((self.nstates), dtype=float)
         en_check = np.empty_like(en, dtype=bool)
         for line in res:
@@ -116,7 +131,7 @@ class QChem():
         else:
             return 'Not all energies were found in QChem output!'
 
-    def read_gradients(self, res):
+    def read_gradients_dft(self, res):
         grad = np.zeros((self.nstates, self.natoms, 3), dtype=float)
         grad_check = np.zeros(self.nstates, dtype=bool)
         natoms = self.natoms
@@ -147,3 +162,60 @@ class QChem():
             return grad
         else:
             return 'Not all gradients were found in QChem output!'
+
+    def read_energies_adc(self, res):
+        en = np.zeros((self.nstates), dtype=float)
+        en_check = np.empty_like(en, dtype=bool)
+        for i in range(len(res)):
+            # Get ground state energy
+            if 'MP(2) Summary' in res[i]:
+                en[0] = float(res[i+3].split()[-2]) - self.ref_en
+                en_check[0] = True
+            # Get excited state energy
+            if 'Excited state' in res[i]:
+                state = int(res[i].split()[2])
+                en[state] = float(res[i+4].split()[2]) - self.ref_en
+                en_check[state] = True
+        # Check that energies of all states were found
+        if np.all(en_check):
+            return en
+        else:
+            return 'Not all energies were found in QChem output!'
+
+
+    def read_gradients_adc(self, res):
+        grad = np.zeros((self.nstates, self.natoms, 3), dtype=float)
+        grad_check = np.zeros(self.nstates, dtype=bool)
+        natoms = self.natoms
+        vfloat = np.vectorize(float)
+        for i in range(len(res)):
+            # state for the gradient has to be found in a complicated
+            # way. Here it is taken from the user input, which is shown
+            # in the output of the calculation.
+            if 'adc_state_to_opt' in res[i].lower():
+                state = int(split_str(res[i].split()[-1])[-1])
+
+            # Read actual gradient
+            if 'Full Analytical Gradient' in res[i]:
+                # Get the state of the gradient
+                if 'Gradient of MP2 Energy' in res[i]:
+                    state = 0
+
+                # Read in the gradient
+                for j in range(int(natoms/5)):
+                    for k in range(2):
+                        grad[state, j*5:j*5+5, k] = vfloat(
+                            res[i+j*4+2+k].split()[1:7])
+                if natoms % 5 > 0:
+                    j = int(natoms/5)
+                    rest = natoms % 5
+                    for k in range(2):
+                        grad[state, j*5:j*5+rest, k] = vfloat(
+                            res[i+j*4+2+k].split()[1:])
+                grad_check[state] = True
+        # Check that the gradients of all states were found
+        if grad_check.all():
+            return grad
+        else:
+            return 'Not all gradients were found in QChem output!'
+

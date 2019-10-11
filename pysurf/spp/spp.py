@@ -144,7 +144,15 @@ class SurfacePointProvider():
             input it takes the coordinates and gives back the
             information at this specific position.
         """
-        return self.interface.get(request)
+        res = self.interface.get(request)
+        
+        # in the case of ab initio/DB add the masses if not done by
+        # the interface
+        if 'mass' in res.keys() and self.mode == 'ab initio':
+            if res['mass'] is None:
+                res['mass'] = get_masses()
+
+        return res
 
     def get_refgeo(self):
         if 'reference geometry' not in self.config['AB INITIO'].keys():
