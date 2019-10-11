@@ -3,6 +3,7 @@ import numpy as np
 import os
 
 from pysurf.utils.osutils import exists_and_isfile
+from pysurf.utils.strutils import split_str
 
 
 class QChem():
@@ -17,16 +18,26 @@ class QChem():
         self.nstates = int(config['number of states'])
         self.ref_en = float(config['reference energy'])
         self.natoms = len(refgeo['atoms'])
+        if 'properties' in config.keys():
+            self.properties = split_str(config['properties'])
+        else:
+            self.properties = ['energy', 'gradient']
 
-    def get(self, coord):
+    def get(self, request):
         """ get is the method that should be used by the interface.
             It takes as arguments the coordinates at a specific
             position and starts the QChem calculation there.
             Finally it reads the output and provides the data.
         """
-        self.write_input(self.refgeo['atoms'], coord)
-        outfile = self.start_calc()
-        return self.read_output(outfile)
+        if 'coord' in request.keys():
+            coord = request['coord']
+            self.write_input(self.refgeo['atoms'], coord)
+            outfile = self.start_calc()
+            return self.read_output(outfile)
+        else:
+            for prop in self.properties:
+                request[prop] = None
+            return request
 
     def write_input(self, atoms, coord, filename='qchem.in'):
         """ Prepares a input file from the template file.

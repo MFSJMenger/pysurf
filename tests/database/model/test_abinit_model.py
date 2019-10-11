@@ -16,18 +16,22 @@ def test_abinit_calc(input_filename):
     spp = SurfacePointProvider(input_filename)
     coord = spp.refgeo['coord']
     
+    # Check available properties
+    res = spp.get({})
+    assert(('energy' in res.keys()) and ('gradient' in res.keys()))
+
     # fill DB with three points
-    spp.get(spp.refgeo['coord'])
+    spp.get({'coord': coord, 'energy': None, 'gradient': None})
     coord[0, 0] += 1
-    spp.get(coord)
+    spp.get({'coord': coord, 'energy': None, 'gradient': None})
     coord[0, 1] += 1
-    spp.get(coord)
+    spp.get({'coord': coord, 'energy': None, 'gradient': None})
     coord[0, 2] += 1
-    res = spp.get(coord)
+    res = spp.get({'coord': coord, 'energy': None, 'gradient': None})
 
     # check interpolation
     coord[0, 2] -= 0.1
-    res = spp.get(coord)
+    res = spp.get({'coord': coord})
     assert(abs(res['energy'][0] - 2.9) < 0.1)
     assert(abs(res['energy'][1] - 0.1) < 0.1)
     refgrad = np.array([[[2, 2, 1.8]], [[ 0. ,  0. , -0.2]]], dtype=float)

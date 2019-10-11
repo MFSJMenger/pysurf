@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 from pyrmini import PyrMini
 
-x = np.linspace(-5,5,100)
+x = np.linspace(-15,15,100)
 
 y_grad = np.empty((100,3),dtype=float)
 y_en = np.empty((100,3), dtype=float)

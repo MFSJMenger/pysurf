@@ -4,11 +4,11 @@ import numpy as np
 import importlib
 import logging
 
-from .interface.interface import Interface
+from .qminter.qminter import get_qminter
 from ..utils.chemutils import atomic_masses
 from ..database.database import Database
 from ..database.dbtools import DBVariable
-
+from .dbinter.dbinter import DBInter
 
 class SurfacePointProvider():
     """ The Surface Point Provider is the main interface providing the
@@ -36,6 +36,8 @@ class SurfacePointProvider():
         self.logger.info('Surface Point Provider')
 
         self.config = configparser.ConfigParser()
+
+
         if os.path.isfile(inputfile):
             self.config.read(inputfile)
             inputfile_full = os.path.abspath(inputfile)
@@ -46,6 +48,20 @@ class SurfacePointProvider():
                               + inputfile + ' for SurfacePointProvider '
                               + 'not found!')
             exit()
+
+        if 'logging' in self.config['MAIN'].keys():
+            loglevel = self.config['MAIN']['logging']
+            if loglevel == 'debug':
+                #handler.setLevel(logging.DEBUG)
+                self.logger.setLevel(logging.DEBUG)
+                for hand in self.logger.handlers:
+                    hand.setLevel(logging.DEBUG)
+                self.logger.info('logging level set to debug')
+            else:
+                self.logger.setLevel(logging.INFO)
+                self.logger.info('logging level set to info' +
+                                 ' as specification was not known')
+
         if 'mode' in self.config['MAIN'].keys():
             self.mode = self.config['MAIN']['mode']
         else:
@@ -57,7 +73,6 @@ class SurfacePointProvider():
         """
         if self.mode == 'model':
             self.logger.info('Using a model to generate the PES')
-
             try:
                 # get absolute path for model
                 path = os.path.join(self.path, self.config['MODEL']['module'])
@@ -76,16 +91,28 @@ class SurfacePointProvider():
                 self.logger.error('The user class could not be found: '
                                   + self.config['MODEL']['class'])
                 exit()
-            self.usr_inst = usr_class()
+            self.interface = usr_class()
 
         #If an ab initio calculation is used
         #    and if a database is used
         elif self.mode == 'ab initio':
             self.logger.info('Ab initio calculations are used to '
                              + 'generate the PES')
+
+            # make sure that AB INITIO section is in the inputfile
+            # add path to AB INITIO section
+            try:
+                self.config['AB INITIO']['path'] = self.path
+
+            except KeyError:
+                self.logger.error('No AB INITIO section in '
+                                  + 'the inputfile!')
+                exit()
+
             # read reference geometry from inputfile
             self.refgeo = self.get_refgeo()
             self.natoms = len(self.refgeo['atoms'])
+
             if 'number of states' in self.config['AB INITIO'].keys():
                 try:
                     self.nstates = int(self.config['AB INITIO']
@@ -103,47 +130,21 @@ class SurfacePointProvider():
                 self.dbpath = os.path.realpath(self.dbpath)
                 self.logger.info('Using database: '
                                  + self.dbpath)
-                self.db = self.create_db(filename=self.dbpath)
+                self.interface = DBInter(self.dbpath, self.config['AB INITIO'], self.logger, self.refgeo)
+                self.db = True
             else:
                 self.db = False
 
-    def get(self, coord):
+                self.interface = get_qminter(self.config['AB INITIO'],
+                                      self.logger, self.refgeo)
+
+    def get(self, request):
         """ The get method is the method which should be called by
             external programs, which want to use the SPP. As an
             input it takes the coordinates and gives back the
             information at this specific position.
         """
-        # if a model is used
-        if self.mode == 'model':
-            return self.usr_inst.get(coord)
-
-        # if ab initio method and/or db is used
-        elif self.mode == 'ab initio':
-            # without database
-            if self.db is False:
-                return self.qm_get(coord)
-            # using database
-            else:
-                res = self.qm_get(coord)
-#                self.db.increase
-                self.db.append('coord', coord)
-                self.db.append('gradient', res['gradient'])
-                self.db.append('energy', res['energy'])
-                return res
-
-    def qm_get(self, coord):
-        try:
-            self.config['AB INITIO']['path'] = self.path
-            interface = Interface(self.config['AB INITIO'],
-                                  self.logger, self.refgeo)
-        except KeyError:
-            self.logger.error('No AB INITIO section in '
-                              + 'the inputfile!')
-            exit()
-        res = interface.get(coord)
-        masses = self.get_masses()
-        res['mass'] = masses
-        return res
+        return self.interface.get(request)
 
     def get_refgeo(self):
         if 'reference geometry' not in self.config['AB INITIO'].keys():
@@ -174,26 +175,6 @@ class SurfacePointProvider():
         for i in range(len(self.refgeo['atoms'])):
             masses += [atomic_masses[self.refgeo['atoms'][i]]]
         return np.array(masses)
-
-    def create_db(self, filename='db.dat'):
-        dct = {'dimensions': {
-                              'frame': 'unlimited',
-                              'natoms': self.natoms,
-                              'nstates': self.nstates,
-                              'three': 3,
-                              'one': 1},
-                'variables': {
-                               'coord': DBVariable(np.double,
-                                        ('frame', 'natoms', 'three')),
-                               'gradient': DBVariable(np.double,
-                                        ('frame', 'natoms', 'three')),
-                               'energy': DBVariable(np.double,
-                                        ('frame', 'nstates'))}
-                }
-        db = Database(filename, dct)
-        return db
-
-
 
 
 if __name__ == "__main__":

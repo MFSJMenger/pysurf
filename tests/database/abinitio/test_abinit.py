@@ -1,5 +1,6 @@
 from pytest import fixture
 import os
+import numpy as np
 
 from pysurf.spp.spp import SurfacePointProvider
 
@@ -10,8 +11,13 @@ def input_filename():
 
 def test_abinit_calc(input_filename):
     spp = SurfacePointProvider(input_filename)
-    print(spp.get(spp.refgeo['coord']))
-#    print(spp.db.get('coord',0))
-#    print(spp.db.get('gradient',0))
-    print(spp.dbinter.db.get_dimension_size('frame'))
-#    assert(spp.db.get_dimension_size('frames') == 1)
+    res = spp.get({})
+    assert(('energy' in res.keys()) and ('gradient' in res.keys()))
+    
+    res = spp.get({'coord': spp.refgeo['coord'],
+                   'energy': None, 'gradient': None})
+
+    assert(res['energy'].all() == np.array([-8.00014277e-10,
+                                            -1.52319380e-02,
+                                            -1.40437478e-02, 
+                                            1.29286264e-02]).all())
