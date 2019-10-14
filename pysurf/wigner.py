@@ -1,6 +1,5 @@
-
 import os
-
+#
 from copy import deepcopy
 #
 from dataclasses import dataclass
@@ -10,17 +9,16 @@ import numpy as np
 import numpy.random as random
 #
 from qctools import MoldenParser
-
-
+#
 from .database.database import Database
 from .database.dbtools import DBVariable
 from .atominfo import masses as MASSES
 from .atominfo import atomname_to_id
 from .constants import U_TO_AMU, CM_TO_HARTREE
-
+#
 Mode = namedtuple("Mode", ["freq", "displacements"])
-#  used to save just InitalConditions (coordinates, velocities) for a given molecule
-InitalCondition = namedtuple("InitalCondition", ['crd', 'veloc'])
+#  used to save just InitialConditions (coordinates, velocities) for a given molecule
+InitialCondition = namedtuple("InitialCondition", ['crd', 'veloc'])
 
 
 @dataclass
@@ -45,12 +43,6 @@ class WignerSampling(object):
         self.modes = modes
         self.is_massweighted = is_massweighted
 
-    def to_mass_weighted(self):
-        if self.is_massweighted is True:
-            return
-        else:
-            self.modes = create_mass_weighted_normal_modes(self.modes, self.molecule)
-            self.is_massweighted = True
 
     @classmethod
     def from_molden(cls, filename):
@@ -71,14 +63,83 @@ class WignerSampling(object):
         return cls(molecule, modes, True)
 
     def create_initial_conditions(self, filename, nconditions, E_equil=0.0):
-        initconds = create_initial_conditions(filename, self.molecule, E_equil)
+        return InitialConditions.from_conditions(filename, self.molecule, self.modes, nconditions, E_equil)
+
+    def to_mass_weighted(self):
+        if self.is_massweighted is True:
+            return
+        else:
+            self.modes = create_mass_weighted_normal_modes(self.modes, self.molecule)
+            self.is_massweighted = True
+
+
+class InitialConditions(object):
+
+
+    def __init__(self, db, nconditions):        
+        self.nconditions = nconditions
+        self._db = db
+
+    @classmethod
+    def from_conditions(cls, filename, molecule, modes, nconditions=1000, E_equil=0.0):
+        db = cls.create_initial_conditions(filename, molecule, modes, nconditions, E_equil)
+        return cls(db, nconditions)
+
+
+    @classmethod
+    def from_db(cls, filename, natoms, nmodes, E_quil=0.0):
+        db = Database(filename, cls.generate_settings(natoms, nmodes))
+        return cls(db, db['crd'].shape[0])
+
+    @staticmethod
+    def generate_settings(natoms, nmodes):
+        return {
+                'dimensions': {
+                    'frame': 'unlimited',
+                    'nmodes': nmodes,
+                    'natoms': natoms,
+                    'three': 3,
+                    },
+                'variables': {
+                    'modes':  DBVariable(np.double, ('nmodes', 'natoms', 'three')),
+                    'freqs':  DBVariable(np.double, ('nmodes',)),
+                    'atomids': DBVariable(np.integer, ('natoms',)),
+                    'masses': DBVariable(np.double, ('natoms',)),
+                    'crd': DBVariable(np.double, ('frame', 'natoms', 'three')),
+                    'veloc': DBVariable(np.double, ('frame', 'natoms', 'three')),
+                    'energy': DBVariable(np.double, ('frame', 'three')),  # E_tot, E_pot, E_kin
+                },
+        }
+
+    def __iter__(self):
+        self._start = 1 # skip equilibrium structure
+        return self
+
+    def __next__(self):
+        if self._start < self.nconditions:
+            crd = self._db.get('crd', self._start)
+            veloc = self._db.get('veloc', self._start)
+            self._start += 1
+            return InitialCondition(crd, veloc)
+        raise StopIteration
+
+    def get_molecule(self):
+        return Molecule(self._db['atomids'], self._db.get('crd', 0), self._db['masses'])
+
+    @classmethod
+    def create_initial_conditions(cls, filename, molecule, modes, nconditions, E_equil):
+        """ """
+        db = create_initial_conditions(cls.generate_settings(molecule.natoms, len(modes)),
+                                       filename, molecule, modes, E_equil)
+
         for _ in range(nconditions):
-            e_pot, conds = get_initial_condition(self.molecule, self.modes)
-            initconds.append('crd', conds.crd)
-            initconds.append('veloc', conds.veloc)
-            e_kin = compute_ekin(conds.veloc, self.molecule.masses)
-            initconds.append('energy', np.array([e_kin+e_pot, e_pot, e_kin]))
-            initconds.increase
+            e_pot, conds = get_initial_condition(molecule, modes)
+            db.append('crd', conds.crd)
+            db.append('veloc', conds.veloc)
+            e_kin = compute_ekin(conds.veloc, molecule.masses)
+            db.append('energy', np.array([e_kin+e_pot, e_pot, e_kin]))
+            db.increase
+        return db
 
 
 def compute_ekin(veloc, masses):
@@ -184,25 +245,23 @@ def create_mass_weighted_normal_modes(modes, molecule):
 
 
 def get_initial_condition(molecule, modes):
-    """This function samples a single initial condition from the
-       modes and atomic coordinates by the use of a Wigner distribution.
-       The first atomic dictionary in the molecule list contains also
-       additional information like kinetic energy and total harmonic
-       energy of the sampled initial condition.
-       Method is based on L. Sun, W. L. Hase J. Chem. Phys. 133, 044313
-       (2010) nonfixed energy, independent mode sampling."""
+    """Generate an initial condition based on the normal modes of
+       the molecule, according to a Wigner distribution
+       Method is based on L. Sun, W. L. Hase J. Chem. Phys. 133, 044313 (2010).
+    """
     Epot = 0.0
     #
     crd = np.copy(molecule.crd)
     veloc = np.zeros((molecule.natoms, 3), dtype=np.double)
     #
-    for mode in modes:  # treat each mode as an uncoupled harmonic oscillator
+    for mode in modes:  
+        #
         while True:
             # get random Q and P in the interval [-5, +5]
             Q = random.random()*10.0 - 5.0
             P = random.random()*10.0 - 5.0
             # calculate probability for this set of P and Q with Wigner distr.
-            probability, nquant = wigner(Q, P, mode)
+            probability = wigner_gs(Q, P)
             #
             if probability > random.random():
                 break  # coordinates accepted
@@ -226,33 +285,17 @@ def get_initial_condition(molecule, modes):
     #
     # remove translational/rotational dofs
     #
-    return Epot, InitalCondition(crd, veloc)
+    return Epot, InitialCondition(crd, veloc)
 
 
-def wigner(Q, P, mode):
-    """This function calculates the Wigner distribution
-       for a one-dimensional harmonic oscillator.
+def wigner_gs(Q, P):
+    """for a one-dimensional harmonic oscillator.
        Q contains the dimensionless coordinate of the
        oscillator and P contains the corresponding momentum."""
-    return (np.exp(-Q**2.0) * np.exp(-P**2.0), 0.)
+    return np.exp(-Q**2.0) * np.exp(-P**2.0)
 
 
-def create_initial_conditions(filename, molecule, E_zero):
-    #
-    settings = {
-            'dimensions': {
-                'frame': 'unlimited',
-                'natoms': molecule.natoms,
-                'three': 3,
-                },
-            'variables': {
-                'atomids': DBVariable(np.integer, ('natoms')),
-                'masses': DBVariable(np.double, ('natoms')),
-                'crd': DBVariable(np.double, ('frame', 'natoms', 'three')),
-                'veloc': DBVariable(np.double, ('frame', 'natoms', 'three')),
-                'energy': DBVariable(np.double, ('frame', 'three')),  # E_tot, E_pot, E_kin
-            },
-    }
+def create_initial_conditions(settings, filename, molecule, modes, E_zero):
     # Initialize database
     if os.path.exists(filename):
         raise Exception('database "%s" does already exist' % filename)
@@ -261,6 +304,8 @@ def create_initial_conditions(filename, molecule, E_zero):
     # set constants
     db.set('atomids', molecule.atomids)
     db.set('masses', molecule.masses/U_TO_AMU)
+    db.set('modes', np.array([mode.displacements for mode in modes]))
+    db.set('freqs', np.array([mode.freq for mode in modes]))
     # add equilibrium values
     db.append('crd', molecule.crd)
     db.append('veloc', np.zeros(molecule.natoms*3, dtype=np.double))

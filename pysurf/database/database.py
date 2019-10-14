@@ -18,7 +18,7 @@ class Database(object):
     
     """
 
-    __slots__ = ('filename', '_rep', '_db', '_handle', 'closed', '_icurrent')
+    __slots__ = ('filename', '_rep', '_db', '_handle', '_closed', '_icurrent')
 
     def __init__(self, filename, settings):
         """Initialize new Database,
@@ -30,13 +30,13 @@ class Database(object):
         else:
            create new database
         """
-        #
         self.filename = filename
+        #
         self._rep = DatabaseRepresentation(settings)
         #
         self._db, self._handle = self._rep.create_database(filename)
         # 
-        self.closed = False
+        self._closed = False
         # 
         self._icurrent = None
 
@@ -58,6 +58,10 @@ class Database(object):
     def get_dimension_size(self, key):
         if key in self._db.dimensions.keys():
             return self._db.dimensions[key].size
+
+    @property
+    def closed(self):
+        return self._closed
 
     @property
     def increase(self):
@@ -83,10 +87,5 @@ class Database(object):
         else:
             variable[:] = value
 
-    def close(self):
-        if self.closed is False:
-            self._db.close()
-            self.closed = True
-
     def __del__(self):
-        self.close()
+        self._db.close()

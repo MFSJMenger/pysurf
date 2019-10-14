@@ -2,6 +2,8 @@ import numpy as np
 from ..random.shrandom import RandomNumberGeneratorNP
 
 
+random = RandomNumberGeneratorNP()
+
 def vv_xstep(crd, v, a, dt):
     crd += v*dt + 0.5*a*dt*dt
     return crd
@@ -13,11 +15,13 @@ def vv_vstep(v, a_old, a, dt):
 
 
 def get_acceleration(g, m):
-    return g/m
+    return -g/m
 
 
 def abs_gt(a, b):
-    return abs(a) > abs(b)
+    if  isinstance(a, float) or isinstance(a, int):
+        return abs(a) > abs(b)
+    return any(a[i] > b[i] for i in range(len(a)))
 
 
 def compute_landau_zener_probability(dt, d_curr,
@@ -72,6 +76,7 @@ class LandauZener(object):
                 if curr_hop_prob > prop:
                     prop = curr_hop_prob
                     iselected = istate
+                    print(f"{iselected} = {istate}")
         #
         if iselected is None:
             return None

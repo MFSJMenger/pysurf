@@ -1,5 +1,6 @@
 """Tools to store information on the Variables and Dimensions in the Database"""
 import netCDF4
+import numpy as np
 
 from ..utils.osutils import exists_and_isfile
 
@@ -15,9 +16,16 @@ class DBVariable(object):
 
     def __eq__(self, rhs):
         assert(isinstance(rhs, self.__class__))
-        if self.type == rhs.type and self.dimensions == rhs.dimensions:
-            return True
-        return False
+        if len(self.dimensions) != len(rhs.dimensions):
+            return False
+        if self.type != rhs.type or any(self.dimensions[i] != rhs.dimensions[i] for i in range(len(self.dimensions))):
+            print("Why is that false?")
+            print(self, rhs)
+            return False
+        return True
+
+    def __str__(self):
+        return f"DBVariable(type = {self.type}, dimension = {self.dimensions})"
 
 
 def get_variable_info(db, key):
@@ -56,6 +64,14 @@ class DatabaseRepresentation(object):
         variables = {key: get_variable_info(db, key) for key in db.variables.keys()}
         dimensions = {key: get_dimension_info(db, key) for key in db.dimensions.keys()}
         return cls({'variables': variables, 'dimensions': dimensions})
+
+    def __str__(self):
+        print("Dimensions: ")
+        for item in self['dimensions']:
+            print(item)
+        for item in self['variables']:
+            print(item)
+        return ""
     
     def _parse(self, settings):
         """Parse given database"""
@@ -99,7 +115,6 @@ class DatabaseRepresentation(object):
         assert(isinstance(rhs, self.__class__))
         # check dimensions
         if (set(rhs['dimensions'].keys()) != set(self['dimensions'].keys())):
-            print('"dimensions" are different between both DatabaseRepresentation!')
             return False
         # check that dimensions are exactly the same
         if not all(rhs['dimensions'][dim_name] == self['dimensions'][dim_name] for dim_name in self['dimensions'].keys()):
@@ -107,8 +122,9 @@ class DatabaseRepresentation(object):
 
         # check variables
         if (set(rhs['variables'].keys()) != set(self['variables'].keys())):
+            print("variables keys not the same?")
             return False
-        if not all(rhs['variables'][var_name] == self['variables'][var_name] for var_name in rhs['variables'].keys()):
+        if any(rhs['variables'][var_name] != self['variables'][var_name] for var_name in rhs['variables'].keys()):
             return False
         return True
 
@@ -121,6 +137,7 @@ class DatabaseRepresentation(object):
            that it is compatable with the existing one"""
         db = load_database(filename)
         ref = DatabaseRepresentation.from_db(db)
+
         if ref != self:
             raise Exception('Database is not in agreement with ask settings!')
         return db, db.variables

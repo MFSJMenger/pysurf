@@ -7,7 +7,7 @@ import logging
 from .interface.interface import Interface
 from ..utils.chemutils import atomic_masses
 
-class SurfacePointProvider():
+class SurfacePointProvider(object):
     """ The Surface Point Provider is the main interface providing the
         providing the information of a system at a specific point. It
         takes care where to take the information from according to the
