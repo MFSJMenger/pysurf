@@ -25,7 +25,7 @@ def get_init(init=0, seed=16661):
     mode2 = Mode(obj.w2, displacement)
     mode3 = Mode(obj.w3, displacement)
 
-    data = obj.get(np.array([1, 1, 1]))
+    data = obj.get({'coord': np.array([1, 1, 1]), 'mass': None, 'energy': None, 'gradient': None})
     mol.masses = data['mass']
 
     crd = np.array([0., 0., 0.], dtype=np.double)

@@ -4,8 +4,11 @@ import numpy as np
 import importlib
 import logging
 
-from .interface.interface import Interface
+from .qminter.qminter import get_qminter
 from ..utils.chemutils import atomic_masses
+from ..database.database import Database
+from ..database.dbtools import DBVariable
+from .dbinter.dbinter import DBInter
 
 class SurfacePointProvider(object):
     """ The Surface Point Provider is the main interface providing the
@@ -33,6 +36,8 @@ class SurfacePointProvider(object):
         self.logger.info('Surface Point Provider')
 
         self.config = configparser.ConfigParser()
+
+
         if os.path.isfile(inputfile):
             self.config.read(inputfile)
             inputfile_full = os.path.abspath(inputfile)
@@ -43,6 +48,20 @@ class SurfacePointProvider(object):
                               + inputfile + ' for SurfacePointProvider '
                               + 'not found!')
             exit()
+
+        if 'logging' in self.config['MAIN'].keys():
+            loglevel = self.config['MAIN']['logging']
+            if loglevel == 'debug':
+                #handler.setLevel(logging.DEBUG)
+                self.logger.setLevel(logging.DEBUG)
+                for hand in self.logger.handlers:
+                    hand.setLevel(logging.DEBUG)
+                self.logger.info('logging level set to debug')
+            else:
+                self.logger.setLevel(logging.INFO)
+                self.logger.info('logging level set to info' +
+                                 ' as specification was not known')
+
         if 'mode' in self.config['MAIN'].keys():
             self.mode = self.config['MAIN']['mode']
         else:
@@ -54,7 +73,6 @@ class SurfacePointProvider(object):
         """
         if self.mode == 'model':
             self.logger.info('Using a model to generate the PES')
-
             try:
                 # get absolute path for model
                 path = os.path.join(self.path, self.config['MODEL']['module'])
@@ -73,46 +91,67 @@ class SurfacePointProvider(object):
                 self.logger.error('The user class could not be found: '
                                   + self.config['MODEL']['class'])
                 exit()
-            self.usr_inst = usr_class()
+            self.interface = usr_class()
+
+        #If an ab initio calculation is used
+        #    and if a database is used
         elif self.mode == 'ab initio':
             self.logger.info('Ab initio calculations are used to '
                              + 'generate the PES')
+
+            # make sure that AB INITIO section is in the inputfile
+            # add path to AB INITIO section
+            try:
+                self.config['AB INITIO']['path'] = self.path
+
+            except KeyError:
+                self.logger.error('No AB INITIO section in '
+                                  + 'the inputfile!')
+                exit()
+
             # read reference geometry from inputfile
             self.refgeo = self.get_refgeo()
-            if 'database' in self.config['MAIN'].keys():
-                self.db = self.config['MAIN']['database']
+            self.natoms = len(self.refgeo['atoms'])
+
+            if 'number of states' in self.config['AB INITIO'].keys():
+                try:
+                    self.nstates = int(self.config['AB INITIO']
+                                       ['number of states'])
+                except ValueError:
+                    self.logger.error('Number of states is not an'
+                                      + 'integer value!')
+                    exit()
+            else:
+                self.logger.error('Number of states not specified'
+                                   + 'in inputfile!')
+                exit()
+            if 'database' in self.config['AB INITIO'].keys():
+                self.dbpath = os.path.join(self.path, self.config['AB INITIO']['database'])
+                self.dbpath = os.path.realpath(self.dbpath)
                 self.logger.info('Using database: '
-                                 + self.db)
+                                 + self.dbpath)
+                self.interface = DBInter(self.dbpath, self.config['AB INITIO'], self.logger, self.refgeo)
+                self.db = True
             else:
                 self.db = False
 
-    def get(self, coord):
+                self.interface = get_qminter(self.config['AB INITIO'],
+                                      self.logger, self.refgeo)
+
+    def get(self, request):
         """ The get method is the method which should be called by
             external programs, which want to use the SPP. As an
             input it takes the coordinates and gives back the
             information at this specific position.
         """
-        if self.mode == 'model':
-            return self.usr_inst.get(coord)
-        elif self.mode == 'ab initio':
-            if self.db is False:
-                return self.qm_get(coord)
-            else:
-                self.logger.error('DB not yet implemented!')
-                exit()
+        res = self.interface.get(request)
+        
+        # in the case of ab initio/DB add the masses if not done by
+        # the interface
+        if 'mass' in res.keys() and self.mode == 'ab initio':
+            if res['mass'] is None:
+                res['mass'] = get_masses()
 
-    def qm_get(self, coord):
-        try:
-            self.config['AB INITIO']['path'] = self.path
-            interface = Interface(self.config['AB INITIO'],
-                                  self.logger, self.refgeo)
-        except KeyError:
-            self.logger.error('No AB INITIO section in '
-                              + 'the inputfile!')
-            exit()
-        res = interface.get(coord)
-        masses = self.get_masses()
-        res['mass'] = masses
         return res
 
     def get_refgeo(self):

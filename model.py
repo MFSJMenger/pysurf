@@ -4,7 +4,7 @@ from pysurf.spp.spp import SurfacePointProvider
 from pysurf.sh.sh import *
 
 spp = SurfacePointProvider('./test.inp')
-out = spp.get(np.zeros(3, dtype=np.double))
+out = spp.get({'coord': np.zeros(3, dtype=np.double), 'energy': None, 'gradient': None})
 
 class Save(object):
 
@@ -50,7 +50,7 @@ def landau_zener_surfacehopping(init_cond, iactive, nsteps, random_seed, inp, dt
     #
     v = init_cond.veloc
     # start
-    data = spp.get(crd)
+    data = spp.get({'coord': crd, 'energy': None, 'gradient': None})
 
     a = get_acceleration(data['gradient'][iactive], data['mass'])
     #
@@ -58,7 +58,7 @@ def landau_zener_surfacehopping(init_cond, iactive, nsteps, random_seed, inp, dt
     for istep in range(2):
         """If not restart, first 2 steps are just to save energy!"""
         crd = vv_xstep(crd, v, a, dt)
-        data = spp.get(crd)
+        data = spp.get({'coord': crd, 'energy': None, 'gradient': None})
         # update acceleration
         a_old = a
         a = get_acceleration(data['gradient'][iactive], data['mass'])
@@ -76,7 +76,7 @@ def landau_zener_surfacehopping(init_cond, iactive, nsteps, random_seed, inp, dt
         # 1) write step info
         # 2) call interface
         crd = vv_xstep(crd, v, a, dt)
-        data = spp.get(crd)
+        data = spp.get({'coord': crd, 'energy': None, 'gradient': None})
         #
         e_two_step_prev = e_prev_step
         e_prev_step = e_curr
