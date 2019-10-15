@@ -8,7 +8,7 @@ from collections import namedtuple
 import numpy as np
 import numpy.random as random
 #
-from qctools import MoldenParser
+from .molden import MoldenParser
 #
 from .database.database import Database
 from .database.dbtools import DBVariable
