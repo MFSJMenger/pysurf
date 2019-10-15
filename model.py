@@ -35,6 +35,7 @@ def landau_zener_surfacehopping(init_cond, iactive, nsteps, random_seed, inp, dt
     save_veloc = Save('veloc.txt', "M1 M2 M3")
     save_acc = Save('acc.txt', "M1 M2 M3")
     save_energy = Save("energy.txt", "iactive EKin EPot ETot")
+    save_pes = Save("pes.txt", "states")
 
     e_curr = None
     e_prev_step = None
@@ -108,6 +109,7 @@ def landau_zener_surfacehopping(init_cond, iactive, nsteps, random_seed, inp, dt
         epot = e_curr[iactive]
         etot = ekin + epot
         save_energy.save("%8d %12.8f   %12.8f    %12.8f" % (iactive, ekin, epot, etot))
+        save_pes.save("%12.8f %12.8f   %12.8f" % (data['energy'][0], data['energy'][1], data['energy'][2]))
 
 def calc_ekin(masses, veloc):
     ekin = 0.0
