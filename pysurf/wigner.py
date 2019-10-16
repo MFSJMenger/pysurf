@@ -40,6 +40,19 @@ class WignerSampling(object):
         self.molecule = molecule
         self.modes = modes
         self.is_massweighted = is_massweighted
+        self._check_modes()
+
+    def _check_modes(self):
+
+        img = [mode.freq for mode in self.modes if mode.freq < 0.0]
+        nimg_freq = len(img)
+        if nimg_freq == 0:
+            return
+        def to_strg(number):
+            return "%12.8f" % number
+        print(f"Found {nimg_freq} imaginary frequencies:")
+        print("[" + ", ".join(map(to_strg, img)) + "]")
+
 
 
     @classmethod
@@ -265,6 +278,10 @@ def get_initial_condition(molecule, modes):
     veloc = np.zeros((molecule.natoms, 3), dtype=np.double)
     #
     for mode in modes:  
+        if mode.freq < 0.0:
+            factor = np.sqrt(-1.0*mode.freq)
+        else:
+            factor = np.sqrt(mode.freq)
         #
         while True:
             # get random Q and P in the interval [-5, +5]
@@ -278,7 +295,6 @@ def get_initial_condition(molecule, modes):
         # now transform the dimensionless coordinate into a real one
         # paper paper says, that freq_factor is sqrt(2*PI*freq)
         # QM programs directly give angular frequency (2*PI is not needed)
-        factor = np.sqrt(mode.freq)
         # Higher frequencies give lower displacements and higher momentum.
         # Therefore scale random_Q and random_P accordingly:
         Q /= factor

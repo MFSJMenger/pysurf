@@ -80,7 +80,7 @@ FrCoords = Event('FrCoords',
 
 
 def parse_fr_norm_coords(result):
-    vibration = OrderedDict()
+    vibration = {}
     active = -1
     for line in result:
         if 'vibration' in line:
@@ -88,7 +88,6 @@ def parse_fr_norm_coords(result):
             vibration[active] = []
             continue
         vibration[active].append(list(map(float, line.split())))
-
     return vibration
 
 
