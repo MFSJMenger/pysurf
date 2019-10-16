@@ -19,7 +19,6 @@ class DBVariable(object):
         if len(self.dimensions) != len(rhs.dimensions):
             return False
         if self.type != rhs.type or any(self.dimensions[i] != rhs.dimensions[i] for i in range(len(self.dimensions))):
-            print("Why is that false?")
             print(self, rhs)
             return False
         return True
@@ -42,6 +41,15 @@ def get_dimension_info(db, key):
     else:
         return dim.size
 
+class DatabaseTools(object):
+    """Namespace to store general tools to work with the database"""
+
+    @staticmethod
+    def get_variables(filename, keys):
+        db = load_database(filename)
+        result = {key: get_dimension_info(db, key) for key in keys}
+        db.close()
+        return result
 
 class DatabaseRepresentation(object):
     """Store abstract representation of the Variables and

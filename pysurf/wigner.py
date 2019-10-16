@@ -11,6 +11,7 @@ from .molden import MoldenParser
 #
 from .database.database import Database
 from .database.dbtools import DBVariable
+from .database.dbtools import DatabaseTools
 from .atominfo import masses as MASSES
 from .atominfo import atomname_to_id
 from .constants import U_TO_AMU, CM_TO_HARTREE
@@ -98,8 +99,10 @@ class InitialConditions(object):
 
 
     @classmethod
-    def from_db(cls, filename, natoms, nmodes, E_quil=0.0):
-        db = Database(filename, cls.generate_settings(natoms, nmodes))
+    def from_db(cls, filename, E_quil=0.0):
+        db_settings = DatabaseTools.get_variables(filename, ["natoms", "nmodes"])
+        db = Database(filename, cls.generate_settings(db_settings['natoms'], 
+                                                      db_settings['nmodes']))
         return cls(db, db['crd'].shape[0])
 
     @staticmethod
