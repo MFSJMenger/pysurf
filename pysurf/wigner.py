@@ -132,7 +132,8 @@ class InitialConditions(object):
             return cond
         raise StopIteration
 
-    def get_molecule(self):
+    @property
+    def molecule(self):
         return Molecule(self._db['atomids'], self._db.get('crd', 0), self._db['masses'])
 
     @classmethod
