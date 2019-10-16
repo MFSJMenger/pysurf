@@ -22,4 +22,4 @@ for con in conditions:
 # get a specific intial condition
 cond = conditions.get_condition(10)
 # Read existing conditions
-condition = InitialConditions.from_db("init_conds.db", 10, 24)
+condition = InitialConditions.from_db("init_conds.db")
