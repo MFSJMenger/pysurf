@@ -2,7 +2,6 @@ import os
 #
 from copy import deepcopy
 #
-from dataclasses import dataclass
 from collections import namedtuple
 #
 import numpy as np
@@ -21,14 +20,13 @@ Mode = namedtuple("Mode", ["freq", "displacements"])
 InitialCondition = namedtuple("InitialCondition", ['crd', 'veloc'])
 
 
-@dataclass
 class Molecule(object):
     """Store info of a molecule"""
-    atomids: np.array  # np.int (natoms)
-    crd: np.array       # np.double (natoms, 3)
-    masses: np.array    # np.double (natoms)
-    name: str = None    # Name of the molecule
-#    unit: str = 'ang'   # unit of the coordinates
+    def __init__(self, atomids, crd, masses, name=None):
+        self.atomids = atomids
+        self.crd = crd
+        self.masses = masses
+        self.name = name
     @property
     def natoms(self):
         return len(self.atomids)
@@ -115,15 +113,27 @@ class InitialConditions(object):
         self._start = 1 # skip equilibrium structure
         return self
 
+    def get_condition(self, idx): 
+        if idx >= self.nconditions:
+            return None
+
+        crd = self._db.get('crd', idx)
+        veloc = self._db.get('veloc', idx)
+        return InitialCondition(crd, veloc)
+
+    @property
+    def equilibrium(self):
+        return self.get_condition(0)
+
     def __next__(self):
-        if self._start < self.nconditions:
-            crd = self._db.get('crd', self._start)
-            veloc = self._db.get('veloc', self._start)
+        cond = self.get_condition(self._start)
+        if cond is not None:
             self._start += 1
-            return InitialCondition(crd, veloc)
+            return cond
         raise StopIteration
 
-    def get_molecule(self):
+    @property
+    def molecule(self):
         return Molecule(self._db['atomids'], self._db.get('crd', 0), self._db['masses'])
 
     @classmethod
