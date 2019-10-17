@@ -1,136 +1,46 @@
-$molecule
-0 1
-c      2.14229      1.37344      0.00001
-n     -0.00018      2.74722     -0.00000
-c     -2.14248      1.37316     -0.00000
-c     -2.14231     -1.37343      0.00000
-h     -3.99562      2.24151     -0.00000
-h     -3.99533     -2.24207      0.00002
-n      0.00019     -2.74722     -0.00000
-c      2.14249     -1.37316     -0.00000
-h      3.99561     -2.24152     -0.00000
-h      3.99532      2.24206      0.00000
-$end
-
-$rem
-jobtype sp
-cis_n_roots 3
-cis_singlets true
-cis_triplets false
-set_iter 50
-exchange pbe0 
-basis sto-3g
-RPA 0
-MAX_SCF_CYCLES 500
-xc_grid 000075000302
-mem_static 4000
-mem_total 16000
-SYM_IGNORE TRUE
-$end
+$molecule                                                               
+0 1                                                                     
+c      2.14229      1.37344      0.00001                                
+n     -0.00018      2.74722     -0.00000                                
+c     -2.14248      1.37316     -0.00000                                
+c     -2.14231     -1.37343      0.00000                                
+h     -3.99562      2.24151     -0.00000                                
+h     -3.99533     -2.24207      0.00002                                
+n      0.00019     -2.74722     -0.00000                                
+c      2.14249     -1.37316     -0.00000                                
+h      3.99561     -2.24152     -0.00000                                
+h      3.99532      2.24206      0.00000                                
+$end                                                                    
 
 
-
-@@@
-$comment
-FORCE
-$end
-
-$molecule
-0 1
-read
-$end
-
-
-
-$rem
-jobtype FORCE
-set_iter 50
-exchange pbe0 
-basis sto-3g
-RPA 0
-MAX_SCF_CYCLES 500
-xc_grid 000075000302
-mem_static 4000
-mem_total 16000
-SYM_IGNORE TRUE
-$end
-
-
+$rem                                                                    
+jobtype opt                                                        
+exchange pbe0                                                           
+basis sto-3g                                                            
+RPA 0                                                                   
+MAX_SCF_CYCLES 500                                                      
+xc_grid 000075000302                                                    
+mem_static 4000                                                         
+mem_total 16000                                                         
+SYM_IGNORE TRUE                                                         
+MOLDEN_FORMAT TRUE
+$end                                                                    
 
 @@@
 $molecule
-0 1
 read
 $end
 
+$rem                                                                    
+jobtype freq                                                        
+exchange pbe0                                                           
+basis sto-3g                                                            
+RPA 0                                                                   
+MAX_SCF_CYCLES 500                                                      
+xc_grid 000075000302                                                    
+mem_static 4000                                                         
+mem_total 16000                                                         
+SYM_IGNORE TRUE                                                         
+MOLDEN_FORMAT TRUE
+$end                                                                    
 
-
-$rem
-jobtype FORCE
-cis_n_roots 3
-cis_triplets false
-set_iter 50
-CIS_STATE_DERIV 1
-exchange pbe0 
-basis sto-3g
-RPA 0
-scf_guess read
-xc_grid 000075000302
-MAX_SCF_CYCLES 500
-mem_static 4000
-mem_total 16000
-SYM_IGNORE TRUE
-$end
-
-
-@@@
-$molecule
-0 1
-read
-$end
-
-
-
-$rem
-jobtype FORCE
-cis_n_roots 3
-cis_triplets false
-set_iter 50
-CIS_STATE_DERIV 2
-exchange pbe0 
-basis sto-3g
-RPA 0
-scf_guess read
-xc_grid 000075000302
-MAX_SCF_CYCLES 500
-mem_static 4000
-mem_total 16000
-SYM_IGNORE TRUE
-$end
-
-
-
-@@@
-$molecule
-0 1
-read
-$end
-
-
-
-$rem
-jobtype FORCE
-cis_n_roots 3
-cis_triplets false
-set_iter 50
-CIS_STATE_DERIV 3
-exchange pbe0 
-basis sto-3g
-RPA 0
-scf_guess read
-xc_grid 000075000302
-MAX_SCF_CYCLES 500
-mem_static 4000
-mem_total 16000
-SYM_IGNORE TRUE
-$end

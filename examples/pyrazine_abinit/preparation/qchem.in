@@ -11,7 +11,26 @@ c      2.14249     -1.37316     -0.00000
 h      3.99561     -2.24152     -0.00000                                
 h      3.99532      2.24206      0.00000                                
 $end                                                                    
-                                                                        
+
+
+$rem                                                                    
+jobtype opt                                                        
+exchange pbe0                                                           
+basis sto-3g                                                            
+RPA 0                                                                   
+MAX_SCF_CYCLES 500                                                      
+xc_grid 000075000302                                                    
+mem_static 4000                                                         
+mem_total 16000                                                         
+SYM_IGNORE TRUE                                                         
+MOLDEN_FORMAT TRUE
+$end                                                                    
+
+@@@
+$molecule
+read
+$end
+
 $rem                                                                    
 jobtype freq                                                        
 exchange pbe0                                                           
