@@ -25,7 +25,7 @@ def get_init(init=0, seed=16666):
     conditions = sampling.create_initial_conditions('init_conds.db',init)
     return conditions
 
-
+ntrajs = 10
 
 if os.path.isfile('init_conds.db'):
     os.remove('init_conds.db')
@@ -34,12 +34,12 @@ if os.path.isdir('traj.0'):
 if os.path.isdir('traj.1'):
     shutil.rmtree('traj.1')
 # create initial condition
-conditions = get_init(2)
+conditions = get_init(10)
 print(conditions.get_condition(0))
-for i in range(2):
+for i in range(ntrajs):
     os.mkdir('traj.'+str(i))
     os.chdir('traj.'+str(i))
     os.system('cp ../test_abinit.inp ../ref_geo.xyz ../template.dat ../qchem.out ../run_qchem ./')
-    landau_zener_surfacehopping(conditions.get_condition(i), 2, 100, 16661, 'test_abinit.inp', 10)
+    landau_zener_surfacehopping(conditions.get_condition(i), 2, 100, 16661, 'test_abinit.inp', 20)
     os.chdir('../')
 

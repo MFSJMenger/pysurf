@@ -30,6 +30,27 @@ class DBInter():
                                                   self.logger,
                                                   self.refgeo)
 
+        if 'interpolation' in self.config.keys():
+            try:
+                self.interpol = self.config.getboolean('interpolation')
+            except ValueError:
+                self.interpol = self.config['interpolation']
+        else:
+            self.interpol = False
+        if self.interpol is True:
+            self.interpol = 'linear'
+            self.logger.info('set default interpolation to linear'
+                             + 'interpolation')
+        self.logger.debug('interpolation method is ' + str(self.interpol))
+
+        if self.interpol:
+            if 'max distance interpolation' in self.config.keys():
+                self.thr = float(self.config['max distance interpolation'])
+            else:
+                self.thr = 0.25
+                self.logger.info('Using default max distance for'
+                                 + ' interpolation of 0.25')
+
     def create_db(self, filename='db.dat'):
         variables = {}
         variables['coord'] = DBVariable(np.double, ('frame', 'natoms',
@@ -56,6 +77,7 @@ class DBInter():
         return db
 
     def get(self, request):
+        self.logger.debug('DBInter.get is called')
         if 'coord' in request.keys():
             coord = request['coord']
         else:
@@ -63,23 +85,13 @@ class DBInter():
                 request[prop] = None
             return request
 
-        if 'interpolation' in self.config.keys():
-            try:
-                interpol = self.config.getboolean('interpolation')
-            except ValueError:
-                interpol = self.config['interpolation']
-        else:
-            interpol = False
 
-        if interpol is True:
-            interpol = 'linear'
-            self.logger.info('set default interpolation to linear'
-                             + 'interpolation')
-
-        self.logger.debug('interpolation method is ' + str(interpol))
-        if interpol:
+        if self.interpol:
+            self.logger.debug('Number of DB entries: ' 
+                               + str(len(self.db['coord'])))
             # if db empty, start qm calculation
             if len(self.db['coord']) == 0:
+                self.logger.debug('DB is empty, start qm calc')
                 res = self.get_qm(request)
                 if len(self.db['coord']) > 0:
                     self.interpolator = Interpolation(self.db,
@@ -94,14 +106,16 @@ class DBInter():
                               + str(min_dist['dist']) + ' of entry: '
                               + str(min_dist['entry']))
 
-            if 'max distance interpolation' in self.config.keys():
-                thr = float(self.config['max distance interpolation'])
-            else:
-                thr = 0.25
-                self.logger.info('Using default max distance for'
-                                 + 'interpolation of 0.25')
+            if min_dist['dist'] < self.thr:
 
-            if min_dist['dist'] < thr:
+                # If point is already in DB
+                if min_dist['dist'] < 0.001:
+                    self.logger.info('take point from DB: entry '
+                                     + str(min_dist['entry']))
+                    for key in self.properties:
+                        request[key] = self.db[key][min_dist['entry']]
+                    return request
+
                 res = self.interpolator.get(coord)
                 success = True
                 for key in res.keys():
@@ -109,9 +123,9 @@ class DBInter():
                         success = False
                 if success is False:
                     self.logger.debug('Interpolation was not'
-                                      + 'successfull! QM'
-                                      + 'calculation is started!')
-                    self.get_qm(request)
+                                      + ' successfull! QM'
+                                      + ' calculation is started!')
+                    res = self.get_qm(request)
                     self.interpolator = Interpolation(self.db,
                                                       self.config,
                                                       self.logger,
@@ -124,6 +138,7 @@ class DBInter():
         else:
             res = self.get_qm(request)
 
+        print('Johannes in dbinter.get() res= ', res)
         return res
 
     def get_qm(self, request):
@@ -147,10 +162,12 @@ class DBInter():
                                    - self.db['coord'][i]))
                 if i == 0:
                     min_dist = max_dist
+                    res = {'entry': i, 'coord': self.db['coord'][i],
+                           'dist': min_dist}
                 elif max_dist < min_dist:
                     min_dist = max_dist
-                res = {'entry': i, 'coord': self.db['coord'][i],
-                       'dist': min_dist}
+                    res = {'entry': i, 'coord': self.db['coord'][i],
+                           'dist': min_dist}
         return res
 
 
@@ -174,12 +191,32 @@ class Interpolation():
                 gradients[i, :] = self.db['gradient'][i].flatten()
             try:
                 self.logger.info('try to set up interpolator')
+                print('Johannes energies:', energies)
+                print('Johannes grads:', gradients)
+                print('Johannes coords:', coords)
                 self.energy = LinearNDInterpolator(coords, energies)
+                print('Johannes energies set up')
                 self.gradient = LinearNDInterpolator(coords, gradients)
                 self.logger.info('successfully set up interpolator')
             except:
+                #self.energy = LinearNDInterpolator(coords, energies)
                 self.energy = lambda x: None
                 self.gradient = lambda x: None
+
+        if self.config['interpolation'] == 'shepard':
+            self.logger.info('Using Shepard interpolation scheme')
+            noc = len(self.db['coord'])
+            coords = np.empty((noc, self.natoms*3), dtype=float)
+            energies = np.empty((noc, self.nstates), dtype=float)
+            gradients = np.empty((noc, self.nstates*self.natoms*3),
+                                 dtype=float)
+            for i in range(len(self.db['coord'])):
+                coords[i, :] = self.db['coord'][i].flatten()
+                energies[i] = self.db['energy'][i]
+                gradients[i, :] = self.db['gradient'][i].flatten()
+            self.logger.info('setting up Shepard interpolator')
+            self.energy = ShepardInterpolator(coords, energies)
+            self.gradient = ShepardInterpolator(coords, gradients)
         else:
             self.logger.error('ERROR: Interpolation scheme not yet'
                               + 'implemented!')
@@ -187,8 +224,38 @@ class Interpolation():
 
     def get(self, coord):
         self.logger.debug('using interpolator to get energy')
-        en = self.energy(coord)[0]
-        grad = self.gradient(coord).reshape((self.nstates,
-                                             self.natoms, 3))
-
+        en = self.energy(coord.flatten())
+        grad = self.gradient(coord.flatten())
+        print('Johannes: ', en)
+        print('Johannes: ', grad)
+#         try:
+#             en = self.energy(coord)[0]
+#             print('Johannes: ', en)
+#         except:
+#             en = None
+#         try:
+#             grad = self.gradient(coord).reshape((self.nstates,
+#                                              self.natoms, 3))
+#         except:
+#             grad = None
         return {'energy': en, 'gradient': grad, 'coord': coord}
+
+class ShepardInterpolator():
+    def __init__(self, coords, values):
+        self.coords = coords
+        self.values = values
+    
+    def __call__(self,coord):
+        print('Johannes called Shepard interpolator')
+        weights = self.get_weights(coord)
+        res = 0
+        for i in range(len(self.values)):
+            res += weights[i]*self.values[i]
+        res = res/sum(weights)
+        return res
+
+    def get_weights(self,coord):
+        weights = np.zeros(len(self.coords), dtype=float)
+        for i in range(len(self.coords)):
+            weights[i] = np.linalg.norm((coord-self.coords[i]))
+        return weights

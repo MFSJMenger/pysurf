@@ -9,6 +9,7 @@ from ..utils.chemutils import atomic_masses
 from ..database.database import Database
 from ..database.dbtools import DBVariable
 from .dbinter.dbinter import DBInter
+from ..utils.constants import angstrom2bohr
 
 class SurfacePointProvider(object):
     """ The Surface Point Provider is the main interface providing the
@@ -145,12 +146,10 @@ class SurfacePointProvider(object):
             information at this specific position.
         """
         res = self.interface.get(request)
-        
         # in the case of ab initio/DB add the masses if not done by
         # the interface
-        if 'mass' in res.keys() and self.mode == 'ab initio':
-            if res['mass'] is None:
-                res['mass'] = get_masses()
+        if 'mass' in request.keys() and self.mode == 'ab initio':
+            res['mass'] = self.get_masses()
 
         return res
 
@@ -170,7 +169,7 @@ class SurfacePointProvider(object):
                 split_line = line.split()
                 if len(split_line) == 4:
                     atoms += [split_line[0]]
-                    coords += [[float(c) for c in split_line[1:]]]
+                    coords += [[float(c)*angstrom2bohr for c in split_line[1:]]]
         for i in range(len(atoms)):
             atom = atoms[i]
             atom = atom[0].upper() + atom[1:].lower()
@@ -181,7 +180,12 @@ class SurfacePointProvider(object):
     def get_masses(self):
         masses = []
         for i in range(len(self.refgeo['atoms'])):
-            masses += [atomic_masses[self.refgeo['atoms'][i]]]
+            # masses are given in an array of shape (natoms, 3) like
+            # the coordinates so that they can be easily used in the
+            # surface hopping algorithm
+            masses += [[atomic_masses[self.refgeo['atoms'][i]],
+                        atomic_masses[self.refgeo['atoms'][i]],
+                        atomic_masses[self.refgeo['atoms'][i]]]]
         return np.array(masses)
 
 

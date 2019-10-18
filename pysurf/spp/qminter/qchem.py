@@ -4,6 +4,7 @@ import os
 
 from pysurf.utils.osutils import exists_and_isfile
 from pysurf.utils.strutils import split_str
+from pysurf.utils.constants import bohr2angstrom
 
 
 class QChem():
@@ -37,7 +38,10 @@ class QChem():
             coord = request['coord']
             self.write_input(self.refgeo['atoms'], coord)
             outfile = self.start_calc()
-            return self.read_output(outfile)
+            ret = self.read_output(outfile)
+            request['energy'] = ret['energy']
+            request['gradient'] = ret['gradient']
+            return request
         else:
             for prop in self.properties:
                 request[prop] = None
@@ -55,7 +59,9 @@ class QChem():
         coordstring = ''
         for i in range(len(atoms)):
             coordstring += '{0} {1:12.5f} {2:12.5f} {3:12.5f}\n'\
-                .format(atoms[i], coord[i, 0], coord[i, 1], coord[i, 2])
+                .format(atoms[i], coord[i, 0]*bohr2angstrom,
+                        coord[i, 1]*bohr2angstrom,
+                        coord[i, 2]*bohr2angstrom)
         with open(filename, 'w') as outfile:
             outfile.write(temp.safe_substitute(
                           geometry=coordstring.strip('\n')))

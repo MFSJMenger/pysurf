@@ -1,0 +1,25 @@
+$molecule
+0 1
+read
+$end
+
+
+
+$rem
+jobtype FORCE
+cis_n_roots 3
+cis_triplets false
+set_iter 50
+CIS_STATE_DERIV 1
+exchange pbe0 
+basis sto-3g
+RPA 0
+scf_guess read
+xc_grid 000075000302
+MAX_SCF_CYCLES 500
+mem_static 4000
+mem_total 16000
+SYM_IGNORE TRUE
+$end
+
+

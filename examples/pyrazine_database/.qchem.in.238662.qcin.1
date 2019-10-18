@@ -1,0 +1,32 @@
+$molecule
+0 1
+C      1.19777      0.70294      0.01171
+N      0.00183      1.47216     -0.00381
+C     -1.14561      0.70108     -0.00269
+C     -1.14676     -0.70102     -0.01323
+H     -2.09663      1.25416      0.00641
+H     -2.09721     -1.25143     -0.00324
+N      0.00067     -1.47445      0.01550
+C      1.14566     -0.70381      0.00357
+H      2.09663     -1.25668     -0.01229
+H      2.09655      1.25704     -0.00191
+$end
+
+$rem
+jobtype sp
+cis_n_roots 3
+cis_singlets true
+cis_triplets false
+set_iter 50
+exchange pbe0 
+basis sto-3g
+RPA 0
+MAX_SCF_CYCLES 500
+xc_grid 000075000302
+mem_static 4000
+mem_total 16000
+SYM_IGNORE TRUE
+$end
+
+
+

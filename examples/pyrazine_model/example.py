@@ -40,11 +40,11 @@ def get_init(init=0, seed=16661):
             veloc[i] = cond.veloc[0][i]
     return InitialCondition(crd, veloc)
 # create initial condition
-for i in range(100):
+for i in range(10000):
     os.mkdir('traj.'+str(i))
     os.chdir('traj.'+str(i))
     init = get_init(i)
     os.system('cp ../test.inp ./')
-    landau_zener_surfacehopping(init, 2, 10000, 16661, 'test.inp', 10)
+    landau_zener_surfacehopping(init, 2, 400, 16661, 'test.inp', 20)
     os.chdir('../')
 
