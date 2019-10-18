@@ -25,6 +25,12 @@ class SurfacePointProvider(object):
 
         self.logger = logging.getLogger('spp')
         self.logger.setLevel(logging.INFO)
+
+        #close all open handlers of spp loggers
+        for hand in self.logger.handlers:
+           hand.stream.close()
+           self.logger.removeHandler(hand)
+
         # create a file handler
         handler = logging.FileHandler(filename='spp.log', mode='w')
         handler.setLevel(logging.INFO)
@@ -37,6 +43,7 @@ class SurfacePointProvider(object):
         self.logger.info('Surface Point Provider')
 
         self.config = configparser.ConfigParser()
+        
 
 
         if os.path.isfile(inputfile):
@@ -49,6 +56,12 @@ class SurfacePointProvider(object):
                               + inputfile + ' for SurfacePointProvider '
                               + 'not found!')
             exit()
+
+        # get current directory, which is the one where the abinit
+        # calculation will be performed
+        self.trajpath = os.getcwd()
+        self.config['MAIN']['trajpath'] = self.trajpath
+
 
         if 'logging' in self.config['MAIN'].keys():
             loglevel = self.config['MAIN']['logging']
@@ -104,6 +117,7 @@ class SurfacePointProvider(object):
             # add path to AB INITIO section
             try:
                 self.config['AB INITIO']['path'] = self.path
+                self.config['AB INITIO']['trajpath'] = self.trajpath
 
             except KeyError:
                 self.logger.error('No AB INITIO section in '

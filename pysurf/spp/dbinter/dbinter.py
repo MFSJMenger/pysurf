@@ -138,7 +138,6 @@ class DBInter():
         else:
             res = self.get_qm(request)
 
-        print('Johannes in dbinter.get() res= ', res)
         return res
 
     def get_qm(self, request):
@@ -191,11 +190,7 @@ class Interpolation():
                 gradients[i, :] = self.db['gradient'][i].flatten()
             try:
                 self.logger.info('try to set up interpolator')
-                print('Johannes energies:', energies)
-                print('Johannes grads:', gradients)
-                print('Johannes coords:', coords)
                 self.energy = LinearNDInterpolator(coords, energies)
-                print('Johannes energies set up')
                 self.gradient = LinearNDInterpolator(coords, gradients)
                 self.logger.info('successfully set up interpolator')
             except:
@@ -226,8 +221,6 @@ class Interpolation():
         self.logger.debug('using interpolator to get energy')
         en = self.energy(coord.flatten())
         grad = self.gradient(coord.flatten())
-        print('Johannes: ', en)
-        print('Johannes: ', grad)
 #         try:
 #             en = self.energy(coord)[0]
 #             print('Johannes: ', en)
@@ -246,7 +239,6 @@ class ShepardInterpolator():
         self.values = values
     
     def __call__(self,coord):
-        print('Johannes called Shepard interpolator')
         weights = self.get_weights(coord)
         res = 0
         for i in range(len(self.values)):

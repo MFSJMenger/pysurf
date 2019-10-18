@@ -71,9 +71,8 @@ class QChem():
             script so that everybody can adopt the bash script to 
             their cluster.
         """
-        path_inter = os.path.join(self.config['path'],
-                                  self.config['run_script'])
-        filename_input = os.path.join(self.config['path'], filename)
+#        path_inter = os.path.join(self.config['run command'])
+        filename_input = filename
         if filename_input.split('.')[-1] == 'inp':
             filename_output = filename_input.strip('inp') + 'out'
         elif filename_input.split('.')[-1] == 'in':
@@ -89,7 +88,7 @@ class QChem():
                 simulate = True
         if simulate is not True:
             # start QChem calculation
-            cmd = path_inter+' '+filename_input+' '+filename_output
+            cmd = self.config['run command']+' '+filename_input+' '+filename_output
             os.system(cmd)
         return filename_output
 

@@ -1,2 +1,3 @@
 bohr2angstrom = 0.529177208 
-angstrom2bohr = 1/0.529177208 
+angstrom2bohr = 1/0.529177208
+fs2au = 41.341374575751
