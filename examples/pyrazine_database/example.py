@@ -13,7 +13,7 @@ from pysurf.spp.spp import SurfacePointProvider
 #from pysurf.model.pyrmini import PyrMini
 import numpy.random as random
 
-from model import landau_zener_surfacehopping
+from pysurf.sh.model import landau_zener_surfacehopping
 
 
 print('Johannes hallo!')
