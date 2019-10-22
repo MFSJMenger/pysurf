@@ -296,7 +296,6 @@ def get_initial_condition(molecule, modes):
             if probability > random.random():
                 break  # coordinates accepted
         # now transform the dimensionless coordinate into a real one
-        # paper paper says, that freq_factor is sqrt(2*PI*freq)
         # QM programs directly give angular frequency (2*PI is not needed)
         # Higher frequencies give lower displacements and higher momentum.
         # Therefore scale random_Q and random_P accordingly:

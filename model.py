@@ -1,4 +1,5 @@
 import numpy as np
+import os
 
 from pysurf.spp.spp import SurfacePointProvider
 from pysurf.sh.sh import *
@@ -9,6 +10,12 @@ out = spp.get(np.zeros(3, dtype=np.double))
 class Save(object):
 
     def __init__(self, filename, header=None):
+
+        if os.path.isfile(filename):
+            filename = list(filename.rpartition('.'))
+            filename[0] += "_%12.11f" % random.get()
+            filename = "".join(filename)
+
         self.f = open(filename, 'w')
         if header is not None:
             self.f.write(header + "\n")
