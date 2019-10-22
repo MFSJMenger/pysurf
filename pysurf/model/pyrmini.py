@@ -59,14 +59,23 @@ class PyrMini(Model):
         self.mass = np.array((1.0/self.w1, 1.0/self.w2, 1.0/self.w3))
         pass
 
-    def get(self, coord):
+    def get(self, request):
         """the get function returns the adiabatic energies as well as the
            gradient at the given position coord. Additionally the masses
            of the normal modes are returned for the kinetic Hamiltonian.
         """
-        en = self.adiab_en(coord)
-        grad = self.adiab_grad(coord)
-        return {'energy': en, 'gradient': grad, 'mass': self.mass}
+        if 'coord' in request.keys():
+            coord = request['coord']
+            if 'energy' in request.keys():
+                request['energy'] = self.adiab_en(coord)
+            if 'gradient' in request.keys():
+                request['gradient'] = self.adiab_grad(coord)
+            request['mass'] = self.mass
+        else:
+            request['energy'] = None
+            request['gradient'] = None
+            request['mass'] = None
+        return request
 
     def adiab_en(self, coord):
         """adiab_en returns a one dimensional vector with the adiabatic energies at

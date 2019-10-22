@@ -4,8 +4,8 @@ import os
 from pysurf.spp.spp import SurfacePointProvider
 from pysurf.sh.sh import *
 
-spp = SurfacePointProvider('./test.inp')
-out = spp.get(np.zeros(3, dtype=np.double))
+#spp = SurfacePointProvider('./test.inp')
+#out = spp.get({'coord': np.zeros(3, dtype=np.double), 'energy': None, 'gradient': None})
 
 class Save(object):
 
@@ -42,6 +42,7 @@ def landau_zener_surfacehopping(init_cond, iactive, nsteps, random_seed, inp, dt
     save_veloc = Save('veloc.txt', "M1 M2 M3")
     save_acc = Save('acc.txt', "M1 M2 M3")
     save_energy = Save("energy.txt", "iactive EKin EPot ETot")
+    save_pes = Save("pes.txt", "states")
 
     e_curr = None
     e_prev_step = None
@@ -56,15 +57,14 @@ def landau_zener_surfacehopping(init_cond, iactive, nsteps, random_seed, inp, dt
     #
     v = init_cond.veloc
     # start
-    data = spp.get(crd)
-
+    data = get_data(spp, crd)
     a = get_acceleration(data['gradient'][iactive], data['mass'])
     #
     e_curr = data['energy']
     for istep in range(2):
         """If not restart, first 2 steps are just to save energy!"""
         crd = vv_xstep(crd, v, a, dt)
-        data = spp.get(crd)
+        data = get_data(spp, crd) 
         # update acceleration
         a_old = a
         a = get_acceleration(data['gradient'][iactive], data['mass'])
@@ -82,7 +82,7 @@ def landau_zener_surfacehopping(init_cond, iactive, nsteps, random_seed, inp, dt
         # 1) write step info
         # 2) call interface
         crd = vv_xstep(crd, v, a, dt)
-        data = spp.get(crd)
+        data = get_data(spp, crd)
         #
         e_two_step_prev = e_prev_step
         e_prev_step = e_curr
@@ -108,16 +108,22 @@ def landau_zener_surfacehopping(init_cond, iactive, nsteps, random_seed, inp, dt
                 v = rescale_velocity(ekin, dE, v)
                 # get acceleration
                 a = get_acceleration(data['gradient'][iactive], data['mass'])
-        save_crd.save(" ".join("%12.8f" % c for c in crd))
-        save_veloc.save(" ".join("%12.8f" % _v for _v in v))
-        save_acc.save(" ".join("%12.8f" % _a for _a in a))
+        save_crd.save(" ".join("%12.8f" % c for c in crd.flatten()))
+        save_veloc.save(" ".join("%12.8f" % _v for _v in v.flatten()))
+        save_acc.save(" ".join("%12.8f" % _a for _a in a.flatten()))
         ekin = calc_ekin(data['mass'], v)
         epot = e_curr[iactive]
         etot = ekin + epot
+        print(iactive, ekin, epot, etot)
         save_energy.save("%8d %12.8f   %12.8f    %12.8f" % (iactive, ekin, epot, etot))
+        save_pes.save("%12.8f %12.8f   %12.8f" % (data['energy'][0], data['energy'][1], data['energy'][2]))
 
 def calc_ekin(masses, veloc):
     ekin = 0.0
-    for i, mass in enumerate(masses):
-        ekin += 0.5*mass*veloc[i]*veloc[i]
+    for i, mass in enumerate(masses.flatten()):
+        ekin += 0.5*mass*veloc.flatten()[i]*veloc.flatten()[i]
     return ekin
+
+def get_data(spp, crd):
+    res = spp.get({'coord': crd, 'mass': None, 'gradient': None, 'energy': None})
+    return res

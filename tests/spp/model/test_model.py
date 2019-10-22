@@ -11,4 +11,12 @@ def input_filename():
 
 def test_model(input_filename):
     spp = SurfacePointProvider(input_filename)
-    print(spp.get(np.array([0.0,0.0,0.0])))
+    res = spp.get({})
+    assert(('energy' in res.keys()) and ('gradient' in res.keys())
+           and ('mass' in res.keys()))
+    res = spp.get({'coord': np.array([0.0,0.0,0.0]), 
+                   'energy': None, 'gradient': None})
+    assert(res['energy'].all() == np.array([0.,
+                                            0.14479228,
+                                            0.17786665]).all())
+

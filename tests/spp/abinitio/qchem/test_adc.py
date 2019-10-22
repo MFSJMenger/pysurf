@@ -7,7 +7,7 @@ from pysurf.spp.spp import SurfacePointProvider
 @fixture
 def input_filename():
     path = os.path.dirname(os.path.realpath(__file__))
-    return os.path.join(path,'test_abinit.inp')
+    return os.path.join(path,'test_adc.inp')
 
 def test_abinit_calc(input_filename):
     spp = SurfacePointProvider(input_filename)
@@ -18,7 +18,5 @@ def test_abinit_calc(input_filename):
     res = spp.get({'coord': spp.refgeo['coord'],
                    'energy': None,
                    'gradient': None})
-    assert(np.allclose(res['energy'], np.array([-8.00014277e-10,
-                                            -1.52319380e-02,
-                                            -1.40437478e-02,
-                                            1.29286264e-02])))
+    #print(res)
+    assert np.allclose(res['energy'], np.array([9.99989425e-10, 1.59115397e-01, 1.81781271e-01, 1.91643398e-01]))

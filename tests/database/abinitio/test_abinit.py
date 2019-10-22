@@ -11,14 +11,13 @@ def input_filename():
 
 def test_abinit_calc(input_filename):
     spp = SurfacePointProvider(input_filename)
-
-    #check properties:
     res = spp.get({})
-    assert( ('energy' in res.keys()) and ('gradient' in res.keys()))
+    assert(('energy' in res.keys()) and ('gradient' in res.keys()))
+    
     res = spp.get({'coord': spp.refgeo['coord'],
-                   'energy': None,
-                   'gradient': None})
-    assert(np.allclose(res['energy'], np.array([-8.00014277e-10,
+                   'energy': None, 'gradient': None})
+
+    assert(res['energy'].all() == np.array([-8.00014277e-10,
                                             -1.52319380e-02,
-                                            -1.40437478e-02,
-                                            1.29286264e-02])))
+                                            -1.40437478e-02, 
+                                            1.29286264e-02]).all())
