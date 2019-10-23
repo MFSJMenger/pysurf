@@ -1,0 +1,13 @@
+[MAIN]
+mode = ab initio
+logging = debug
+
+[AB INITIO]
+program = qchem
+template = template.dat
+reference geometry = ref_geo.xyz
+run command = ../run_qchem
+number of states = 4
+reference energy = -260.7012969266 
+simulate = false
+method = dft

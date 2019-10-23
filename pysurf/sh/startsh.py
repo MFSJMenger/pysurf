@@ -1,7 +1,9 @@
 import logging
 import os
+import numpy as np
 
 from pysurf.utils.constants import fs2au
+from pysurf.utils.strutils import split_str
 from pysurf.sh.model import landau_zener_surfacehopping
 from pysurf.wigner import WignerSampling
 
@@ -77,6 +79,8 @@ class StartSh():
         # parse INITIAL CONDITIONS section
         if ('INITIAL CONDITIONS' in config.keys()) and not(self.restart):
             self.init = False
+            self.molden = False
+            self.freqs = False
             try:
                 self.sampling = config.get('INITIAL CONDITIONS', 'sampling')
             except:
@@ -94,6 +98,14 @@ class StartSh():
             except:
                 pass
 
+            #get frequencies for initial conditions
+            try:
+                vfloat = np.vectorize(float)
+                self.freqs = vfloat(split_str(config.get('INITIAL CONDITIONS', 'frequencies')))
+                self.init = True
+            except:
+                pass
+
         elif not('INITIAL CONDITIONS' in config.keys()) and not(self.restart):
             self.logger.error('No INITIAL CONDITIONS section in inputfile!')
         
@@ -106,9 +118,12 @@ class StartSh():
             self.logger.error('Not enough information provided for the initial sampling!')
             exit()
         if self.sampling == 'wigner':
-            if self.molden:
+            if self.molden is not False:
                 sampling = WignerSampling.from_molden(self.molden)
                 conditions = sampling.create_initial_conditions(filename, self.ntrajs)
+            elif self.freqs is not False:
+                sampling = WignerSampling.from_freqs(self.freqs)
+                conditions = sampling.create_initial_conditions(filename, self.ntrajs, model=True)
             else:
                 self.logger.error('No source for the sampling given, e.g. from molden file!')
         else:
@@ -123,6 +138,9 @@ class StartSh():
                 continue
             os.mkdir(dirname)
             os.chdir(dirname)
+            print('Johannes')
+            print(initconds.get_condition(i))
+
             if self.hopalg == 'landau zener':
                 landau_zener_surfacehopping(initconds.get_condition(i),
                                             self.initstate,
