@@ -1,0 +1,23 @@
+$molecule
+0 1
+$geometry
+$end
+
+$rem
+jobtype sp
+cis_n_roots 3
+cis_singlets true
+cis_triplets false
+set_iter 50
+exchange pbe0 
+basis sto-3g
+RPA 0
+MAX_SCF_CYCLES 500
+xc_grid 000075000302
+mem_static 4000
+mem_total 16000
+SYM_IGNORE TRUE
+$end
+
+
+

@@ -113,6 +113,13 @@ class InitialConditions(object):
         db = cls.create_initial_conditions(filename, molecule, modes, nconditions, E_equil, model)
         return cls(db, nconditions)
 
+    @classmethod
+    def save_condition(cls, filename, init_cond):
+        natoms = len(init_cond.crd)
+        nmodes = natoms*3-6
+        db = Database(filename, cls.generate_settings(natoms=natoms, nmodes=nmodes, model=False))
+        db.append('veloc', init_cond.veloc)
+        db.append('crd', init_cond.crd)
 
     @classmethod
     def from_db(cls, filename, E_quil=0.0):
@@ -123,6 +130,7 @@ class InitialConditions(object):
 
     @staticmethod
     def generate_settings(natoms=0, nmodes=0, model=False):
+        print('Johannes nmodes:' , nmodes)
         if model is False:
             return {
                     'dimensions': {
@@ -130,6 +138,7 @@ class InitialConditions(object):
                         'nmodes': nmodes,
                         'natoms': natoms,
                         'three': 3,
+                        'one': 1,
                         },
                     'variables': {
                         'modes':  DBVariable(np.double, ('nmodes', 'natoms', 'three')),
@@ -139,16 +148,17 @@ class InitialConditions(object):
                         'crd': DBVariable(np.double, ('frame', 'natoms', 'three')),
                         'veloc': DBVariable(np.double, ('frame', 'natoms', 'three')),
                         'energy': DBVariable(np.double, ('frame', 'three')),  # E_tot, E_pot, E_kin
+                        'state': DBVariable(np.double, ('frame', 'one'))
                     },
             }
 
         if model is True:
-            print('Johannes model is true')
             return {
                     'dimensions': {
                         'frame': 'unlimited',
                         'nmodes': nmodes,
                         'three': 3,
+                        'one': 1,
                         },
                     'variables': {
                         'modes':  DBVariable(np.double, ('nmodes','nmodes')),
@@ -157,6 +167,7 @@ class InitialConditions(object):
                         'crd': DBVariable(np.double, ('frame', 'nmodes')),
                         'veloc': DBVariable(np.double, ('frame', 'nmodes')),
                         'energy': DBVariable(np.double, ('frame', 'three')),  # E_tot, E_pot, E_kin
+                        'state': DBVariable(int, ('frame', 'one'))
                     },
             }
 

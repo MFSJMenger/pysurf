@@ -117,3 +117,8 @@ atomic_masses = {'H': 1.008*amu,
                  'Lv': 293.204*amu,
                  'Ts': 293.208*amu,
                  'Og': 294.214*amu}
+
+def get_atom_from_mass(mass):
+    for atom in atomic_masses:
+        if abs(atomic_masses[atom]-mass) < 0.1:
+            return atom

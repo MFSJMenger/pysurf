@@ -1,4 +1,5 @@
 from .dbtools import DatabaseRepresentation
+from .dbtools import load_database
 
 
 class Database(object):
@@ -22,7 +23,7 @@ class Database(object):
 
     def __init__(self, filename, settings):
         """Initialize new Database,
-        if db exisits:
+        if db exists:
            load existing database
            check that the settings of the old database
            are the same with the once used in the loading
@@ -39,6 +40,12 @@ class Database(object):
         self._closed = False
         # 
         self._icurrent = None
+
+    @classmethod
+    def load_db(cls, filename):
+        nc = load_database(filename)
+        rep = DatabaseRepresentation.from_db(nc)
+        return cls(filename,{'variables': rep.variables, 'dimensions': rep.dimensions})
 
     def __getitem__(self, key):
         return self._handle.get(key, None)

@@ -39,8 +39,10 @@ class QChem():
             self.write_input(self.refgeo['atoms'], coord)
             outfile = self.start_calc()
             ret = self.read_output(outfile)
-            request['energy'] = ret['energy']
-            request['gradient'] = ret['gradient']
+            if 'energy' in self.properties:
+                request['energy'] = ret['energy']
+            if 'gradient' in self.properties:
+                request['gradient'] = ret['gradient']
             return request
         else:
             for prop in self.properties:
@@ -152,13 +154,13 @@ class QChem():
 
                 # Read in the gradient
                 for j in range(int(natoms/6)):
-                    for k in range(2):
+                    for k in range(3):
                         grad[state, j*6:j*6+6, k] = vfloat(
                             res[i+j*4+2+k].split()[1:7])
                 if natoms % 6 > 0:
                     j = int(natoms/6)
                     rest = natoms % 6
-                    for k in range(2):
+                    for k in range(3):
                         grad[state, j*6:j*6+rest, k] = vfloat(
                             res[i+j*4+2+k].split()[1:])
                 grad_check[state] = True
@@ -208,13 +210,13 @@ class QChem():
 
                 # Read in the gradient
                 for j in range(int(natoms/5)):
-                    for k in range(2):
+                    for k in range(3):
                         grad[state, j*5:j*5+5, k] = vfloat(
                             res[i+j*4+2+k].split()[1:7])
                 if natoms % 5 > 0:
                     j = int(natoms/5)
                     rest = natoms % 5
-                    for k in range(2):
+                    for k in range(3):
                         grad[state, j*5:j*5+rest, k] = vfloat(
                             res[i+j*4+2+k].split()[1:])
                 grad_check[state] = True
