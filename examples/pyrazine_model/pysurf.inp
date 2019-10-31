@@ -4,12 +4,12 @@ simulation = surface hopping
 
 
 [SURFACE HOPPING]
-number of steps = 40
+number of steps = 400
 stepsize = 0.5
 number of trajectories = 100
 inputfile for SPP = spp.inp
 restart = false
-initial state = 3
+initial state = 2
 
 [INITIAL CONDITIONS]
-from molden file = molden.in
+frequencies = 0.0046304129, 0.00271944885, 0.004336418446387614 

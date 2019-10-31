@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.interpolate import LinearNDInterpolator
+from copy import deepcopy
 
 from pysurf.database.database import Database
 from pysurf.database.dbtools import DBVariable
@@ -19,6 +20,17 @@ class DBInter():
         self.refgeo = refgeo
         self.natoms = len(self.refgeo['atoms'])
         self.nstates = int(self.config['number of states'])
+
+        try:
+            self.inter_grad = self.config.getboolean('interpolate gradient')
+            if self.inter_grad is None:
+                self.inter_grad = False
+                self.config['interpolate gradient'] = 'False'
+        except:
+            self.inter_grad = False
+            self.config['interpolate gradient'] = 'False'
+
+
         if 'properties' in config.keys():
             self.properties = split_str(config['properties'])
         else:
@@ -50,6 +62,7 @@ class DBInter():
                 self.thr = 0.25
                 self.logger.info('Using default max distance for'
                                  + ' interpolation of 0.25')
+
 
     def create_db(self, filename='db.dat'):
         variables = {}
@@ -93,11 +106,6 @@ class DBInter():
             if len(self.db['coord']) == 0:
                 self.logger.debug('DB is empty, start qm calc')
                 res = self.get_qm(request)
-                if len(self.db['coord']) > 0:
-                    self.interpolator = Interpolation(self.db,
-                                                      self.config,
-                                                      self.logger,
-                                                      self.refgeo)
                 return res
 
             # get closest geometry
@@ -107,15 +115,16 @@ class DBInter():
                               + str(min_dist['entry']))
 
             if min_dist['dist'] < self.thr:
-
                 # If point is already in DB
                 if min_dist['dist'] < 0.001:
                     self.logger.info('take point from DB: entry '
                                      + str(min_dist['entry']))
                     for key in self.properties:
                         request[key] = self.db[key][min_dist['entry']]
+                    if self.inter_grad is True:
+                        request['gradient'] = self.interpolator.calc_grad(coord)
                     return request
-
+                
                 res = self.interpolator.get(coord)
                 success = True
                 for key in res.keys():
@@ -126,15 +135,10 @@ class DBInter():
                                       + ' successfull! QM'
                                       + ' calculation is started!')
                     res = self.get_qm(request)
-                    self.interpolator = Interpolation(self.db,
-                                                      self.config,
-                                                      self.logger,
-                                                      self.refgeo)
+
             else:
                 res = self.get_qm(request)
-                self.interpolator = Interpolation(self.db, self.config,
-                                                  self.logger,
-                                                  self.refgeo)
+
         else:
             res = self.get_qm(request)
 
@@ -147,11 +151,19 @@ class DBInter():
         if 'coord' in res.keys():
             self.db.append('coord', res['coord'])
             increase = True
-        if 'gradient' in res.keys():
-            self.db.append('gradient', res['gradient'])
+        if self.inter_grad is False:
+            if 'gradient' in res.keys():
+                self.db.append('gradient', res['gradient'])
         if 'energy' in res.keys():
             self.db.append('energy', res['energy'])
         if increase: self.db.increase
+        
+        self.interpolator = Interpolation(self.db, self.config,
+                                                  self.logger,
+                                                  self.refgeo)
+        if self.inter_grad is True:
+            res['gradient'] = self.interpolator.calc_grad(request['coord'])
+
         return res
 
     def get_min_dist(self, coord, method='max atom displacement'):
@@ -178,6 +190,9 @@ class Interpolation():
         self.natoms = len(refgeo['atoms'])
         self.nstates = int(self.config['number of states'])
 
+        # The interpolate gradient key has been added in DBInter
+        self.inter_grad = self.config.getboolean('interpolate gradient')
+        
         if self.config['interpolation'] == 'linear':
             noc = len(self.db['coord'])
             coords = np.empty((noc, self.natoms*3), dtype=float)
@@ -203,15 +218,21 @@ class Interpolation():
             noc = len(self.db['coord'])
             coords = np.empty((noc, self.natoms*3), dtype=float)
             energies = np.empty((noc, self.nstates), dtype=float)
-            gradients = np.empty((noc, self.nstates*self.natoms*3),
+            if self.inter_grad is False:
+                gradients = np.empty((noc, self.nstates*self.natoms*3),
                                  dtype=float)
             for i in range(len(self.db['coord'])):
                 coords[i, :] = self.db['coord'][i].flatten()
                 energies[i] = self.db['energy'][i]
-                gradients[i, :] = self.db['gradient'][i].flatten()
+                if self.inter_grad is False:
+                    gradients[i, :] = self.db['gradient'][i].flatten()
             self.logger.info('setting up Shepard interpolator')
             self.energy = ShepardInterpolator(coords, energies)
-            self.gradient = ShepardInterpolator(coords, gradients)
+
+            #Check whether gradient is calculated or interpolated
+
+            if self.inter_grad is False:
+                self.gradient = ShepardInterpolator(coords, gradients)
         else:
             self.logger.error('ERROR: Interpolation scheme not yet'
                               + 'implemented!')
@@ -220,7 +241,12 @@ class Interpolation():
     def get(self, coord):
         self.logger.debug('using interpolator to get energy')
         en = self.energy(coord.flatten())
-        grad = self.gradient(coord.flatten())
+        if self.inter_grad is False:
+            grad = self.gradient(coord.flatten())
+        else:
+            grad = self.calc_grad(coord)
+        grad.resize((self.nstates,*coord.shape))
+#        grad.resize((self.nstates,len(coord),3))
 #         try:
 #             en = self.energy(coord)[0]
 #             print('Johannes: ', en)
@@ -232,6 +258,22 @@ class Interpolation():
 #         except:
 #             grad = None
         return {'energy': en, 'gradient': grad, 'coord': coord}
+
+    def calc_grad(self, coord, dq=0.01):
+        grad = np.empty((self.nstates, len(coord.flatten())), dtype=float)
+
+        for i in range(len(coord.flatten())):
+            coord1 = deepcopy(coord).flatten()
+            coord1[i] += dq
+            en1 = self.energy(coord1)
+            coord2 = deepcopy(coord).flatten()
+            coord2 -= dq
+            en2 = self.energy(coord2)
+            grad[:,i] = (en1 - en2)/2.0/dq
+
+        grad.resize((self.nstates, *coord.shape))
+        return grad
+
 
 class ShepardInterpolator():
     def __init__(self, coords, values):
@@ -249,5 +291,5 @@ class ShepardInterpolator():
     def get_weights(self,coord):
         weights = np.zeros(len(self.coords), dtype=float)
         for i in range(len(self.coords)):
-            weights[i] = np.linalg.norm((coord-self.coords[i]))
+            weights[i] = 1./np.linalg.norm((coord-self.coords[i]))**2
         return weights

@@ -74,8 +74,24 @@ class WignerSampling(object):
         #
         return cls(molecule, modes, True)
 
-    def create_initial_conditions(self, filename, nconditions, E_equil=0.0):
-        return InitialConditions.from_conditions(filename, self.molecule, self.modes, nconditions, E_equil)
+    # method to create initial conditions for model systems like the pyrazine model
+    @classmethod
+    def from_freqs(cls, freqs):
+        nfreqs = len(freqs)
+        print('Johannes in from freqs')
+        masses = 1./freqs
+        mol = Molecule(np.ones(nfreqs), np.zeros(nfreqs, dtype=np.double), np.ones(nfreqs, dtype=np.double))
+        mol.masses = masses
+        displacement = np.ones(nfreqs, dtype=np.double)
+        displacement /= np.linalg.norm(displacement)
+        modes = [Mode(freq, displacement) for freq in freqs]
+        print('Johannes modes:', modes) 
+        return cls(mol, modes, True)
+        
+
+    def create_initial_conditions(self, filename, nconditions, E_equil=0.0, model=False):
+        print('Johannes: model ', model)
+        return InitialConditions.from_conditions(filename, self.molecule, self.modes, nconditions, E_equil, model)
 
     def to_mass_weighted(self):
         if self.is_massweighted is True:
@@ -93,10 +109,17 @@ class InitialConditions(object):
         self._db = db
 
     @classmethod
-    def from_conditions(cls, filename, molecule, modes, nconditions=1000, E_equil=0.0):
-        db = cls.create_initial_conditions(filename, molecule, modes, nconditions, E_equil)
+    def from_conditions(cls, filename, molecule, modes, nconditions=1000, E_equil=0.0, model=False):
+        db = cls.create_initial_conditions(filename, molecule, modes, nconditions, E_equil, model)
         return cls(db, nconditions)
 
+    @classmethod
+    def save_condition(cls, filename, init_cond):
+        natoms = len(init_cond.crd)
+        nmodes = natoms*3-6
+        db = Database(filename, cls.generate_settings(natoms=natoms, nmodes=nmodes, model=False))
+        db.append('veloc', init_cond.veloc)
+        db.append('crd', init_cond.crd)
 
     @classmethod
     def from_db(cls, filename, E_quil=0.0):
@@ -106,24 +129,47 @@ class InitialConditions(object):
         return cls(db, db['crd'].shape[0])
 
     @staticmethod
-    def generate_settings(natoms, nmodes):
-        return {
-                'dimensions': {
-                    'frame': 'unlimited',
-                    'nmodes': nmodes,
-                    'natoms': natoms,
-                    'three': 3,
+    def generate_settings(natoms=0, nmodes=0, model=False):
+        print('Johannes nmodes:' , nmodes)
+        if model is False:
+            return {
+                    'dimensions': {
+                        'frame': 'unlimited',
+                        'nmodes': nmodes,
+                        'natoms': natoms,
+                        'three': 3,
+                        'one': 1,
+                        },
+                    'variables': {
+                        'modes':  DBVariable(np.double, ('nmodes', 'natoms', 'three')),
+                        'freqs':  DBVariable(np.double, ('nmodes',)),
+                        'atomids': DBVariable(np.integer, ('natoms',)),
+                        'masses': DBVariable(np.double, ('natoms',)),
+                        'crd': DBVariable(np.double, ('frame', 'natoms', 'three')),
+                        'veloc': DBVariable(np.double, ('frame', 'natoms', 'three')),
+                        'energy': DBVariable(np.double, ('frame', 'three')),  # E_tot, E_pot, E_kin
+                        'state': DBVariable(np.double, ('frame', 'one'))
                     },
-                'variables': {
-                    'modes':  DBVariable(np.double, ('nmodes', 'natoms', 'three')),
-                    'freqs':  DBVariable(np.double, ('nmodes',)),
-                    'atomids': DBVariable(np.integer, ('natoms',)),
-                    'masses': DBVariable(np.double, ('natoms',)),
-                    'crd': DBVariable(np.double, ('frame', 'natoms', 'three')),
-                    'veloc': DBVariable(np.double, ('frame', 'natoms', 'three')),
-                    'energy': DBVariable(np.double, ('frame', 'three')),  # E_tot, E_pot, E_kin
-                },
-        }
+            }
+
+        if model is True:
+            return {
+                    'dimensions': {
+                        'frame': 'unlimited',
+                        'nmodes': nmodes,
+                        'three': 3,
+                        'one': 1,
+                        },
+                    'variables': {
+                        'modes':  DBVariable(np.double, ('nmodes','nmodes')),
+                        'freqs':  DBVariable(np.double, ('nmodes',)),
+                        'masses': DBVariable(np.double, ('nmodes',)),
+                        'crd': DBVariable(np.double, ('frame', 'nmodes')),
+                        'veloc': DBVariable(np.double, ('frame', 'nmodes')),
+                        'energy': DBVariable(np.double, ('frame', 'three')),  # E_tot, E_pot, E_kin
+                        'state': DBVariable(int, ('frame', 'one'))
+                    },
+            }
 
     def __iter__(self):
         self._start = 1 # skip equilibrium structure
@@ -153,10 +199,14 @@ class InitialConditions(object):
         return Molecule(self._db['atomids'], self._db.get('crd', 0), self._db['masses'])
 
     @classmethod
-    def create_initial_conditions(cls, filename, molecule, modes, nconditions, E_equil):
+    def create_initial_conditions(cls, filename, molecule, modes, nconditions, E_equil, model=False):
         """ """
-        db = create_initial_conditions(cls.generate_settings(molecule.natoms, len(modes)),
-                                       filename, molecule, modes, E_equil)
+        if model is False:
+            db = create_initial_conditions(cls.generate_settings(molecule.natoms, len(modes)),
+                                       filename, molecule, modes, E_equil, model)
+        else:
+            db = create_initial_conditions(cls.generate_settings(nmodes=len(modes), model=True),
+                                       filename, molecule, modes, E_equil, model)
 
         for _ in range(nconditions):
             e_pot, conds = get_initial_condition(molecule, modes)
@@ -323,20 +373,24 @@ def wigner_gs(Q, P):
     return np.exp(-Q**2.0) * np.exp(-P**2.0)
 
 
-def create_initial_conditions(settings, filename, molecule, modes, E_zero):
+def create_initial_conditions(settings, filename, molecule, modes, E_zero, model=False):
     # Initialize database
     if os.path.exists(filename):
         raise Exception('database "%s" does already exist' % filename)
     # create database
     db = Database(filename, settings)
     # set constants
-    db.set('atomids', molecule.atomids)
+    if model is False:
+        db.set('atomids', molecule.atomids)
     db.set('masses', molecule.masses/U_TO_AMU)
     db.set('modes', np.array([mode.displacements for mode in modes]))
     db.set('freqs', np.array([mode.freq for mode in modes]))
     # add equilibrium values
     db.append('crd', molecule.crd)
-    db.append('veloc', np.zeros(molecule.natoms*3, dtype=np.double))
+    if model is False:
+        db.append('veloc', np.zeros(molecule.natoms*3, dtype=np.double))
+    else: 
+        db.append('veloc',np.zeros(len(modes), dtype=np.double))
     db.append('energy', np.array([E_zero, E_zero, 0.0]))
     # go to next step
     db.increase

@@ -50,7 +50,7 @@ class PyrMini(Model):
         self.E2 = 4.84*ev2au
         self.kappa11 = 0.037*ev2au
         self.kappa12 = -0.105*ev2au
-        self.kappa21 = -0.0254*ev2au
+        self.kappa21 = -0.254*ev2au
         self.kappa22 = 0.149*ev2au
         self.lam = 0.262*ev2au
         self.w1 = 0.126*ev2au
@@ -143,10 +143,33 @@ class PyrMini(Model):
         return diab_grad
 
 
+class PyrMiniSala(PyrMini):
+
+    def __init__(self):
+        """ Pyrazine model according to Sala, Lasorne, Gatti and Guerin;
+            PCCP 2014, 16, 15957 with 3 modes and 2 excited states.
+            The model is in dimensionless normal modes.
+        """
+        ev2au = 1./27.2113961
+        self.E1 = 3.93*ev2au
+        self.E2 = 4.79*ev2au
+        self.kappa11 = -0.038*ev2au
+        self.kappa12 = -0.081*ev2au
+        self.kappa21 = -0.183*ev2au
+        self.kappa22 = 0.128*ev2au
+        self.lam = 0.195*ev2au
+        self.w1 = 0.126*ev2au
+        self.w2 = 0.074*ev2au
+        self.w3 = 0.116*ev2au
+        self.mass = np.array((1.0/self.w1, 1.0/self.w2, 1.0/self.w3))
+        pass
+
+
 if __name__ == "__main__":
     """small test function printing the energies and gradients at the equilibrium
        point
     """
     coord = np.array([0.0, 0.0, 0.0])
     model = PyrMini()
-    print(model.get(coord))
+    print(model.w1, model.w2, model.w3)
+    #print(model.get(coord))

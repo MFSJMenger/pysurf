@@ -1,0 +1,7 @@
+start QM calculation
+Johannes: model  False
+Johannes nmodes: 24
+Johannes start_sh:  None
+Johannes nmodes: 24
+Johannes wrote initcond
+Johannes self.propagation:  True

@@ -160,11 +160,12 @@ class SurfacePointProvider(object):
             information at this specific position.
         """
         res = self.interface.get(request)
-        # in the case of ab initio/DB add the masses if not done by
-        # the interface
+        # in the case of ab initio/DB add the masses
         if 'mass' in request.keys() and self.mode == 'ab initio':
             res['mass'] = self.get_masses()
-
+        if 'atoms' in request.keys() and self.mode == 'ab initio':
+            res['atoms'] = self.refgeo['atoms']
+        print(res)
         return res
 
     def get_refgeo(self):

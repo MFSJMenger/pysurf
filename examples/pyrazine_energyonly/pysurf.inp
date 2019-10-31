@@ -4,9 +4,9 @@ simulation = surface hopping
 
 
 [SURFACE HOPPING]
-number of steps = 40
+number of steps = 10
 stepsize = 0.5
-number of trajectories = 100
+number of trajectories = 10
 inputfile for SPP = spp.inp
 restart = false
 initial state = 3
