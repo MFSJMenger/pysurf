@@ -59,9 +59,9 @@ class SurfacePointProvider(object):
 
     def _parse_config(self, inputfile):
         """Parse the config file"""
-
+        #
         config = configparser.ConfigParser()
-
+        #
         if exists_and_isfile(inputfile):
             config.read(inputfile)
             inputfile_full = os.path.abspath(inputfile)
