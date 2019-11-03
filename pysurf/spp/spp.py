@@ -153,10 +153,12 @@ class SurfacePointProvider(object):
             self.dbpath = os.path.realpath(self.dbpath)
             self.logger.info('Using database: ' + self.dbpath)
             self.db = True
-            interface = DBInter(self.dbpath, self.config['AB INITIO'], self.logger, self.refgeo)
+            self.logger.add_handle("db")
+            interface = DBInter(self.dbpath, self.config['AB INITIO'], self.logger["db"], self.refgeo)
         else:
             self.db = False
-            interface = get_qminter(self.config['AB INITIO'], self.logger, self.refgeo)
+            self.logger.add_handle("QM")
+            interface = get_qminter(self.config['AB INITIO'], self.logger["QM"], self.refgeo)
         return interface
 
 
