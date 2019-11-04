@@ -3,7 +3,7 @@ from functools import partial
 import sys
 
 
-__all__ = ["get_logger"]
+__all__ = ["get_logger", "Logger"]
 
 
 def get_logger(filename, name, handles):
@@ -17,6 +17,10 @@ class _LoggerBase(object):
         self.name = name
         self._enter = False
         self.fhandle = fhandle
+
+    def set_fhandle(self, handle):
+        """ """
+        self.fhandle = _TextHandle(handle)
 
     @property
     def enter(self):
@@ -52,7 +56,7 @@ class _LoggerBase(object):
 
     def error(self, txt):
         error = (f"\n\n{self.name} Error Termination:\n"
-                 f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                 f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
                  f"{txt}\n\n")
         #
         self.fhandle.write(error)
