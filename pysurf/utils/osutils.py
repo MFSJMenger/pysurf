@@ -2,8 +2,8 @@ import os
 
 
 def exists_and_isfile(filename):
-    """if file does not exist, create it
-       if file exisits check if isfile or  raise Exception
+    """if file does not exist return False
+       if file exisits check if isfile or raise Exception
     """
 
     if os.path.exists(filename):
@@ -11,5 +11,4 @@ def exists_and_isfile(filename):
             return True
         else:
             raise Exception("Object '%s' exisits but is not a file!")
-
     return False

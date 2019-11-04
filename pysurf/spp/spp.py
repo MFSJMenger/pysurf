@@ -1,15 +1,19 @@
 import configparser
-import os
-import numpy as np
 import importlib
-import logging
-
-from .qminter.qminter import get_qminter
-from ..utils.chemutils import atomic_masses
-from ..database.database import Database
-from ..database.dbtools import DBVariable
+import os
+# Numpy
+import numpy as np
+# Database related
 from .dbinter.dbinter import DBInter
-from ..utils.constants import angstrom2bohr
+from .qminter.qminter import get_qminter
+# utils
+from ..utils.chemutils import atomic_masses
+from ..utils.osutils import exists_and_isfile
+# fileparser
+from ..fileparser import read_geom
+# logger
+from ..logger import get_logger, Logger
+
 
 class SurfacePointProvider(object):
     """ The Surface Point Provider is the main interface providing the
@@ -17,141 +21,57 @@ class SurfacePointProvider(object):
         takes care where to take the information from according to the
         specified input file
     """
-    def __init__(self, inputfile):
+
+    def __init__(self, inputfile, logger=None):
         """ The inputfile for the SPP has to provide the necessary
             information, how to produce the data at a specific point
             in the coordinate space.
         """
-
-        self.logger = logging.getLogger('spp')
-        self.logger.setLevel(logging.INFO)
-
-        #close all open handlers of spp loggers
-        for hand in self.logger.handlers:
-           hand.stream.close()
-           self.logger.removeHandler(hand)
-
-        # create a file handler
-        handler = logging.FileHandler(filename='spp.log', mode='w')
-        handler.setLevel(logging.INFO)
-        # create a logging format
-        formatter = logging.Formatter('%(asctime)s - %(name)s - '
-                                      + '%(levelname)s - %(message)s')
-        handler.setFormatter(formatter)
-        # add the file handler to the logger
-        self.logger.addHandler(handler)
-        self.logger.info('Surface Point Provider')
-
-        self.config = configparser.ConfigParser()
-        
-
-
-        if os.path.isfile(inputfile):
-            self.config.read(inputfile)
-            inputfile_full = os.path.abspath(inputfile)
-            self.path = os.path.dirname(inputfile_full)
-            self.config['MAIN']['path'] = self.path
+        if not isinstance(logger, Logger):
+            self.logger = get_logger('spp.log', 'SPP', [])
         else:
-            self.logger.error('Inputfile '
-                              + inputfile + ' for SurfacePointProvider '
-                              + 'not found!')
-            exit()
+            self.logger = logger
 
-        # get current directory, which is the one where the abinit
-        # calculation will be performed
+        # get config
+        self.config, self.path = self._parse_config(inputfile)
+        # get current directory, which is the one where the actual calculation will be performed
         self.trajpath = os.getcwd()
         self.config['MAIN']['trajpath'] = self.trajpath
-
-
-        if 'logging' in self.config['MAIN'].keys():
-            loglevel = self.config['MAIN']['logging']
-            if loglevel == 'debug':
-                #handler.setLevel(logging.DEBUG)
-                self.logger.setLevel(logging.DEBUG)
-                for hand in self.logger.handlers:
-                    hand.setLevel(logging.DEBUG)
-                self.logger.info('logging level set to debug')
-            else:
-                self.logger.setLevel(logging.INFO)
-                self.logger.info('logging level set to info' +
-                                 ' as specification was not known')
-
-        if 'mode' in self.config['MAIN'].keys():
-            self.mode = self.config['MAIN']['mode']
-        else:
+        #
+        self.mode = self.config['MAIN'].get('mode', None)
+        if self.mode is None:
             self.logger.error('Mode has to be provided in main section')
-            exit()
-
+        #
         """ If a model is used, import the model according to the user
             input and provide an instance in the variable self.user_inst
         """
         if self.mode == 'model':
             self.logger.info('Using a model to generate the PES')
-            try:
-                # get absolute path for model
-                path = os.path.join(self.path, self.config['MODEL']['module'])
-                path = os.path.realpath(path)
-                self.logger.info('The model is given as: ' + path)
-                spec = importlib.util.spec_from_file_location("", path)
-                usr_module = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(usr_module)
-            except (FileNotFoundError, ModuleNotFoundError, ImportError):
-                self.logger.error('The user module could not be '
-                                  + 'loaded: ' + path)
-                exit()
-            try:
-                usr_class = getattr(usr_module, self.config['MODEL']['class'])
-            except AttributeError:
-                self.logger.error('The user class could not be found: '
-                                  + self.config['MODEL']['class'])
-                exit()
-            self.interface = usr_class()
+            self.interface = self._import_model_interface(self.config['MODEL']['module'],
+                                                          self.config['MODEL']['class'])
 
-        #If an ab initio calculation is used
-        #    and if a database is used
+        # If an ab initio calculation is used and if a database is used
         elif self.mode == 'ab initio':
-            self.logger.info('Ab initio calculations are used to '
-                             + 'generate the PES')
-
+            self.logger.info('Ab initio calculations are used to generate the PES')
             # make sure that AB INITIO section is in the inputfile
             # add path to AB INITIO section
-            try:
-                self.config['AB INITIO']['path'] = self.path
-                self.config['AB INITIO']['trajpath'] = self.trajpath
+            self.interface = self._import_abinitio_interface()
 
-            except KeyError:
-                self.logger.error('No AB INITIO section in '
-                                  + 'the inputfile!')
-                exit()
-
-            # read reference geometry from inputfile
-            self.refgeo = self.get_refgeo()
-            self.natoms = len(self.refgeo['atoms'])
-
-            if 'number of states' in self.config['AB INITIO'].keys():
-                try:
-                    self.nstates = int(self.config['AB INITIO']
-                                       ['number of states'])
-                except ValueError:
-                    self.logger.error('Number of states is not an'
-                                      + 'integer value!')
-                    exit()
-            else:
-                self.logger.error('Number of states not specified'
-                                   + 'in inputfile!')
-                exit()
-            if 'database' in self.config['AB INITIO'].keys():
-                self.dbpath = os.path.join(self.path, self.config['AB INITIO']['database'])
-                self.dbpath = os.path.realpath(self.dbpath)
-                self.logger.info('Using database: '
-                                 + self.dbpath)
-                self.interface = DBInter(self.dbpath, self.config['AB INITIO'], self.logger, self.refgeo)
-                self.db = True
-            else:
-                self.db = False
-
-                self.interface = get_qminter(self.config['AB INITIO'],
-                                      self.logger, self.refgeo)
+    def _parse_config(self, inputfile):
+        """Parse the config file"""
+        #
+        config = configparser.ConfigParser()
+        #
+        if exists_and_isfile(inputfile):
+            config.read(inputfile)
+            inputfile_full = os.path.abspath(inputfile)
+            path = os.path.dirname(inputfile_full)
+            self.config['MAIN']['path'] = path
+        else:
+            self.logger.error('Inputfile '
+                              + inputfile + ' for SurfacePointProvider '
+                              + 'not found!')
+        return config, path
 
     def get(self, request):
         """ The get method is the method which should be called by
@@ -161,40 +81,23 @@ class SurfacePointProvider(object):
         """
         res = self.interface.get(request)
         # in the case of ab initio/DB add the masses
-        if 'mass' in request.keys() and self.mode == 'ab initio':
+        if 'mass' in request and self.mode == 'ab initio':
             res['mass'] = self.get_masses()
-        if 'atoms' in request.keys() and self.mode == 'ab initio':
+        if 'atoms' in request and self.mode == 'ab initio':
             res['atoms'] = self.refgeo['atoms']
         print(res)
         return res
 
-    def get_refgeo(self):
-        if 'reference geometry' not in self.config['AB INITIO'].keys():
-            self.logger.error('no reference geometry file provided!')
-            exit()
+    def _get_refgeo(self, filename):
         atoms = []
         coords = []
-        refgeo_path = os.path.join(self.path,
-                                   self.config['AB INITIO']
-                                   ['reference geometry'])
-        with open(refgeo_path) as infile:
-            infile.readline()
-            infile.readline()
-            for line in infile:
-                split_line = line.split()
-                if len(split_line) == 4:
-                    atoms += [split_line[0]]
-                    coords += [[float(c)*angstrom2bohr for c in split_line[1:]]]
-        for i in range(len(atoms)):
-            atom = atoms[i]
-            atom = atom[0].upper() + atom[1:].lower()
-            atoms[i] = atom
-
-        return {'atoms': atoms, 'coord': np.array(coords)}
+        refgeo_path = os.path.join(self.path, filename)
+        natoms, atoms, coords = read_geom(refgeo_path)
+        return natoms, {'atoms': atoms, 'coord': np.array(coords)}
 
     def get_masses(self):
         masses = []
-        for i in range(len(self.refgeo['atoms'])):
+        for i in range(self.natoms):
             # masses are given in an array of shape (natoms, 3) like
             # the coordinates so that they can be easily used in the
             # surface hopping algorithm
@@ -202,6 +105,61 @@ class SurfacePointProvider(object):
                         atomic_masses[self.refgeo['atoms'][i]],
                         atomic_masses[self.refgeo['atoms'][i]]]]
         return np.array(masses)
+
+    def _import_model_interface(self, module_path, class_name):
+        """Import Model class and initalize it"""
+        path = os.abspath(module_path)
+        self.logger.info('The model is given as: %s' % path)
+        # load module
+        try:
+            spec = importlib.util.spec_from_file_location("", path)
+            usr_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(usr_module)
+        except (FileNotFoundError, ModuleNotFoundError, ImportError):
+            self.logger.error('The user module could not be loaded: %s' % path)
+        #
+        try:
+            usr_class = getattr(usr_module, class_name)
+        except AttributeError:
+            self.logger.error('The user class could not be found: %s' % class_name)
+        #
+        return usr_class()
+
+    def _import_abinitio_interface(self):
+        """Setup abinitio interface"""
+        try:
+            self.config['AB INITIO']['path'] = self.path
+            self.config['AB INITIO']['trajpath'] = self.trajpath
+        except KeyError:
+            self.logger.error('No AB INITIO section in the inputfile!')
+        # read reference geometry from inputfile
+        refgeo_name = self.config['AB INITIO'].get('reference geometry', None)
+        if refgeo_name is None:
+            self.logger.error('no reference geometry file provided!')
+        #
+        self.natoms, self.refgeo = self._get_refgeo(refgeo_name)
+        # get number of states
+        if 'number of states' in self.config['AB INITIO']:
+            try:
+                self.nstates = int(self.config['AB INITIO']['number of states'])
+            except ValueError:
+                self.logger.error('Number of states is not an'
+                                  + 'integer value!')
+        else:
+            self.logger.error('Number of states not specified in inputfile!')
+
+        if 'database' in self.config['AB INITIO']:
+            self.dbpath = os.path.join(self.path, self.config['AB INITIO']['database'])
+            self.dbpath = os.path.realpath(self.dbpath)
+            self.logger.info('Using database: ' + self.dbpath)
+            self.db = True
+            self.logger.add_handle("db")
+            interface = DBInter(self.dbpath, self.config['AB INITIO'], self.logger["db"], self.refgeo)
+        else:
+            self.db = False
+            self.logger.add_handle("QM")
+            interface = get_qminter(self.config['AB INITIO'], self.logger["QM"], self.refgeo)
+        return interface
 
 
 if __name__ == "__main__":

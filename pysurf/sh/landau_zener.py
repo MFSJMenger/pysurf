@@ -13,7 +13,6 @@ class Save(object):
     def __init__(self, filename, data, header=None):
 
         crds = data['coord']
-            
 
         variables = {}
         variables['curr_state'] = DBVariable(int, ('frame', 'one'))
@@ -23,7 +22,6 @@ class Save(object):
         variables['etot'] = DBVariable(np.double, ('frame', 'one'))
         #check whether model or abinit calculations
         if len(crds.shape) == 2:
-
             variables['coord'] = DBVariable(np.double, ('frame', 'natoms', 'three'))
             variables['gradient'] = DBVariable(np.double, ('frame', 'nstates', 'natoms', 'three'))
             variables['mass'] = DBVariable(np.double, ('natoms','three'))
@@ -71,9 +69,6 @@ class Save(object):
     def add_mass(self, mass):
         self.db.set('mass', mass)
 
-#    def __del__(self):
-#        self.f.close()
-
 
 def rescale_velocity(ekin, dE, v):
     factor = (1. - dE/ekin)
@@ -83,13 +78,6 @@ def rescale_velocity(ekin, dE, v):
 
 def landau_zener_surfacehopping(init_cond, iactive, nsteps, random_seed, inp, dt, model=False):
 
-#    mass = np.array([1.0, 1.0, 1.0])
-
-#    save_crd = Save('crd.txt', "M1 M2 M3")
-#    save_veloc = Save('veloc.txt', "M1 M2 M3")
-#    save_acc = Save('acc.txt', "M1 M2 M3")
-#    save_energy = Save("energy.txt", "iactive EKin EPot ETot")
-#    save_pes = Save("pes.txt", "states")
     e_curr = None
     e_prev_step = None
     e_two_step_prev = None
@@ -108,8 +96,9 @@ def landau_zener_surfacehopping(init_cond, iactive, nsteps, random_seed, inp, dt
     a = get_acceleration(data['gradient'][iactive], data['mass'])
     #
     e_curr = data['energy']
+    #
     for istep in range(2):
-        """If not restart, first 2 steps are just to save energy!"""
+        # If not restart, first 2 steps are just to save energy!
         crd = vv_xstep(crd, v, a, dt)
         data = get_data(spp, crd) 
         # update acceleration
@@ -125,7 +114,7 @@ def landau_zener_surfacehopping(init_cond, iactive, nsteps, random_seed, inp, dt
         e_curr = data['energy']
         
     save = Save('prop.db', data)
-    #check whether ab initio calculation
+    # check whether ab initio calculation
     save.add_mass(data['mass'])
 
     for istep in range(nsteps):
@@ -134,9 +123,6 @@ def landau_zener_surfacehopping(init_cond, iactive, nsteps, random_seed, inp, dt
         crd = vv_xstep(crd, v, a, dt)
         data = get_data(spp, crd)
         #
-        e_two_step_prev = e_prev_step
-        e_prev_step = e_curr
-        e_curr = data['energy']
         # update acceleration
         a_old = a
         a = get_acceleration(data['gradient'][iactive], data['mass'])
@@ -158,16 +144,11 @@ def landau_zener_surfacehopping(init_cond, iactive, nsteps, random_seed, inp, dt
                 v = rescale_velocity(ekin, dE, v)
                 # get acceleration
                 a = get_acceleration(data['gradient'][iactive], data['mass'])
-#        save_crd.save(" ".join("%12.8f" % c for c in crd.flatten()))
-#        save_veloc.save(" ".join("%12.8f" % _v for _v in v.flatten()))
-#        save_acc.save(" ".join("%12.8f" % _a for _a in a.flatten()))
         ekin = calc_ekin(data['mass'], v)
         epot = e_curr[iactive]
         etot = ekin + epot
         print(iactive, ekin, epot, etot)
         save.append(data, v, iactive, ekin, epot, etot)
-#        save_energy.save("%8d %12.8f   %12.8f    %12.8f" % (iactive, ekin, epot, etot))
-#        save_pes.save("%12.8f %12.8f   %12.8f" % (data['energy'][0], data['energy'][1], data['energy'][2]))
 
 def calc_ekin(masses, veloc):
     ekin = 0.0
