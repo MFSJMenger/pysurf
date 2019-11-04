@@ -241,7 +241,7 @@ def is_normal_mode_format(modes, natoms):
     result = np.dot(matrix.T, matrix)  # returns modes*modes matrix
     # compute the trace
     trace = np.trace(result)
-    # set diagonal elemnts to 0.0
+    # set diagonal elements to 0.0
     np.fill_diagonal(result, 0.0)
     #
     nmodes_m1 = float(nmodes-1)
@@ -300,7 +300,7 @@ def create_mass_weighted_normal_modes(modes, molecule):
                                                                (molecule.masses[iatom]
                                                                 / U_TO_AMU)
                                                                / ANG_TO_BOHR)),
-            'mass-wighted': lambda imode, iatom, ixyz, disp: disp,
+            'mass-weighted': lambda imode, iatom, ixyz, disp: disp,
     }
     #
     possible_formats = []
