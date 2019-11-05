@@ -1,14 +1,16 @@
+import sys
 from datetime import datetime
 from functools import partial
-import sys
+from .utils.context_utils import ExitOnException
 
 
 __all__ = ["get_logger", "Logger"]
 
 
-def get_logger(filename, name, handles):
-    fhandle = _TextHandle(filename)
-    return Logger(name, fhandle, handles)
+def get_logger(filename, name, sublogger):
+    """initialize a new logger"""
+    fhandle = Logger.get_fhandle(filename)
+    return Logger(name, fhandle, sublogger)
 
 
 class _LoggerBase(object):
@@ -18,9 +20,22 @@ class _LoggerBase(object):
         self._enter = False
         self.fhandle = fhandle
 
+    @staticmethod
+    def get_fhandle(filename):
+        """Generate a new file handle"""
+        return _TextHandle(filename)
+
     def set_fhandle(self, handle):
-        """ """
-        self.fhandle = _TextHandle(handle)
+        """set fhandle to new handle"""
+        if isinstance(handle, _TextHandle):
+            pass
+        elif isinstance(handle, str) or isinstance(handle, None): 
+            handle = self.get_fhandle(handle)
+        else:
+            raise Exception("new file handle can only be: \n"
+                            "None     -> Console logger\n"
+                            "filename -> File logger \n"
+                            "logger   -> logger \n")
 
     @property
     def enter(self):
@@ -40,19 +55,14 @@ class _LoggerBase(object):
         self.fhandle.write(f"\nLeave '{txt}' at: "
                            f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
 
+    def debug(self, txt):            
+        self.fhandle.write(f"Debug: {txt}\n")
+
     def info(self, txt):
-        if self._enter is True:
-            txt = f"{txt}\n"
-        else:
-            txt = f"{self.name}: {txt}\n"
-        self.fhandle.write(txt)
+        self.fhandle.write(f"{txt}\n")
 
     def warning(self, txt):
-        if self._enter is True:
-            txt = f"Warning: {txt}\n"
-        else:
-            txt = f"{self.name} Warning: {txt}\n"
-        self.fhandle.write(txt)
+        self.fhandle.write(f"Warning: {txt}\n")
 
     def error(self, txt):
         error = (f"\n\n{self.name} Error Termination:\n"
@@ -61,41 +71,48 @@ class _LoggerBase(object):
         #
         self.fhandle.write(error)
         # raise Exception
-        raise Exception(error)
+        with ExitOnException():
+            raise Exception(error)
 
 
 class Logger(_LoggerBase):
 
-    def __init__(self, name, fhandle, handles=None):
+    def __init__(self, name, fhandle=None, handles=None):
+        if fhandle is None:
+            # create an terminal logger
+            fhandle = self.get_fhandle(None)
         _LoggerBase.__init__(self, name, fhandle)
-        self.handles = self._get_handles(handles)
+        self.sublogger = self._generate_sublogger(handles)
 
     def __getitem__(self, key):
-        return self.handles[key]
+        return self.sublogger[key]
 
-    def add_handle(self, handles):
-        """add new subhandles to logger"""
-        if isinstance(handles, str):
-            handles = [handles]
-        #
-        handels = self._get_handles(handles)
-        # register new keys
-        for key, value in handels.items():
-            self.handles[ky] = value
-
-    def _get_handles(self, handles):
-        if handles is None:
+    def add_sublogger(self, sublogger):
+        """add new sublogger to logger"""
+        if sublogger is None:
             return
-        if isinstance(handles, list):
-            return {handle: Logger(f"{self.name.upper()}-{handle}", self.fhandle)
-                    for handle in handles}
-        if isinstance(handles, dict):
-            return {key: Logger(f"{self.name.upper()}-{key}", self.fhandle, handle)
-                    for key, handle in handles.items()}
-        if isinstance(handles, tuple):
-            return {handle: Logger(f"{self.name.upper()}-{handle}", self.fhandle)
-                    for handle in handles}
-        raise Exception("can only handle tuple, dict, list and None!")
+        if isinstance(sublogger, str):
+            sublogger = [sublogger]
+        #
+        sublogger = self._generate_sublogger(sublogger)
+        # register new keys
+        for key, value in sublogger.items():
+            self.sublogger[key] = value
+
+    def _generate_sublogger(self, sublogger):
+        """create subloggers"""
+        if sublogger is None:
+            return
+        if isinstance(sublogger, list):
+            return {logger: Logger(f"{self.name.upper()}-{logger}", self.fhandle)
+                    for logger in sublogger}
+        if isinstance(sublogger, dict):
+            return {logger_name: Logger(f"{self.name.upper()}-{logger_name}", self.fhandle, sub_logger)
+                    for logger_name, sub_logger in sublogger.items()}
+        if isinstance(sublogger, tuple):
+            return {logger: Logger(f"{self.name.upper()}-{logger}", self.fhandle)
+                    for logger in sublogger}
+        raise Exception("Sublogger can only be tuple, dict, list or None!")
 
 
 class _TextHandle(object):

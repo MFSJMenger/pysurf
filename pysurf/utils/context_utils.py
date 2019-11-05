@@ -16,7 +16,6 @@ class _BaseContextDecorator(object):
         def _wrapper(*args, **kwargs):
             with self:
                 return func(*args, **kwargs)
-
         return _wrapper
 
 

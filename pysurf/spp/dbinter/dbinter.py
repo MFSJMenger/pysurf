@@ -10,8 +10,8 @@ from ..qminter.qminter import get_qminter
 
 class DBInter():
     """This class handels all the interaction with the database and
-        the surface point provider, i.e. saves the stuff and does the
-        interpolation
+        the surface point provider, 
+        saves the data and does the interpolation
     """
     def __init__(self, dbpath, config, logger, refgeo):
         self.dbpath = dbpath
@@ -280,11 +280,11 @@ class ShepardInterpolator():
         self.coords = coords
         self.values = values
     
-    def __call__(self,coord):
+    def __call__(self, coord):
         weights = self.get_weights(coord)
-        res = 0
-        for i in range(len(self.values)):
-            res += weights[i]*self.values[i]
+        res = 0.0
+        for i, value in enumerate(self.values):
+            res += weights[i]*value
         res = res/sum(weights)
         return res
 
