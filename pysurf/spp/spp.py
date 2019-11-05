@@ -9,6 +9,7 @@ from .qminter.qminter import get_qminter
 # utils
 from ..utils.chemutils import atomic_masses
 from ..utils.osutils import exists_and_isfile
+from ..utils.context_utils import DoOnException
 # fileparser
 from ..fileparser import read_geom
 # logger
@@ -106,32 +107,30 @@ class SurfacePointProvider(object):
                         atomic_masses[self.refgeo['atoms'][i]]]]
         return np.array(masses)
 
+    def _error_on_exception(self, txt):
+        """print error on exception and end code"""
+        return DoOnException(self.logger.error, txt)
+
     def _import_model_interface(self, module_path, class_name):
         """Import Model class and initalize it"""
         path = os.abspath(module_path)
         self.logger.info('The model is given as: %s' % path)
         # load module
-        try:
+        with self._error_on_exception('The user module could not be loaded: %s' % path):
             spec = importlib.util.spec_from_file_location("", path)
             usr_module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(usr_module)
-        except (FileNotFoundError, ModuleNotFoundError, ImportError):
-            self.logger.error('The user module could not be loaded: %s' % path)
         #
-        try:
+        with self._error_on_exception('The user class could not be found: %s' % class_name):
             usr_class = getattr(usr_module, class_name)
-        except AttributeError:
-            self.logger.error('The user class could not be found: %s' % class_name)
         #
         return usr_class()
 
     def _import_abinitio_interface(self):
         """Setup abinitio interface"""
-        try:
+        with self._error_on_exception('No AB INITIO section in the inputfile!'):
             self.config['AB INITIO']['path'] = self.path
             self.config['AB INITIO']['trajpath'] = self.trajpath
-        except KeyError:
-            self.logger.error('No AB INITIO section in the inputfile!')
         # read reference geometry from inputfile
         refgeo_name = self.config['AB INITIO'].get('reference geometry', None)
         if refgeo_name is None:
@@ -140,11 +139,8 @@ class SurfacePointProvider(object):
         self.natoms, self.refgeo = self._get_refgeo(refgeo_name)
         # get number of states
         if 'number of states' in self.config['AB INITIO']:
-            try:
+            with self._error_on_exception('Number of states is not an integer value!'):
                 self.nstates = int(self.config['AB INITIO']['number of states'])
-            except ValueError:
-                self.logger.error('Number of states is not an'
-                                  + 'integer value!')
         else:
             self.logger.error('Number of states not specified in inputfile!')
 
