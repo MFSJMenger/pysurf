@@ -1,8 +1,6 @@
-
 ================
 Surface Provider
 ================
-
 
 
 SurfacePointProvider
@@ -30,15 +28,12 @@ Hereby, it can get its Information potentially 3 ways
     2. with the database 
     3. directly from an electronic structure
 
-
-
-
+.. autoclass:: pysurf.wigner.WignerSampling
+   :members:
 
 
 Database
 --------
-
-
 
 .. graphviz::
 

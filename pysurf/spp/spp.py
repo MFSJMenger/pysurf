@@ -57,6 +57,8 @@ class SurfacePointProvider(object):
             # make sure that AB INITIO section is in the inputfile
             # add path to AB INITIO section
             self.interface = self._import_abinitio_interface()
+        else:
+            self.logger.error("Mode has to be 'model' or 'ab initio'")
 
     def _parse_config(self, inputfile):
         """Parse the config file"""

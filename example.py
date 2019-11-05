@@ -39,5 +39,6 @@ def get_init(init=0, seed=16661):
             veloc[i] = cond.veloc[0][i]
     return InitialCondition(crd, veloc)
 # create initial condition
-init = get_init(100)
-landau_zener_surfacehopping(init, 2, 10000, 16661, 'test.inp', 10)
+for i in range(100):
+    init = get_init(i)
+    landau_zener_surfacehopping(init, 2, 10000, 16661, 'test.inp', 10)

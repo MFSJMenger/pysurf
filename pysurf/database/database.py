@@ -53,6 +53,9 @@ class Database(object):
     def __contains__(self, key):
         return key in self._handle
 
+    def keys(self):
+        return self._handle.keys()
+
     def get(self, key, ivalue):
         variable = self._handle[key]
         if variable.shape[0] > ivalue:
@@ -63,8 +66,9 @@ class Database(object):
             self._handle[key][ivalue, :] = value
 
     def get_dimension_size(self, key):
-        if key in self._db.dimensions.keys():
-            return self._db.dimensions[key].size
+        dim = self.db.dimensions.get(key, None)
+        if dim is not None:
+            return dim.size
 
     @property
     def closed(self):
