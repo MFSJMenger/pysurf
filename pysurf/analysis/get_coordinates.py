@@ -1,5 +1,6 @@
 import sys
 import os 
+import cli
 import numpy as np
 
 from pysurf.database.database import Database
