@@ -1,0 +1,37 @@
+import numpy as np
+import random
+import matplotlib.pyplot as plt
+
+from pysurf.spp.dbinter.dbinter import MyRBF
+
+
+start = -1.2
+stop = 1.2
+
+x = np.array([[(random.random()-0.5)*2.] for _ in range(10)])
+y = np.array(x**2).flatten()
+
+
+print('Johannes x: ', x)
+print('Johannes y: ', y)
+interpolator = MyRBF(x, y)
+
+x_inter = np.linspace(start,stop,50)
+y_inter = np.array([interpolator(i) for i in x_inter]) 
+
+
+x_real = np.linspace(start, stop, 50)
+y_real = x_real**2
+
+fig = plt.figure()
+ax = fig.add_subplot(1,1,1)
+ax.plot(x_real, y_real, linestyle= 'dashed',color='black')
+ax.plot(x_inter, y_inter, 'b')
+ax.plot(x, y, 'ro')
+
+
+
+plt.show()
+
+
+

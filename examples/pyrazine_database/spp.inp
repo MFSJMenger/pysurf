@@ -11,5 +11,5 @@ number of states = 4
 reference energy = -260.7012969266 
 simulate = false
 database = db.dat
-interpolation = shepard
+interpolation = rbf
 method = dft

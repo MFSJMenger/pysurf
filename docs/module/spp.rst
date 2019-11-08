@@ -54,4 +54,6 @@ Database
 Interface
 ---------
 
+.. autoclass:: pysurf.wigner.WignerSampling
+   :members:
 

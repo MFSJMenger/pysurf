@@ -10,7 +10,7 @@ cis_singlets true
 cis_triplets false
 set_iter 50
 exchange pbe0 
-basis sto-3g
+basis cc-pVDZ
 RPA 0
 MAX_SCF_CYCLES 500
 xc_grid 000075000302
@@ -37,7 +37,7 @@ $rem
 jobtype FORCE
 set_iter 50
 exchange pbe0 
-basis sto-3g
+basis cc-pVDZ
 RPA 0
 MAX_SCF_CYCLES 500
 xc_grid 000075000302
@@ -63,7 +63,7 @@ cis_triplets false
 set_iter 50
 CIS_STATE_DERIV 1
 exchange pbe0 
-basis sto-3g
+basis cc-pVDZ
 RPA 0
 scf_guess read
 xc_grid 000075000302
@@ -89,7 +89,7 @@ cis_triplets false
 set_iter 50
 CIS_STATE_DERIV 2
 exchange pbe0 
-basis sto-3g
+basis cc-pVDZ
 RPA 0
 scf_guess read
 xc_grid 000075000302
@@ -116,7 +116,7 @@ cis_triplets false
 set_iter 50
 CIS_STATE_DERIV 3
 exchange pbe0 
-basis sto-3g
+basis cc-pVDZ
 RPA 0
 scf_guess read
 xc_grid 000075000302

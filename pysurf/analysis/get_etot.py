@@ -1,6 +1,7 @@
 import sys
 import os 
 import numpy as np
+import click
 
 from pysurf.database.database import Database
 from pysurf.database.dbtools import DatabaseRepresentation
@@ -20,28 +21,27 @@ def write_etot(ekin, epot, etot, step):
     return string
 
 
-if len(sys.argv) < 2:
-    print('Error: Please provide DB file')
 
-infile = sys.argv[1]
+@click.command()
+@click.option('-f', 'infile', default='prop.db')
+@click.option('-o', 'outfile', default='etot.dat')
+def get_etot_command(infile, outfile):
+    get_etot(infile, outfile)
 
-if len(sys.argv) >=3:
-    outfile = sys.argv[2]
-else:
-    outfile = 'etot.dat'
-
-if not(os.path.isfile(infile)):
-    print('Error: infile path does not exist! ' + infile)
-    exit()
-
-db = Database.load_db(infile)
-
-
-with open(outfile, 'w') as output:
-    output.write('ekin, epot, etot \n')
-    step = 0
-    for ekin, epot, etot in zip(db['ekin'], db['epot'], db['etot']):
-        output.write(write_etot(ekin[0], epot[0], etot[0], step))
-        step += 1
+def get_etot(infile, outfile):
+    if not(os.path.isfile(infile)):
+        print('Error: infile path does not exist! ' + infile)
+        exit()
     
-
+    db = Database.load_db(infile)
+    
+    
+    with open(outfile, 'w') as output:
+        output.write('ekin, epot, etot \n')
+        step = 0
+        for ekin, epot, etot in zip(db['ekin'], db['epot'], db['etot']):
+            output.write(write_etot(ekin[0], epot[0], etot[0], step))
+            step += 1
+        
+if __name__=="__main__":
+    get_etot_command()

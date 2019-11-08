@@ -1,4 +1,3 @@
-#! /data/ehrmaier/anaconda3/bin/python3
 import sys
 import os 
 import numpy as np
@@ -13,21 +12,23 @@ from pysurf.utils.chemutils import get_atom_from_mass
 
 from pysurf.utils.constants import bohr2angstrom
 
-def au2ang(x):
-    return x * bohr2angstrom
 
-def write_xyz(atoms, coord, step):
-    string = str(len(coord)) + '\n'
+def write_gradient(atoms, gradient, step):
+    nstates = len(gradient)
+    string = str(len(gradient)) + '\n'
     string += 'step {0} \n'.format(step)
-    for i in range(len(coord)):
-        string += '{0:s}  {1:12.8f}  {2:12.8f}  {3:12.8f}\n'.format(atoms[i], *au2ang(coord[i]))
+    for state in range(len(gradient)):
+        string += 'state: ' + str(state) + '\n'
+        for i in range(len(atoms)):
+            string += '{0:s}  {1:12.8f}  {2:12.8f}  {3:12.8f}\n'.format(atoms[i], *gradient[state][i])
+
     return string
 
-def write_coord(coord, step):
-    string = str(len(coord)) + '\n'
+def write_gradient_model(gradient, step):
+    string = str(len(gradient)) + '\n'
     string += 'step {0} \n'.format(step)
     np.vectorize(str)
-    string += np.array2string(coord, separator=',   ', precision=5).strip(']').strip('[')
+    string += np.array2string(gradient, separator=',   ', precision=5).strip(']').strip('[')
     string += '\n'
     string += '\n'
     return string
@@ -35,11 +36,11 @@ def write_coord(coord, step):
 
 @click.command()
 @click.option('-f', 'infile', default='prop.db')
-@click.option('-o', 'outfile', default='coord.xyz')
-def get_coordinates_command(infile, outfile):
-    get_coordinates(infile, outfile)
+@click.option('-o', 'outfile', default='gradient.dat')
+def get_gradients_command(infile, outfile):
+    get_gradient(infile, outfile)
 
-def get_coordinates(infile, outfile):
+def get_gradients(infile, outfile):
     if not(os.path.isfile(infile)):
         print('Error: infile path does not exist! ' + infile)
         exit()
@@ -58,7 +59,7 @@ def get_coordinates(infile, outfile):
     
     atoms=[]
     if model is True:
-        for m in range(len(db['coord'][0])):
+        for m in range(len(db['gradient'][0])):
             atoms+=['Q']
     if model is False:
         for m in mass[:,0]:
@@ -67,12 +68,13 @@ def get_coordinates(infile, outfile):
     
     with open(outfile, 'w') as output:
         step = 0
-        for coord in db['coord']:
+        for grad in db['gradient']:
             if model is False:
-                output.write(write_xyz(atoms, coord, step))
+                output.write(write_gradient(atoms, grad, step))
             else:
-                output.write(write_coord(coord, step))
+                output.write(write_gradient_model(grad, step))
             step += 1
-    
-if __name__=='__main__':
-    get_coordinates_command()
+        
+  
+if __name__=="__main__":
+    get_gradients_command()

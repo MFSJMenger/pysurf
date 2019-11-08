@@ -47,6 +47,13 @@ class Database(object):
         rep = DatabaseRepresentation.from_db(nc)
         return cls(filename,{'variables': rep.variables, 'dimensions': rep.dimensions})
 
+    @classmethod
+    def empty_like(cls, filename, db):
+        """ create an empty database with the same dimensions as db
+            filename is the name of the new empty db
+        """
+        return cls(filename, {'variables': db._rep.variables, 'dimensions': db._rep.dimensions})
+
     def __getitem__(self, key):
         return self._handle.get(key, None)
 
@@ -57,6 +64,9 @@ class Database(object):
         variable = self._handle[key]
         if variable.shape[0] > ivalue:
             return variable[ivalue]
+
+    def get_keys(self):
+        return self._db.variables.keys()
 
     def set(self, ivalue, key, value):
         if key in self:
