@@ -11,7 +11,7 @@ y_en = np.empty((100,3), dtype=float)
 pm=PyrMini()
 print(pm.w1)
 for i in range(100):
-    res = pm.get(np.array([0,0,x[i]]))
+    res = pm.get({'coord': np.array([0,0,x[i]]), 'gradient': None, 'energy': None})
     y_grad[i] = res['gradient'][:,2]
     y_en[i] = res['energy']
     #print(pm.get(np.array([x[i],0,0]))['gradient'])

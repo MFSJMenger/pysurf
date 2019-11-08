@@ -1,6 +1,8 @@
+#! /data/ehrmaier/anaconda3/bin/python3
 import sys
 import os 
 import numpy as np
+import click
 
 from pysurf.database.database import Database
 from pysurf.database.dbtools import DatabaseRepresentation
@@ -19,27 +21,24 @@ def write_state(state, step):
     return string
 
 
-if len(sys.argv) < 2:
-    print('Error: Please provide DB file')
+@click.command()
+@click.option('-f', 'infile', default='prop.db')
+@click.option('-o', 'outfile', default='states.dat')
+def get_states_command(infile, outfile):
+    get_states(infile, outfile)
 
-infile = sys.argv[1]
-
-if len(sys.argv) >=3:
-    outfile = sys.argv[2]
-else:
-    outfile = 'state.dat'
-
-if not(os.path.isfile(infile)):
-    print('Error: infile path does not exist! ' + infile)
-    exit()
-
-db = Database.load_db(infile)
-
-
-with open(outfile, 'w') as output:
-    step = 0
-    for state in db['curr_state']:
-        output.write(write_state(state[0], step))
-        step += 1
+def get_states(infile, outfile):
+    if not(os.path.isfile(infile)):
+        print('Error: infile path does not exist! ' + infile)
+        exit()
     
-
+    db = Database.load_db(infile)
+    
+    with open(outfile, 'w') as output:
+        step = 0
+        for state in db['curr_state']:
+            output.write(write_state(state[0], step))
+            step += 1
+    
+if __name__=="__main__":
+    get_states_command()

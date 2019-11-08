@@ -220,6 +220,7 @@ class StartSh():
             shlogger.info('starting trajectory ' + str(i))
             self.write_init_cond(initconds.get_condition(i))
             print('Johannes wrote initcond')
+            print(initconds.get_condition(i))
             print('Johannes self.propagation: ', self.propagation)
             if self.propagation is True:
                 if self.hopalg == 'landau zener':

@@ -88,7 +88,6 @@ class SurfacePointProvider(object):
             res['mass'] = self.get_masses()
         if 'atoms' in request and self.mode == 'ab initio':
             res['atoms'] = self.refgeo['atoms']
-        print(res)
         return res
 
     def _get_refgeo(self, filename):

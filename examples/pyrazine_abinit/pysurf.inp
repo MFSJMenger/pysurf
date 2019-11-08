@@ -4,15 +4,16 @@ simulation = surface hopping
 
 
 [SURFACE HOPPING]
-number of steps = 3
+number of steps = 400
 stepsize = 0.5
-number of trajectories = 10
+number of trajectories = 100
 inputfile for SPP = spp.inp
-restart = false
-initial state = 2
-run trajectory = 7
-propagation = False
+initial state = 3
+run trajectory = 0
+preparation = False
+propagation = True
+restart = True
 
 [INITIAL CONDITIONS]
-#from molden file = molden.in
-from database file = init_conds.db
+from molden file = molden.in
+#from database file = init_conds.db

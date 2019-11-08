@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.interpolate import LinearNDInterpolator
+from scipy.interpolate import Rbf
 from copy import deepcopy
 
 from pysurf.database.database import Database
@@ -50,8 +51,8 @@ class DBInter():
         else:
             self.interpol = False
         if self.interpol is True:
-            self.interpol = 'linear'
-            self.logger.info('set default interpolation to linear'
+            self.interpol = 'rbf'
+            self.logger.info('set default interpolation to rbf'
                              + 'interpolation')
         self.logger.debug('interpolation method is ' + str(self.interpol))
 
@@ -141,7 +142,8 @@ class DBInter():
 
         else:
             res = self.get_qm(request)
-
+            
+        print('Johannes res:', res)
         return res
 
     def get_qm(self, request):
@@ -193,27 +195,31 @@ class Interpolation():
         # The interpolate gradient key has been added in DBInter
         self.inter_grad = self.config.getboolean('interpolate gradient')
         
-        if self.config['interpolation'] == 'linear':
+        if self.config['interpolation'] == 'rbf':
             noc = len(self.db['coord'])
             coords = np.empty((noc, self.natoms*3), dtype=float)
             energies = np.empty((noc, self.nstates), dtype=float)
-            gradients = np.empty((noc, self.nstates*self.natoms*3),
+            if self.inter_grad is False:
+                gradients = np.empty((noc, self.nstates*self.natoms*3),
                                  dtype=float)
             for i in range(len(self.db['coord'])):
                 coords[i, :] = self.db['coord'][i].flatten()
                 energies[i] = self.db['energy'][i]
-                gradients[i, :] = self.db['gradient'][i].flatten()
+                if self.inter_grad is False:
+                    gradients[i, :] = self.db['gradient'][i].flatten()
             try:
                 self.logger.info('try to set up interpolator')
-                self.energy = LinearNDInterpolator(coords, energies)
-                self.gradient = LinearNDInterpolator(coords, gradients)
+                self.energy = MyRBF(coords, energies)
+                if self.inter_grad is False:
+                    self.gradient = MyRBF(coords, gradients)
                 self.logger.info('successfully set up interpolator')
             except:
-                #self.energy = LinearNDInterpolator(coords, energies)
                 self.energy = lambda x: None
-                self.gradient = lambda x: None
-
-        if self.config['interpolation'] == 'shepard':
+                if self.inter_grad is False:
+                    self.gradient = lambda x: None
+                else:
+                    self.gradient = lambda x: np.zeros(slef.nstates, self.atoms, 3, dtype=float)
+        elif self.config['interpolation'] == 'shepard':
             self.logger.info('Using Shepard interpolation scheme')
             noc = len(self.db['coord'])
             coords = np.empty((noc, self.natoms*3), dtype=float)
@@ -242,14 +248,15 @@ class Interpolation():
         self.logger.debug('using interpolator to get energy')
         en = self.energy(coord.flatten())
         if self.inter_grad is False:
+            print('Johannes: interpolate gradient')
             grad = self.gradient(coord.flatten())
         else:
+            print('Johannes: calculated gradient')
             grad = self.calc_grad(coord)
         grad.resize((self.nstates,*coord.shape))
 #        grad.resize((self.nstates,len(coord),3))
 #         try:
 #             en = self.energy(coord)[0]
-#             print('Johannes: ', en)
 #         except:
 #             en = None
 #         try:
@@ -260,16 +267,19 @@ class Interpolation():
         return {'energy': en, 'gradient': grad, 'coord': coord}
 
     def calc_grad(self, coord, dq=0.01):
-        grad = np.empty((self.nstates, len(coord.flatten())), dtype=float)
+        grad = np.zeros((self.nstates, len(coord.flatten())), dtype=float)
 
-        for i in range(len(coord.flatten())):
-            coord1 = deepcopy(coord).flatten()
-            coord1[i] += dq
-            en1 = self.energy(coord1)
-            coord2 = deepcopy(coord).flatten()
-            coord2 -= dq
-            en2 = self.energy(coord2)
-            grad[:,i] = (en1 - en2)/2.0/dq
+        if self.energy(coord) is None:
+            pass
+        else:
+            for i in range(len(coord.flatten())):
+                coord1 = deepcopy(coord).flatten()
+                coord1[i] += dq
+                en1 = self.energy(coord1)
+                coord2 = deepcopy(coord).flatten()
+                coord2[i] -= dq
+                en2 = self.energy(coord2)
+                grad[:,i] = (en1 - en2)/2.0/dq
 
         grad.resize((self.nstates, *coord.shape))
         return grad
@@ -293,3 +303,28 @@ class ShepardInterpolator():
         for i in range(len(self.coords)):
             weights[i] = 1./np.linalg.norm((coord-self.coords[i]))**2
         return weights
+
+class MyRBF():
+    def __init__(self, coords, values):
+        print('Setting up rbf')
+        if len(coords.shape) == 1:
+            coords = deepcopy(coords)
+            coords.resize(len(coords),1)
+        if len(values.shape) > 1:
+            self.vdim = len(values[0])
+            self.rbfi = []
+            for i in range(self.vdim):
+                self.rbfi += [Rbf(*coords.transpose(), values[:,i])]
+        else:
+            self.vdim = 1
+            self.rbfi = Rbf(*coords.transpose(), values)
+
+    def __call__(self, coord):
+#        coord = deepcopy(coordin)
+        res = []
+        if self.vdim != 1:
+            for i in range(self.vdim):
+                res += [self.rbfi[i](*coord.flatten())]
+        else:
+            res = self.rbfi(coord)
+        return np.array(res).flatten()

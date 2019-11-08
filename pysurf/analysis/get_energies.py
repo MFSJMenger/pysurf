@@ -1,6 +1,7 @@
 import sys
 import os 
 import numpy as np
+import click
 
 from pysurf.database.database import Database
 from pysurf.database.dbtools import DatabaseRepresentation
@@ -21,27 +22,26 @@ def write_energy(energy, step):
     return string
 
 
-if len(sys.argv) < 2:
-    print('Error: Please provide DB file')
+@click.command()
+@click.option('-o', 'outfile', default='energy.dat')
+@click.option('-f', 'infile', default='prop.db')
+def get_energies_command(infile, outfile):
+    get_energies(infile, outfile)
 
-infile = sys.argv[1]
-
-if len(sys.argv) >=3:
-    outfile = sys.argv[2]
-else:
-    outfile = 'energy.dat'
-
-if not(os.path.isfile(infile)):
-    print('Error: infile path does not exist! ' + infile)
-    exit()
-
-db = Database.load_db(infile)
-
-
-with open(outfile, 'w') as output:
-    step = 0
-    for energy in db['energy']:
-        output.write(write_energy(energy, step))
-        step += 1
+def get_energies(infile, outfile):
+    if not(os.path.isfile(infile)):
+        print('Error: infile path does not exist! ' + infile)
+        exit()
     
+    db = Database.load_db(infile)
+    
+    
+    with open(outfile, 'w') as output:
+        step = 0
+        for energy in db['energy']:
+            output.write(write_energy(energy, step))
+            step += 1
+        
 
+if __name__=="__main__":
+    get_energies_command()

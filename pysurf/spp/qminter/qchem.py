@@ -130,8 +130,10 @@ class QChem():
             # Get excited state energy
             if 'Total energy for state' in line:
                 state = int(line.split()[4].strip(':'))
-                en[state] = float(line.split()[5]) - self.ref_en
-                en_check[state] = True
+                # sometimes QChem prints too many states
+                if state <= self.nstates:
+                    en[state] = float(line.split()[5]) - self.ref_en
+                    en_check[state] = True
         # Check that energies of all states were found
         if np.all(en_check):
             return en

@@ -91,16 +91,21 @@ def landau_zener_surfacehopping(init_cond, iactive, nsteps, random_seed, inp, dt
     #
     v = init_cond.veloc
     # start
+    print('Johannes first crd: ', crd)
     data = get_data(spp, crd)
     nstates = len(data['energy'])
     a = get_acceleration(data['gradient'][iactive], data['mass'])
+    print('Johannes gradient: ', data['gradient'][iactive])
+    print('Johannes all: ', crd, v, a, dt)
     #
     e_curr = data['energy']
     #
     for istep in range(2):
         # If not restart, first 2 steps are just to save energy!
         crd = vv_xstep(crd, v, a, dt)
+        print('Johannes before get_data:', crd)
         data = get_data(spp, crd) 
+        print('Johannes after get_data:', crd)
         # update acceleration
         a_old = a
         a = get_acceleration(data['gradient'][iactive], data['mass'])
@@ -116,6 +121,7 @@ def landau_zener_surfacehopping(init_cond, iactive, nsteps, random_seed, inp, dt
     save = Save('prop.db', data)
     # check whether ab initio calculation
     save.add_mass(data['mass'])
+    eref = 0
 
     for istep in range(nsteps):
         # 1) write step info
@@ -147,6 +153,14 @@ def landau_zener_surfacehopping(init_cond, iactive, nsteps, random_seed, inp, dt
         ekin = calc_ekin(data['mass'], v)
         epot = e_curr[iactive]
         etot = ekin + epot
+
+        # If total energy changes too much stop the dynamics
+        # This is likely to happen for interpolated data
+        if istep == 0:
+            eref = etot
+        else:
+            if eref < 0.5*etot or eref > 2.*etot:
+                break
         print(iactive, ekin, epot, etot)
         save.append(data, v, iactive, ekin, epot, etot)
 
