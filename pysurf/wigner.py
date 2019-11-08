@@ -241,7 +241,7 @@ def is_normal_mode_format(modes, natoms):
     result = np.dot(matrix.T, matrix)  # returns modes*modes matrix
     # compute the trace
     trace = np.trace(result)
-    # set diagonal elemnts to 0.0
+    # set diagonal elements to 0.0
     np.fill_diagonal(result, 0.0)
     #
     nmodes_m1 = float(nmodes-1)
@@ -300,7 +300,7 @@ def create_mass_weighted_normal_modes(modes, molecule):
                                                                (molecule.masses[iatom]
                                                                 / U_TO_AMU)
                                                                / ANG_TO_BOHR)),
-            'mass-wighted': lambda imode, iatom, ixyz, disp: disp,
+            'mass-weighted': lambda imode, iatom, ixyz, disp: disp,
     }
     #
     possible_formats = []
@@ -346,7 +346,6 @@ def get_initial_condition(molecule, modes):
             if probability > random.random():
                 break  # coordinates accepted
         # now transform the dimensionless coordinate into a real one
-        # paper paper says, that freq_factor is sqrt(2*PI*freq)
         # QM programs directly give angular frequency (2*PI is not needed)
         # Higher frequencies give lower displacements and higher momentum.
         # Therefore scale random_Q and random_P accordingly:
