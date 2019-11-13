@@ -9,7 +9,7 @@ import numpy.random as random
 #
 from pysurf.molden import MoldenParser
 #
-from .initialconditions import InitialConditions
+#from .initialconditions import InitialConditions
 
 class WignerSampling(object):
     questions = """ 
