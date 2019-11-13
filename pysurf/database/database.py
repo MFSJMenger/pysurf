@@ -4,19 +4,19 @@ from .dbtools import load_database
 
 class Database(object):
     """"Core Database, can store data given by the DatabaseRepresentation
-    
+
     database is automatically build using a settings dictionary:
 
     dct = { 'dimensions': {
                  'frame': 'unlimited',
                  'natoms': 3,
                  'three': 3,
-                 }, 
+                 },
              'variables': {
                 'crd': DBVariable(np.double, ('frame', 'natoms', 'three')),
              }
           }
-    
+
     """
 
     __slots__ = ('filename', '_rep', '_db', '_handle', '_closed', '_icurrent')
@@ -36,16 +36,16 @@ class Database(object):
         self._rep = DatabaseRepresentation(settings)
         #
         self._db, self._handle = self._rep.create_database(filename)
-        # 
+        #
         self._closed = False
-        # 
+        #
         self._icurrent = None
 
     @classmethod
     def load_db(cls, filename):
         nc = load_database(filename)
         rep = DatabaseRepresentation.from_db(nc)
-        return cls(filename,{'variables': rep.variables, 'dimensions': rep.dimensions})
+        return cls(filename, {'variables': rep.variables, 'dimensions': rep.dimensions})
 
     @classmethod
     def empty_like(cls, filename, db):
@@ -70,10 +70,6 @@ class Database(object):
 
     def get_keys(self):
         return self._db.variables.keys()
-
-    def set(self, ivalue, key, value):
-        if key in self:
-            self._handle[key][ivalue, :] = value
 
     def get_dimension_size(self, key):
         dim = self.db.dimensions.get(key, None)
@@ -100,7 +96,7 @@ class Database(object):
     def set(self, key, value, ivalue=None):
         """set a given variable"""
         variable = self._handle[key]
-        if variable.get_dims()[0].isunlimited(): 
+        if variable.get_dims()[0].isunlimited():
             if ivalue is None:
                 self.append(key, value)
             else:
