@@ -1,7 +1,11 @@
 import sys
+#
 from datetime import datetime
 from functools import partial
+#
+from .utils.context_utils import DoOnException
 from .utils.context_utils import ExitOnException
+from .utils.context_utils import BaseContextDecorator
 
 
 __all__ = ["get_logger", "Logger"]
@@ -13,12 +17,31 @@ def get_logger(filename, name, sublogger=None):
     return Logger(name, fhandle, sublogger)
 
 
+class LogBlock(BaseContextDecorator):
+
+    def __init__(self, logger, txt=None):
+        self.txt = txt
+        self.logger = logger
+
+    def set_text(self, txt):
+        self.txt = txt
+
+    def __enter__(self):
+        self.logger.info(f"\nEnter '{self.txt}' at: "
+                         f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+
+    def __exit__(self, exception_type, exception_value, traceback):
+        self.logger.info(f"\nLeave '{self.txt}' at: "
+                         f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+
+
 class _LoggerBase(object):
 
     def __init__(self, name, fhandle):
         self.name = name
-        self._enter = False
         self.fhandle = fhandle
+        self._info_block = LogBlock(self)
+        self._error_block = DoOnException(self.error)
 
     @staticmethod
     def get_fhandle(filename):
@@ -36,24 +59,7 @@ class _LoggerBase(object):
                             "None     -> Console logger\n"
                             "filename -> File logger \n"
                             "logger   -> logger \n")
-
-    @property
-    def enter(self):
-        self._enter = True
-        self.enter_text(f"routine {self.name}")
-
-    @property
-    def leave(self):
-        self._enter = False
-        self.leave_text(f"routine {self.name}")
-
-    def enter_text(self, txt):
-        self.fhandle.write(f"\nEnter '{txt}' at: "
-                           f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
-
-    def leave_text(self, txt):
-        self.fhandle.write(f"\nLeave '{txt}' at: "
-                           f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+        self.fhandle = handle 
 
     def debug(self, txt):            
         self.fhandle.write(f"Debug: {txt}\n")
@@ -64,12 +70,20 @@ class _LoggerBase(object):
     def warning(self, txt):
         self.fhandle.write(f"Warning: {txt}\n")
 
+    def info_block(self, txt):
+        self._info_block.set_text(txt)
+        return self._info_block
+
+    def exit_on_exception(self, txt):
+        self._error_block.set_args(txt)
+        return self._error_block
+
     def error(self, txt):
-        error = (f"\n\n{self.name} Error Termination:\n"
-                 f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+        error = (f"in '{self.name}' at "
+                 f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}:\n"
                  f"{txt}\n\n")
         #
-        self.fhandle.write(error)
+        self.fhandle.write(f"Error Termination {error}")
         # raise Exception
         with ExitOnException():
             raise Exception(error)
