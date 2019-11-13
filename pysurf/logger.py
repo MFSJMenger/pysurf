@@ -7,7 +7,7 @@ from .utils.context_utils import ExitOnException
 __all__ = ["get_logger", "Logger"]
 
 
-def get_logger(filename, name, sublogger):
+def get_logger(filename, name, sublogger=None):
     """initialize a new logger"""
     fhandle = Logger.get_fhandle(filename)
     return Logger(name, fhandle, sublogger)
