@@ -258,10 +258,10 @@ class StartSh():
                 if os.path.isfile('prop.db'):
                     shlogger.info('taking restart information from prop.db')
                     db = Database.load_db('prop.db')
-                    nsdone = len(db['coord'])
+                    nsdone = len(db['crd'])
                     if nsdone < self.nsteps:
                         init_cond = InitialCondition = namedtuple("InitialCondition", ['crd', 'veloc'])
-                        init_cond.crd = db['coord'][-1]
+                        init_cond.crd = db['crd'][-1]
                         init_cond.veloc = db['veloc'][-1]
                         self.initstate = db['curr_state'][-1][0]
                         shlogger.info('Restarting from step: ' + str(nsdone))

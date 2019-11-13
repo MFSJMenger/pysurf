@@ -10,23 +10,55 @@ from pysurf.molden import MoldenParser
 from pysurf.database.database import Database
 from pysurf.database.dbtools import DBVariable
 from pysurf.database.dbtools import DatabaseTools
+from wigner import WignerSampling
 #
 from pysurf.molecule.molecule import Molecule
 #
+from pysurf.colt import AskQuestions
 #  used to save just InitialConditions (coordinates, velocities) for a given molecule
 InitialCondition = namedtuple("InitialCondition", ['crd', 'veloc'])
 
 
 class InitialConditions(object):
-    def __init__(self, filename, logger=None, method=None):
+    _methods = {'wigner': WignerSampling}
+    questions = """
+    # database file where the initial conditions are saved or from which the initial conditions
+    # are taken if the file already exists.
+    outputfile = initconds.db
+
+
+    # Describes which sampling algorithm is used to generate the initial conditions.
+    # The default is wigner.
+    sampling = wigner
+
+    # Number of initial conditions that have to be created.
+    # The default value is 100.
+    number of initial conditions = 100 :: int
+    """
+
+    def __init__(self, inputfile, logger=None):
+        """ Class to create initial conditions due to user input. Initial conditions are saved 
+            in a file for further usage.
+        """
+        # Generate the config
+        quests = QuestionGenerator(question_string)
+        quests.generate_cases("", "sampling", {
+            name: sampling.questions for name, sampling in self._methods.items()}
+        quests = AskQuestions("INITIAL CONDITIONS", quests.questions)
+        self.config = quests.ask(inputfile)
+        
+
+
         if logger is None:
             self.logger = get_logger('initconds.log', 'initconds')
         else:
             self.logger = logger
 
+        
         if exists_and_isfile(filename):
-            self._db = load_db(filename)
-        self.nconditions = nconditions
+            self._db = Database.load_db(filename)
+            self.nconditions = len(self._db['crd'])
+            self._get_method()
         self._db = db
         self._molecule = None
 

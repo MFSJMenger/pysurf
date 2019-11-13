@@ -26,15 +26,15 @@ class PlotPES(SurfacePointProvider):
 
         #check whether the inputfile contains which coordinate is used
         #for the plotting
-        if 'coord' not in self.config['PLOT'].keys():
+        if 'crd' not in self.config['PLOT'].keys():
             self.logger.error('No coordinate given in plot section '
                               + 'of the inputfile')
 
-        if len(split_str(self.config['PLOT']['coord'])) == 1:
+        if len(split_str(self.config['PLOT']['crd'])) == 1:
             try:
-                self.plot_coord = int(self.config['PLOT']['coord'])
+                self.plot_crd = int(self.config['PLOT']['crd'])
             except ValueError:
-                self.logger.error('coord in PLOT section is not an integer!')
+                self.logger.error('crd in PLOT section is not an integer!')
                 exit()
             #start plotting of 1D PES
             self.plot1DPES()
@@ -120,13 +120,13 @@ class PlotPES(SurfacePointProvider):
         yval = np.empty((npoints, nstates), dtype=float)
 
         for i in range(0, len(xval)):
-            coord = np.zeros(ndofs)
-            coord[self.plot_coord-1] = xval[i]
-            yval[i, :] = self.get(coord)['energy']
+            crd = np.zeros(ndofs)
+            crd[self.plot_crd-1] = xval[i]
+            yval[i, :] = self.get(crd)['energy']
 
         fig = plt.figure()
         ax = fig.add_subplot(1, 1, 1)
-        ax.set_xlabel('Coord ' + str(self.plot_coord))
+        ax.set_xlabel('Coord ' + str(self.plot_crd))
         ax.set_ylabel('energy')
 
         ax.plot(xval, yval)

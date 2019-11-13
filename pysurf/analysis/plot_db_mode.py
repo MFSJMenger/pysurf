@@ -29,7 +29,7 @@ def plot_db_mode(molden, spp, mode):
 
     for c in x:
         crd = smp.molecule.crd + c * smp.modes[mode].displacements
-        y = spp.get({'coord': crd, 'energy': None})
+        y = spp.get({'crd': crd, 'energy': None})
 
     print(y)
 

@@ -14,7 +14,25 @@ from .initialconditions import InitialConditions
 
 
 class WignerSampling(object):
+    questions = """ 
+        # Input source for the normal modes and/or frequencies, which are used to generate the 
+        # initial conditions.
+        # Possible options are:
+        # - molden
+        # - frequencies
+        from = none :: str :: [molden, frequencies]
+        
+        # If initial conditions are generated from a molden file, this subquestion asks for the 
+        # molden file.
+        [from(molden)]
+        moldenfile = none
 
+        # If initial conditions are generated from frequencies, here a list of frequencies has to
+        # be given for the modes. The list can be in the python list format or just comma separated
+        # values.
+        [from(frequencies)]
+        frequencies = none
+    """
     def __init__(self, molecule, modes, is_massweighted=False):
         """Initialize a new Wigner Sampling with a molecule class
            and a normal Mode class"""

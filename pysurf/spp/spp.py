@@ -26,7 +26,7 @@ class SurfacePointProvider(object):
     def __init__(self, inputfile, logger=None):
         """ The inputfile for the SPP has to provide the necessary
             information, how to produce the data at a specific point
-            in the coordinate space.
+            in the crdinate space.
         """
         if not isinstance(logger, Logger):
             self.logger = get_logger('spp.log', 'SPP', [])
@@ -79,7 +79,7 @@ class SurfacePointProvider(object):
     def get(self, request):
         """ The get method is the method which should be called by
             external programs, which want to use the SPP. As an
-            input it takes the coordinates and gives back the
+            input it takes the crdinates and gives back the
             information at this specific position.
         """
         res = self.interface.get(request)
@@ -92,10 +92,10 @@ class SurfacePointProvider(object):
 
     def _get_refgeo(self, filename):
         atoms = []
-        coords = []
+        crds = []
         refgeo_path = os.path.join(self.path, filename)
-        natoms, atoms, coords = read_geom(refgeo_path)
-        return natoms, {'atoms': atoms, 'coord': np.array(coords)}
+        natoms, atoms, crds = read_geom(refgeo_path)
+        return natoms, {'atoms': atoms, 'crd': np.array(crds)}
 
     def get_masses(self):
         masses = []

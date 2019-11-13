@@ -20,16 +20,16 @@ class TestDB(Model):
 
     def get(self, request):
         """ the get function returns the adiabatic energies as well as
-            the gradient at the given position coord. Additionally the
+            the gradient at the given position crd. Additionally the
             masses of the normal modes are returned for the kinetic
             Hamiltonian.
         """
-        if 'coord' in request.keys():
-            coord = request['coord']
+        if 'crd' in request.keys():
+            crd = request['crd']
             if 'energy' in request.keys():
-                request['energy'] = self.en(coord)
+                request['energy'] = self.en(crd)
             if 'gradient' in request.keys():
-                request['gradient'] = self.grad(coord)
+                request['gradient'] = self.grad(crd)
 
         # If an empty dictionary is sent, all possible properties are
         # sent back
@@ -39,23 +39,23 @@ class TestDB(Model):
         return request
             
 
-    def en(self, coord):
+    def en(self, crd):
         """ Method to calculate the energies of the PE surfaces at the
             given point.
         """
         en = [0.0, 0.0]
-        for co in coord.flatten():
+        for co in crd.flatten():
             en[0] += co**2
             en[1] += (co-1)**2
         return en
 
-    def grad(self, coord):
+    def grad(self, crd):
         """ Method to calculate the gradient for the PE surfaces
             at the given point.
         """
-        grad = np.zeros((2, *coord.shape), dtype=float)
-        grad[0, :, :] = 2.*coord
-        grad[1, :, :] = 2.*(coord-1)
+        grad = np.zeros((2, *crd.shape), dtype=float)
+        grad[0, :, :] = 2.*crd
+        grad[1, :, :] = 2.*(crd-1)
         return grad
 
 
@@ -63,6 +63,6 @@ if __name__ == "__main__":
     """ small test function printing the energies and gradients at the
         equilibrium point
     """
-    coord = np.array([[0.0, 0.0, 0.0]])
+    crd = np.array([[0.0, 0.0, 0.0]])
     model = TestDB()
-    print(model.get(coord))
+    print(model.get(crd))

@@ -34,9 +34,9 @@ class QChem():
             position and starts the QChem calculation there.
             Finally it reads the output and provides the data.
         """
-        if 'coord' in request.keys():
-            coord = request['coord']
-            self.write_input(self.refgeo['atoms'], coord)
+        if 'crd' in request.keys():
+            crd = request['crd']
+            self.write_input(self.refgeo['atoms'], crd)
             outfile = self.start_calc()
             ret = self.read_output(outfile)
             if 'energy' in self.properties:
@@ -49,7 +49,7 @@ class QChem():
                 request[prop] = None
             return request
 
-    def write_input(self, atoms, coord, filename='qchem.in'):
+    def write_input(self, atoms, crd, filename='qchem.in'):
         """ Prepares a input file from the template file.
             Here only the geometry is added.
         """
@@ -58,15 +58,15 @@ class QChem():
         with open(self.config['template']) as infile:
             temp = Template(infile.read())
 
-        coordstring = ''
+        crdstring = ''
         for i in range(len(atoms)):
-            coordstring += '{0} {1:12.5f} {2:12.5f} {3:12.5f}\n'\
-                .format(atoms[i], coord[i, 0]*bohr2angstrom,
-                        coord[i, 1]*bohr2angstrom,
-                        coord[i, 2]*bohr2angstrom)
+            crdstring += '{0} {1:12.5f} {2:12.5f} {3:12.5f}\n'\
+                .format(atoms[i], crd[i, 0]*bohr2angstrom,
+                        crd[i, 1]*bohr2angstrom,
+                        crd[i, 2]*bohr2angstrom)
         with open(filename, 'w') as outfile:
             outfile.write(temp.safe_substitute(
-                          geometry=coordstring.strip('\n')))
+                          geometry=crdstring.strip('\n')))
 
     def start_calc(self, filename='qchem.in'):
         """ Starts the QChem calculation by calling an external bash

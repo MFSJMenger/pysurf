@@ -19,7 +19,7 @@ def read_geom(filename):
 
 def _read_xyz(filename):
     atoms = []
-    coords = []
+    crds = []
     with open(filename, 'r') as f:
             natoms = int(f.readline())
             f.readline()
@@ -28,7 +28,7 @@ def _read_xyz(filename):
                 split_line = line.split()
                 if len(split_line) == 4:
                     atoms.append(split_line[0])
-                    coords.append([float(c)*angstrom2bohr for c in split_line[1:5]])
+                    crds.append([float(c)*angstrom2bohr for c in split_line[1:5]])
 
     atoms_are_numbers = False
 
@@ -46,4 +46,4 @@ def _read_xyz(filename):
             atom = atom[0].upper() + atom[1:].lower()
             atoms[idx] = atom
 
-    return natoms, atoms, coords
+    return natoms, atoms, crds

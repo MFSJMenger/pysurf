@@ -22,17 +22,17 @@ class HarmonicOscillator(Model):
         print(x - self.x0)
         return -2*self.a*(x - self.x0)
 
-    def get(self, coord):
+    def get(self, crd):
         """the get function returns the adiabatic energies as well as the
-           gradient at the given position coord. Additionally the masses
+           gradient at the given position crd. Additionally the masses
            of the normal modes are returned for the kinetic Hamiltonian.
         """
         val = 1
         N = 3
-        en = self.energy(coord)
-        grad = self.gradient(coord)
+        en = self.energy(crd)
+        grad = self.gradient(crd)
         en = [e + val*i for i, e in enumerate(en)]
-        grad = self.gradient(coord)
+        grad = self.gradient(crd)
         grad = [grad for _ in range(N)]
         mass = [1, 1, 1]
         return {'energy': en, 'gradient': grad, 'mass': mass}
@@ -61,15 +61,15 @@ class PyrMini(Model):
 
     def get(self, request):
         """the get function returns the adiabatic energies as well as the
-           gradient at the given position coord. Additionally the masses
+           gradient at the given position crd. Additionally the masses
            of the normal modes are returned for the kinetic Hamiltonian.
         """
-        if 'coord' in request.keys():
-            coord = request['coord']
+        if 'crd' in request.keys():
+            crd = request['crd']
             if 'energy' in request.keys():
-                request['energy'] = self.adiab_en(coord)
+                request['energy'] = self.adiab_en(crd)
             if 'gradient' in request.keys():
-                request['gradient'] = self.adiab_grad(coord)
+                request['gradient'] = self.adiab_grad(crd)
             request['mass'] = self.mass
         else:
             request['energy'] = None
@@ -77,65 +77,65 @@ class PyrMini(Model):
             request['mass'] = None
         return request
 
-    def adiab_en(self, coord):
+    def adiab_en(self, crd):
         """adiab_en returns a one dimensional vector with the adiabatic energies at
-           the position coord
+           the position crd
         """
-        diab_en = self.diab_en(coord)
+        diab_en = self.diab_en(crd)
         adiab_en = np.linalg.eig(diab_en)[0]
         adiab_en = np.sort(adiab_en)
         return adiab_en
 
-    def diab_en(self, coord):
+    def diab_en(self, crd):
         """diab_en returns the full diabatic matrix of the system
         """
         diab_en = np.empty((3, 3), dtype=float)
-        diab_en[0, 0] = 0.5*(self.w1*coord[0]**2
-                             + self.w2*coord[1]**2
-                             + self.w3*coord[2]**2)
+        diab_en[0, 0] = 0.5*(self.w1*crd[0]**2
+                             + self.w2*crd[1]**2
+                             + self.w3*crd[2]**2)
         diab_en[0, 1] = 0.0
         diab_en[0, 2] = 0.0
         diab_en[1, 1] = diab_en[0, 0] + self.E1 \
-            + self.kappa11*coord[0] + self.kappa12*coord[1]
-        diab_en[1, 2] = self.lam*coord[2]
+            + self.kappa11*crd[0] + self.kappa12*crd[1]
+        diab_en[1, 2] = self.lam*crd[2]
         diab_en[2, 2] = diab_en[0, 0] + self.E2 \
-            + self.kappa21*coord[0] + self.kappa22*coord[1]
+            + self.kappa21*crd[0] + self.kappa22*crd[1]
         diab_en[1, 0] = diab_en[0, 1]
         diab_en[2, 0] = diab_en[0, 2]
         diab_en[2, 1] = diab_en[1, 2]
         return diab_en
 
-    def adiab_grad(self, coord):
+    def adiab_grad(self, crd):
         """adiab_grad calculates and returns the numeric adiabatic gradients
         """
         adiab_grad = np.empty((3, 3), dtype=float)
         dq = 0.01
         for i in range(3):
-            coord1 = deepcopy(coord)
-            coord1[i] = coord1[i] + dq
-            en1 = self.adiab_en(coord1)
-            coord2 = deepcopy(coord)
-            coord2[i] = coord2[i] - dq
-            en2 = self.adiab_en(coord2)
+            crd1 = deepcopy(crd)
+            crd1[i] = crd1[i] + dq
+            en1 = self.adiab_en(crd1)
+            crd2 = deepcopy(crd)
+            crd2[i] = crd2[i] - dq
+            en2 = self.adiab_en(crd2)
             adiab_grad[:, i] = (en1 - en2)/2.0/dq
         return adiab_grad
 
-    def diab_grad(self, coord):
+    def diab_grad(self, crd):
         """diab_grad returns the matrix with the analytical diabatic gradients
         """
         diab_grad = np.empty((3, 3, 3), dtype=float)
-        diab_grad[0, 0, 0] = self.w1*coord[0]
-        diab_grad[0, 0, 1] = self.w2*coord[1]
-        diab_grad[0, 0, 2] = self.w3*coord[2]
+        diab_grad[0, 0, 0] = self.w1*crd[0]
+        diab_grad[0, 0, 1] = self.w2*crd[1]
+        diab_grad[0, 0, 2] = self.w3*crd[2]
         diab_grad[0, 1, 0:3] = 0.0
         diab_grad[0, 2, 0:3] = 0.0
-        diab_grad[1, 1, 0] = diab_grad[0, 0, 0] + 2.*self.kappa11*coord[0]
-        diab_grad[1, 1, 1] = diab_grad[0, 0, 1] + 2.*self.kappa12*coord[1]
+        diab_grad[1, 1, 0] = diab_grad[0, 0, 0] + 2.*self.kappa11*crd[0]
+        diab_grad[1, 1, 1] = diab_grad[0, 0, 1] + 2.*self.kappa12*crd[1]
         diab_grad[1, 1, 2] = diab_grad[0, 0, 2]
         diab_grad[1, 2, 0:2] = 0.0
         diab_grad[1, 2, 2] = self.lam
-        diab_grad[2, 2, 0] = diab_grad[0, 0, 0] + 2.*self.kappa21*coord[0]
-        diab_grad[2, 2, 1] = diab_grad[0, 0, 1] + 2.*self.kappa12*coord[1]
+        diab_grad[2, 2, 0] = diab_grad[0, 0, 0] + 2.*self.kappa21*crd[0]
+        diab_grad[2, 2, 1] = diab_grad[0, 0, 1] + 2.*self.kappa12*crd[1]
         diab_grad[2, 2, 2] = diab_grad[0, 0, 2]
         diab_grad[1, 0, :] = diab_grad[0, 1, :]
         diab_grad[2, 0, :] = diab_grad[0, 2, :]
@@ -169,7 +169,7 @@ if __name__ == "__main__":
     """small test function printing the energies and gradients at the equilibrium
        point
     """
-    coord = np.array([0.0, 0.0, 0.0])
+    crd = np.array([0.0, 0.0, 0.0])
     model = PyrMini()
     print(model.w1, model.w2, model.w3)
-    #print(model.get(coord))
+    #print(model.get(crd))

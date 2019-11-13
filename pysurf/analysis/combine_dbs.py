@@ -11,14 +11,14 @@ from pysurf.database.database import Database
 """
 class NextNeighbor():
     def __init__(self, db):
-        coords = []
-        for coord in db['coord']:
-            coords += [np.array(coord).flatten()]
-        coords = np.array(coords)
-        self.tree = cKDTree(coords)
+        crds = []
+        for crd in db['crd']:
+            crds += [np.array(crd).flatten()]
+        crds = np.array(crds)
+        self.tree = cKDTree(crds)
     
-    def get(self, coord):
-        return self.tree.query(coord.flatten(), k=1)
+    def get(self, crd):
+        return self.tree.query(crd.flatten(), k=1)
 
 @click.command()
 @click.argument('database1')
@@ -37,8 +37,8 @@ def combine_dbs(database1, database2):
 
     keys = db2.get_keys()
     nn = NextNeighbor(db1)
-    for i,coord in enumerate(db2['coord']):
-        min_dist = nn.get(coord)
+    for i,crd in enumerate(db2['crd']):
+        min_dist = nn.get(crd)
         if min_dist[0] > 0.25:
             for key in keys:
                 db1.append(key,db2[key][i])
