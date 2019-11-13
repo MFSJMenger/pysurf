@@ -1,12 +1,14 @@
 import numpy as np
 from copy import deepcopy
-from abc import abstractmethod, ABC 
+from abc import abstractmethod, ABC
+
 
 class Model(ABC):
 
     @abstractmethod
     def get(self):
         pass
+
 
 class HarmonicOscillator(Model):
 
@@ -172,4 +174,4 @@ if __name__ == "__main__":
     crd = np.array([0.0, 0.0, 0.0])
     model = PyrMini()
     print(model.w1, model.w2, model.w3)
-    #print(model.get(crd))
+    # print(model.get(crd))

@@ -1,6 +1,5 @@
 """Tools to store information on the Variables and Dimensions in the Database"""
 import netCDF4
-import numpy as np
 
 from ..utils.osutils import exists_and_isfile
 
@@ -18,7 +17,8 @@ class DBVariable(object):
         assert(isinstance(rhs, self.__class__))
         if len(self.dimensions) != len(rhs.dimensions):
             return False
-        if self.type != rhs.type or any(self.dimensions[i] != rhs.dimensions[i] for i in range(len(self.dimensions))):
+        if self.type != rhs.type or any(self.dimensions[i] != rhs.dimensions[i]
+                                        for i in range(len(self.dimensions))):
             print(self, rhs)
             return False
         return True
@@ -41,6 +41,7 @@ def get_dimension_info(db, key):
     else:
         return dim.size
 
+
 class DatabaseTools(object):
     """Namespace to store general tools to work with the database"""
 
@@ -51,14 +52,15 @@ class DatabaseTools(object):
         db.close()
         return result
 
+
 class DatabaseRepresentation(object):
     """Store abstract representation of the Variables and
     Dimensions stored in the Database. This class makes
-    also comparisons between different representation 
+    also comparisons between different representation
     straight forward!
     """
 
-    __slots__ = ('variables', 'dimensions', 'unlimited', '_created', '_db', '_handle') 
+    __slots__ = ('variables', 'dimensions', 'unlimited', '_created', '_db', '_handle')
 
     def __init__(self, settings):
         self._parse(settings)
@@ -80,7 +82,7 @@ class DatabaseRepresentation(object):
         for item in self['variables']:
             print(item)
         return ""
-    
+
     def _parse(self, settings):
         """Parse given database"""
         self.dimensions = {}
@@ -104,7 +106,7 @@ class DatabaseRepresentation(object):
             return self.variables
         else:
             raise KeyError("Only ['dimension', 'variables'] are allowed keys!")
-        
+
     def create_database(self, filename):
         """Create the database from the representation"""
         if self._created is True:
@@ -114,7 +116,7 @@ class DatabaseRepresentation(object):
             self._db, self._handle = self._load_database(filename)
         else:
             self._db, self._handle = self._init_database(filename)
-        # 
+        #
         self._created = True
         return self._db, self._handle
 
@@ -125,14 +127,16 @@ class DatabaseRepresentation(object):
         if (set(rhs['dimensions'].keys()) != set(self['dimensions'].keys())):
             return False
         # check that dimensions are exactly the same
-        if not all(rhs['dimensions'][dim_name] == self['dimensions'][dim_name] for dim_name in self['dimensions'].keys()):
+        if not all(rhs['dimensions'][dim_name] == self['dimensions'][dim_name]
+                   for dim_name in self['dimensions'].keys()):
             return False
 
         # check variables
         if (set(rhs['variables'].keys()) != set(self['variables'].keys())):
             print("variables keys not the same?")
             return False
-        if any(rhs['variables'][var_name] != self['variables'][var_name] for var_name in rhs['variables'].keys()):
+        if any(rhs['variables'][var_name] != self['variables'][var_name]
+               for var_name in rhs['variables'].keys()):
             return False
         return True
 
@@ -152,7 +156,7 @@ class DatabaseRepresentation(object):
 
 
 def create_dataset(filename, settings):
-    # 
+    #
     nc = netCDF4.Dataset(filename, 'w')
     # create dimensions
     for dim_name, dim in settings['dimensions'].items():
@@ -163,7 +167,7 @@ def create_dataset(filename, settings):
     handle = {}
     for var_name, variable in settings['variables'].items():
         handle[var_name] = nc.createVariable(var_name, variable.type, variable.dimensions)
-    return nc, handle 
+    return nc, handle
 
 
 def load_database(filename, io_options='a'):

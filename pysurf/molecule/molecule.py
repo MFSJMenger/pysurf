@@ -5,6 +5,7 @@ class Molecule(object):
         self.crd = crd
         self.masses = masses
         self.name = name
+
     @property
     def natoms(self):
         return len(self.atomids)

@@ -1,5 +1,3 @@
-import sys
-#
 from datetime import datetime
 from functools import partial
 #
@@ -52,16 +50,16 @@ class _LoggerBase(object):
         """set fhandle to new handle"""
         if isinstance(handle, _TextHandle):
             pass
-        elif isinstance(handle, str) or isinstance(handle, None): 
+        elif isinstance(handle, str) or isinstance(handle, None):
             handle = self.get_fhandle(handle)
         else:
             raise Exception("new file handle can only be: \n"
                             "None     -> Console logger\n"
                             "filename -> File logger \n"
                             "logger   -> logger \n")
-        self.fhandle = handle 
+        self.fhandle = handle
 
-    def debug(self, txt):            
+    def debug(self, txt):
         self.fhandle.write(f"Debug: {txt}\n")
 
     def info(self, txt):
@@ -121,7 +119,8 @@ class Logger(_LoggerBase):
             return {logger: Logger(f"{self.name.upper()}-{logger}", self.fhandle)
                     for logger in sublogger}
         if isinstance(sublogger, dict):
-            return {logger_name: Logger(f"{self.name.upper()}-{logger_name}", self.fhandle, sub_logger)
+            return {logger_name: Logger(f"{self.name.upper()}-{logger_name}",
+                                        self.fhandle, sub_logger)
                     for logger_name, sub_logger in sublogger.items()}
         if isinstance(sublogger, tuple):
             return {logger: Logger(f"{self.name.upper()}-{logger}", self.fhandle)
