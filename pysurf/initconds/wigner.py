@@ -11,6 +11,8 @@ from pysurf.molden import MoldenParser
 #
 from .initialconditions import InitialConditions
 
+
+
 class WignerSampling(object):
 
     def __init__(self, molecule, modes, is_massweighted=False):
@@ -32,6 +34,15 @@ class WignerSampling(object):
         print(f"Found {nimg_freq} imaginary frequencies:")
         print("[" + ", ".join(map(to_strg, img)) + "]")
 
+    @classmethod
+    def from_config(cls, config):
+        """ """    
+        if config['from'] == 'molden':
+            sampling = cls.from_molden(config['from']['filename'])
+        elif config['from'] == 'freqs':
+            sampling = cls.from_freqs(config['from']['freqs'])
+        else:
+            raise Exception("only (molden, freqs) implemented")
 
     @classmethod
     def from_molden(cls, filename):
