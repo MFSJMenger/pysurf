@@ -21,50 +21,32 @@ InitialCondition = namedtuple("InitialCondition", ['crd', 'veloc'])
 
 class InitialConditions(object):
     _methods = {'wigner': WignerSampling}
+    questions = """
+    # database file where the initial conditions are saved or from which the initial conditions
+    # are taken if the file already exists.
+    outputfile = initconds.db
+
+
+    # Describes which sampling algorithm is used to generate the initial conditions.
+    # The default is wigner.
+    sampling = wigner
+
+    # Number of initial conditions that have to be created.
+    # The default value is 100.
+    number of initial conditions = 100 :: int
+    """
+
     def __init__(self, inputfile, logger=None):
         """ Class to create initial conditions due to user input. Initial conditions are saved 
             in a file for further usage.
         """
-
-        question_string = """
-        # database file where the initial conditions are saved or from which the initial conditions
-        # are taken if the file already exists.
-        outputfile = initconds.db
-
-        # Input source for the normal modes and/or frequencies, which are used to generate the 
-        # initial conditions.
-        # Possible options are:
-        # - molden
-        # - frequencies
-        from = none :: str :: [molden, frequencies]
-
-        # Describes which sampling algorithm is used to generate the initial conditions.
-        # The default is wigner.
-        sampling = wigner
-
-        # Number of initial conditions that have to be created.
-        # The default value is 100.
-        number of initial conditions = 100 :: int
-
-        # If initial conditions are generated from a molden file, this subquestion asks for the 
-        # molden file.
-        [from(molden)]
-        moldenfile = none
-
-        # If initial conditions are generated from frequencies, here a list of frequencies has to
-        # be given for the modes. The list can be in the python list format or just comma separated
-        # values.
-        [from(frequencies)]
-        frequencies = none
-        """
-    
-        quests = AskQuestions.questions_from_string("INITIAL CONDITIONS", question_string, config=inputfile)
-        
-        # Read or create the inputfile and ask for missing options with the AskQuestion class
-
+        # Generate the config
+        quests = QuestionGenerator(question_string)
+        quests.generate_cases("", "sampling", {
+            name: sampling.questions for name, sampling in self._methods.items()}
+        quests = AskQuestions("INITIAL CONDITIONS", quests.questions)
         self.config = quests.ask(inputfile)
-        #        self.config = quests.check_only(inputfile)
-        quests.create_config_from_answers(inputfile)
+        
 
 
         if logger is None:
@@ -72,9 +54,11 @@ class InitialConditions(object):
         else:
             self.logger = logger
 
+        
         if exists_and_isfile(filename):
-            self._db = load_db(filename)
-        self.nconditions = nconditions
+            self._db = Database.load_db(filename)
+            self.nconditions = len(self._db['crd'])
+            self._get_method()
         self._db = db
         self._molecule = None
 
