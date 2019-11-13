@@ -13,7 +13,7 @@ class Database(object):
                  'three': 3,
                  }, 
              'variables': {
-                'coords': DBVariable(np.double, ('frame', 'natoms', 'three')),
+                'crd': DBVariable(np.double, ('frame', 'natoms', 'three')),
              }
           }
     

@@ -12,18 +12,18 @@ from pysurf.utils.chemutils import get_atom_from_mass
 
 from pysurf.utils.constants import bohr2angstrom
 
-def write_veloc(atoms, coord, step):
-    string = str(len(coord)) + '\n'
+def write_veloc(atoms, crd, step):
+    string = str(len(crd)) + '\n'
     string += 'step {0} \n'.format(step)
-    for i in range(len(coord)):
-        string += '{0:s}  {1:12.8f}  {2:12.8f}  {3:12.8f}\n'.format(atoms[i], *coord[i])
+    for i in range(len(crd)):
+        string += '{0:s}  {1:12.8f}  {2:12.8f}  {3:12.8f}\n'.format(atoms[i], *crd[i])
     return string
 
-def write_veloc_model(coord, step):
-    string = str(len(coord)) + '\n'
+def write_veloc_model(crd, step):
+    string = str(len(crd)) + '\n'
     string += 'step {0} \n'.format(step)
     np.vectorize(str)
-    string += np.array2string(coord, separator=',   ', precision=5).strip(']').strip('[')
+    string += np.array2string(crd, separator=',   ', precision=5).strip(']').strip('[')
     string += '\n'
     string += '\n'
     return string
@@ -53,7 +53,7 @@ def get_velocs(infile, outfile):
     
     atoms=[]
     if model is True:
-        for m in range(len(db['coord'][0])):
+        for m in range(len(db['crd'][0])):
             atoms+=['Q']
     if model is False:
         for m in mass[:,0]:

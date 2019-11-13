@@ -3,7 +3,7 @@ from .shbase import SurfaceHoppingBase
 
 
 def get_data(spp, crd):
-    res = spp.get({'coord': crd, 'mass': None, 'gradient': None, 'energy': None})
+    res = spp.get({'crd': crd, 'mass': None, 'gradient': None, 'energy': None})
     return res
 
 
@@ -26,7 +26,7 @@ class LandauZener(SurfaceHoppingBase):
         e_curr = self.storage['energy'].current
         e_prev_step =  self.storage['energy'].prev
         e_two_step_prev =  self.storage['energy'].twoprev
-        # set starting coords
+        # set starting crd
         crd = self.storage['crd']
         #
         v = self.storage['veloc']

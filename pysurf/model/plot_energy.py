@@ -13,17 +13,17 @@ y3_en = np.empty((100,3), dtype=float)
 pm=PyrMini()
 print(pm.w1)
 for i in range(100):
-    res = pm.get({'coord': np.array([x[i],0,0]), 'gradient': None, 'energy': None})
+    res = pm.get({'crd': np.array([x[i],0,0]), 'gradient': None, 'energy': None})
     y1_en[i] = res['energy']
     #print(pm.get(np.array([x[i],0,0]))['gradient'])
 
 for i in range(100):
-    res = pm.get({'coord': np.array([0,x[i],0]), 'gradient': None, 'energy': None})
+    res = pm.get({'crd': np.array([0,x[i],0]), 'gradient': None, 'energy': None})
     y2_en[i] = res['energy']
     #print(pm.get(np.array([x[i],0,0]))['gradient'])
 
 for i in range(100):
-    res = pm.get({'coord': np.array([0,0,x[i]]), 'gradient': None, 'energy': None})
+    res = pm.get({'crd': np.array([0,0,x[i]]), 'gradient': None, 'energy': None})
     y3_en[i] = res['energy']
 
 y1_en = np.array(y1_en)*27.2114

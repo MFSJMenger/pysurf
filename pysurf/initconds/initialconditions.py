@@ -10,14 +10,17 @@ from pysurf.molden import MoldenParser
 from pysurf.database.database import Database
 from pysurf.database.dbtools import DBVariable
 from pysurf.database.dbtools import DatabaseTools
+from wigner import WignerSampling
 #
 from pysurf.molecule.molecule import Molecule
 #
+from pysurf.colt import AskQuestions
 #  used to save just InitialConditions (coordinates, velocities) for a given molecule
 InitialCondition = namedtuple("InitialCondition", ['crd', 'veloc'])
 
 
 class InitialConditions(object):
+    _methods = {'wigner': WignerSampling}
     def __init__(self, inputfile, logger=None):
         """ Class to create initial conditions due to user input. Initial conditions are saved 
             in a file for further usage.
@@ -54,10 +57,16 @@ class InitialConditions(object):
         [from(frequencies)]
         frequencies = none
         """
+    
+        quests = AskQuestions.questions_from_string("INITIAL CONDITIONS", question_string, config=inputfile)
+        
+        # Read or create the inputfile and ask for missing options with the AskQuestion class
 
-        self.logger = get_logger('initconds.log', 'initconds')
+        self.config = quests.ask(inputfile)
+        #        self.config = quests.check_only(inputfile)
+        quests.create_config_from_answers(inputfile)
 
-        quests = AskQuestions.from_string("INITIAL CONDITIONS", question_string, config=inputfile)
+
         if logger is None:
             self.logger = get_logger('initconds.log', 'initconds')
         else:

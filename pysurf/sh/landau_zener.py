@@ -6,13 +6,13 @@ from pysurf.database.database import Database
 from pysurf.database.dbtools import DBVariable
 
 #spp = SurfacePointProvider('./test.inp')
-#out = spp.get({'coord': np.zeros(3, dtype=np.double), 'energy': None, 'gradient': None})
+#out = spp.get({'crd': np.zeros(3, dtype=np.double), 'energy': None, 'gradient': None})
 
 class Save(object):
 
     def __init__(self, filename, data, header=None):
 
-        crds = data['coord']
+        crds = data['crd']
 
         variables = {}
         variables['curr_state'] = DBVariable(int, ('frame', 'one'))
@@ -22,7 +22,7 @@ class Save(object):
         variables['etot'] = DBVariable(np.double, ('frame', 'one'))
         #check whether model or abinit calculations
         if len(crds.shape) == 2:
-            variables['coord'] = DBVariable(np.double, ('frame', 'natoms', 'three'))
+            variables['crd'] = DBVariable(np.double, ('frame', 'natoms', 'three'))
             variables['gradient'] = DBVariable(np.double, ('frame', 'nstates', 'natoms', 'three'))
             variables['mass'] = DBVariable(np.double, ('natoms','three'))
             variables['veloc'] = DBVariable(np.double, ('frame','natoms', 'three'))
@@ -36,7 +36,7 @@ class Save(object):
                    }
 
         else:
-            variables['coord'] = DBVariable(np.double, ('frame', 'nmodes'))
+            variables['crd'] = DBVariable(np.double, ('frame', 'nmodes'))
             variables['veloc'] = DBVariable(np.double, ('frame', 'nmodes'))
             variables['mass'] = DBVariable(np.double, ('nmodes',))
             variables['gradient'] = DBVariable(np.double, ('frame', 'nstates', 'nmodes'))
@@ -52,7 +52,7 @@ class Save(object):
         self.db = Database(filename, dct)
 
     def append(self, data, veloc, curr_state, ekin, epot, etot):
-        self.db.append('coord', data['coord'])
+        self.db.append('crd', data['crd'])
         self.db.append('gradient', data['gradient'])
         self.db.append('energy', data['energy'])
         self.db.append('veloc', veloc)
@@ -86,7 +86,7 @@ def landau_zener_surfacehopping(init_cond, iactive, nsteps, random_seed, inp, dt
     spp = SurfacePointProvider(inp)
     # set random number
     random = RandomNumberGeneratorNP(random_seed)
-    # set starting coords
+    # set starting crds
     crd = init_cond.crd
     #
     v = init_cond.veloc
@@ -171,5 +171,5 @@ def calc_ekin(masses, veloc):
     return ekin
 
 def get_data(spp, crd):
-    res = spp.get({'coord': crd, 'mass': None, 'gradient': None, 'energy': None})
+    res = spp.get({'crd': crd, 'mass': None, 'gradient': None, 'energy': None})
     return res

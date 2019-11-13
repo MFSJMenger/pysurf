@@ -5,7 +5,7 @@ from pysurf.spp.spp import SurfacePointProvider
 from pysurf.sh.sh import *
 
 #spp = SurfacePointProvider('./test.inp')
-#out = spp.get({'coord': np.zeros(3, dtype=np.double), 'energy': None, 'gradient': None})
+#out = spp.get({'crd': np.zeros(3, dtype=np.double), 'energy': None, 'gradient': None})
 
 class Save(object):
 
@@ -52,7 +52,7 @@ def landau_zener_surfacehopping(init_cond, iactive, nsteps, random_seed, inp, dt
     spp = SurfacePointProvider(inp)
     # set random number
     random = RandomNumberGeneratorNP(random_seed)
-    # set starting coords
+    # set starting crds
     crd = init_cond.crd
     #
     v = init_cond.veloc
@@ -125,5 +125,5 @@ def calc_ekin(masses, veloc):
     return ekin
 
 def get_data(spp, crd):
-    res = spp.get({'coord': crd, 'mass': None, 'gradient': None, 'energy': None})
+    res = spp.get({'crd': crd, 'mass': None, 'gradient': None, 'energy': None})
     return res
