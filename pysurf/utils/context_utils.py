@@ -3,7 +3,7 @@ from functools import wraps
 from collections import namedtuple
 
 
-class _BaseContextDecorator(object):
+class BaseContextDecorator(object):
 
     def __enter__(self):
         pass
@@ -19,8 +19,9 @@ class _BaseContextDecorator(object):
                 return func(*args, **kwargs)
         return _wrapper
 
+        
 
-class DoOnException(_BaseContextDecorator):
+class DoOnException(BaseContextDecorator):
     """Performs fallback function, if exception is raised"""
 
     def __init__(self, fallback, *args, **kwargs):
@@ -28,12 +29,16 @@ class DoOnException(_BaseContextDecorator):
         self._kwargs = kwargs
         self._fallback = fallback
 
+    def set_args(self, *args, **kwargs):
+        self._args = args
+        self._kwargs = kwargs
+
     def __exit__(self, exception_type, exception_value, traceback):
         if exception_type is not None:
             self._fallback(*self._args, **self._kwargs)
             return True
 
-class SetOnException(_BaseContextDecorator):
+class SetOnException(BaseContextDecorator):
 
     def __init__(self, dct, reset_all=True):
         """Context Manager to set defaults on exception,
@@ -63,7 +68,7 @@ class SetOnException(_BaseContextDecorator):
     def __call__(self, func):
         raise NotImplementedError("SetOnException cannot be used as decorator")
 
-class ExitOnException(_BaseContextDecorator):
+class ExitOnException(BaseContextDecorator):
 
     def __exit__(self, exception_type, exception_value, traceback):
         if exception_type is not None:

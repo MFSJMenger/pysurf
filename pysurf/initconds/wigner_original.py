@@ -101,7 +101,7 @@ class WignerSampling(object):
 class InitialConditions(object):
 
 
-    def __init__(self, db, nconditions):        
+    def __init__(self, db, nconditions):
         self.nconditions = nconditions
         self._db = db
         self._molecule = None
@@ -112,19 +112,19 @@ class InitialConditions(object):
         return cls(db, nconditions)
 
     @classmethod
+    def from_db(cls, filename, E_quil=0.0):
+        db_settings = DatabaseTools.get_variables(filename, ["natoms", "nmodes"])
+        db = Database(filename, cls.generate_settings(db_settings['natoms'],
+                                                      db_settings['nmodes']))
+        return cls(db, db['crd'].shape[0])
+
+    @classmethod
     def save_condition(cls, filename, init_cond):
         natoms = len(init_cond.crd)
         nmodes = natoms*3-6
         db = Database(filename, cls.generate_settings(natoms=natoms, nmodes=nmodes, model=False))
         db.append('veloc', init_cond.veloc)
         db.append('crd', init_cond.crd)
-
-    @classmethod
-    def from_db(cls, filename, E_quil=0.0):
-        db_settings = DatabaseTools.get_variables(filename, ["natoms", "nmodes"])
-        db = Database(filename, cls.generate_settings(db_settings['natoms'], 
-                                                      db_settings['nmodes']))
-        return cls(db, db['crd'].shape[0])
 
     @staticmethod
     def generate_settings(natoms=0, nmodes=0, model=False):
@@ -225,7 +225,6 @@ class InitialConditions(object):
         else:
             db = create_initial_conditions(cls.generate_settings(nmodes=len(modes), model=True),
                                        filename, molecule, modes, E_equil, model)
-
         for _ in range(nconditions):
             e_pot, conds = get_initial_condition(molecule, modes)
             db.append('crd', conds.crd)
@@ -303,7 +302,6 @@ def scale_mode(imode, modes, expression):
 
 def create_mass_weighted_normal_modes(modes, molecule):
     """decide which format the normal modes are and convert to the mass-weighted once"""
-    import numpy as np
     ANG_TO_BOHR = 1./0.529177211
     # compute norms
     norms = [compute_norm_mode(mode, molecule) for mode in modes]

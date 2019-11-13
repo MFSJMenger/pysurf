@@ -285,20 +285,23 @@ class Interpolation():
         return grad
 
 
+class _InterpolatorCore(object):
+
+
 class ShepardInterpolator():
     def __init__(self, coords, values):
         self.coords = coords
         self.values = values
     
     def __call__(self, coord):
-        weights = self.get_weights(coord)
+        weights = self._get_weights(coord)
         res = 0.0
         for i, value in enumerate(self.values):
             res += weights[i]*value
         res = res/sum(weights)
         return res
 
-    def get_weights(self,coord):
+    def _get_weights(self,coord):
         weights = np.zeros(len(self.coords), dtype=float)
         for i in range(len(self.coords)):
             weights[i] = 1./np.linalg.norm((coord-self.coords[i]))**2
