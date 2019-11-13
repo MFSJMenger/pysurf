@@ -1,28 +1,23 @@
-import os
-#
 from copy import deepcopy
 #
 from collections import namedtuple
 #
 import numpy as np
-import numpy.random as random
 #
-from pysurf.molden import MoldenParser
+from pysurf.constants import U_TO_AMU
 #
-from pysurf.atominfo import masses as MASSES
-from pysurf.atominfo import atomname_to_id
-from pysurf.constants import U_TO_AMU, CM_TO_HARTREE
-#
+
 Mode = namedtuple("Mode", ["freq", "displacements"])
 
-class NormalModes():
+
+class NormalModes(object):
 
     @staticmethod
     def is_normal_mode_format(modes, natoms):
         """Check if the normal mode is in the given format!
             change the docstring to something useful!
         """
-    
+
         thresh = 0.05
         nmodes = len(modes)
         #
@@ -60,9 +55,9 @@ class NormalModes():
     @staticmethod
     def scale_mode(imode, modes, expression):
         """example expression:
-    
+
         lambda imode, iatom, ixyz, disp: disp/(norm/np.sqrt(molecule.masses[iatom]))
-    
+
         """
         mode = deepcopy(modes[imode])
         #
@@ -72,12 +67,12 @@ class NormalModes():
         #
         return mode
 
-    @classmethod    
+    @classmethod
     def create_mass_weighted_normal_modes(cls, modes, molecule):
         """decide which format the normal modes are and convert to the mass-weighted once"""
         ANG_TO_BOHR = 1./0.529177211
         # compute norms
-        norms = [compute_norm_mode(mode, molecule) for mode in modes]
+        norms = [cls.compute_norm_mode(mode, molecule) for mode in modes]
         # define options
         options = {
                 'gaussian-type': lambda imode, iatom, ixyz, disp: (disp/(norms[imode]
@@ -96,7 +91,8 @@ class NormalModes():
         possible_formats = []
         #
         for typ, expression in options.items():
-            current_modes = [scale_mode(imode, modes, expression) for imode in range(len(modes))]
+            current_modes = [cls.scale_mode(imode, modes, expression)
+                             for imode in range(len(modes))]
             if cls.is_normal_mode_format(current_modes, molecule.natoms):
                 selected_format = typ
                 final_modes = current_modes
@@ -108,11 +104,11 @@ class NormalModes():
                             % ", ".join(possible_formats))
         #
         return final_modes
-    
+
     @classmethod
     def create_dimensionless_normal_modes(cls, modes, molecules, mass_weighted=False):
         if mass_weighted is False:
             # get mass weighted normal modes
             modes = cls.create_mass_weighted_normal_modes(modes, molecules)
-        modes = [Mode(mode.freq, mode.displacements/np.sqrt(freq) for mode in modes]
+        modes = [Mode(mode.freq, mode.displacements/np.sqrt(mode.freq)) for mode in modes]
         return modes

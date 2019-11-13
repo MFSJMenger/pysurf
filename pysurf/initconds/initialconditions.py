@@ -12,7 +12,8 @@ from pysurf.utils.osutils import exists_and_isfile
 from pysurf.database.database import Database
 from pysurf.database.dbtools import DBVariable
 from pysurf.database.dbtools import DatabaseTools
-from wigner import WignerSampling
+from .wigner import WignerSampling
+from .base_initialconditions import InitialCondition
 #
 from pysurf.molecule.molecule import Molecule
 #
@@ -52,7 +53,7 @@ class InitialConditions(object):
         quests = QuestionGenerator(self.questions)
         quests.generate_cases("", "sampling", {
             name: sampling.questions for name, sampling in self._methods.items()})
-        quests = AskQuestions("INITIAL CONDITIONS", quests.questions)
+        quests = AskQuestions("INITIAL CONDITIONS", quests.questions, inputfile)
         self.config = quests.ask(inputfile)
         
 
@@ -61,82 +62,29 @@ class InitialConditions(object):
         else:
             self.logger = logger
 
-        
+        self._molecule = None 
 
         if exists_and_isfile(self.config['outputfile']):
+            self.logger.info('Database of initial conditions exists')
+            self.logger.info('Taking info from database ' + self.config['outputfile'])
             self._db = Database.load_db(self.config['outputfile'])
             self.nconditions = len(self._db['crd'])
             self._get_method_from_db()
+            if self.nconditions < self.config['number of initial conditions']:
+                self.logger.info('Adding additional entries to database of initial conditions')
+                self.add_initial_conditions(self.config['number of initial conditions']
+                                            - self.nconditions)
         else:
+            self.logger.info('Setting up new database for initial conditions: ' 
+                             + self.config['outputfile'])
             self.nconditions = 0
             self.model = self.config['model']
             self._setup_method()
-            sampler = self._methods[self.method](self.config)
             self._setup_db()
-            self._add_reference_entry()
-
-
-#    @classmethod
-#    def from_conditions(cls, filename, molecule, modes, nconditions=1000, E_equil=0.0, model=False):
-#        db = cls.create_initial_conditions(filename, molecule, modes, nconditions, E_equil, model)
-#        return cls(db, nconditions)
-#
-#    @classmethod
-#    def save_condition(cls, filename, init_cond):
-#        natoms = len(init_cond.crd)
-#        nmodes = natoms*3-6
-#        db = Database(filename, cls.generate_settings(natoms=natoms, nmodes=nmodes, model=False))
-#        db.append('veloc', init_cond.veloc)
-#        db.append('crd', init_cond.crd)
-#
-#    @classmethod
-#    def from_db(cls, filename, E_quil=0.0):
-#        db_settings = DatabaseTools.get_variables(filename, ["natoms", "nmodes"])
-#        db = Database(filename, cls.generate_settings(db_settings['natoms'], 
-#                                                      db_settings['nmodes']))
-#        return cls(db, db['crd'].shape[0])
-
-    def _setup_db(self):
-        if self.model is False:
-            settings = {
-                    'dimensions': {
-                        'frame': 'unlimited',
-                        'nmodes': nmodes,
-                        'natoms': natoms,
-                        'three': 3,
-                        'one': 1,
-                        },
-                    'variables': {
-                        'modes':  DBVariable(np.double, ('nmodes', 'natoms', 'three')),
-                        'freqs':  DBVariable(np.double, ('nmodes',)),
-                        'atomids': DBVariable(np.integer, ('natoms',)),
-                        'masses': DBVariable(np.double, ('natoms',)),
-                        'crd': DBVariable(np.double, ('frame', 'natoms', 'three')),
-                        'veloc': DBVariable(np.double, ('frame', 'natoms', 'three')),
-                        'state': DBVariable(np.double, ('frame', 'one'))
-                    },
-            }
-
-        if self.model is True:
-            settings = {
-                    'dimensions': {
-                        'frame': 'unlimited',
-                        'nmodes': nmodes,
-                        'three': 3,
-                        'one': 1,
-                        },
-                    'variables': {
-                        'modes':  DBVariable(np.double, ('nmodes','nmodes')),
-                        'freqs':  DBVariable(np.double, ('nmodes',)),
-                        'masses': DBVariable(np.double, ('nmodes',)),
-                        'crd': DBVariable(np.double, ('frame', 'nmodes')),
-                        'veloc': DBVariable(np.double, ('frame', 'nmodes')),
-                        'state': DBVariable(int, ('frame', 'one'))
-                    },
-            }
-
-        filename = self.config['outputfile']
-        self._db = Database(settings, filename)
+            self.logger.info('Adding {0} new initial conditions to database'.format(
+                             self.config['number of initial conditions']))
+            self.add_initial_conditions(self.config['number of initial conditions'])
+            self.nconditions = self.config['number of initial conditions']
 
     def __iter__(self):
         self._start = 1 # skip equilibrium structure
@@ -155,13 +103,19 @@ class InitialConditions(object):
         # Take the random seed and random counter from the database to assure the consistency with all
         # the previous conditions
 
-        sampler = self._methods[self.method](self.config)
-
+        sampler = self._get_sampler()
         for _ in range(nconditions):
             cond = sampler.get_condition()
             self._write_initial_condition(cond)
-
-
+    def _setup_db(self):
+        sampler = self._methods[self.method].from_config(self.config['sampling'])
+        getinit = sampler.get_init()
+        molecule = getinit['molecule']
+        self.modes = getinit['modes']
+        self.natoms = molecule.natoms
+        self.nmodes = len(self.modes)
+        self._db = Database(self.config['outputfile'], self._settings)
+        self._add_reference_entry(molecule, self.modes)
 
     @property
     def equilibrium(self):
@@ -182,29 +136,56 @@ class InitialConditions(object):
                                       np.copy(self._db['masses']))
         return self._molecule
 
-#    @classmethod
-#    def create_initial_conditions(cls, filename, molecule, modes, nconditions, E_equil, state=0, model=False):
-#        """ """
-#        if model is False:
-#            db = create_initial_conditions(cls.generate_settings(molecule.natoms, len(modes)),
-#                                       filename, molecule, modes, E_equil, model)
-#        else:
-#            db = create_initial_conditions(cls.generate_settings(nmodes=len(modes), model=True),
-#                                       filename, molecule, modes, E_equil, model)
-#
-#        for _ in range(nconditions):
-#            e_pot, conds = get_initial_condition(molecule, modes)
-#            db.append('crd', conds.crd)
-#            db.append('veloc', conds.veloc)
-#            db.append('state', state)
-#            e_kin = compute_ekin(conds.veloc, molecule.masses)
-#            db.append('energy', np.array([e_kin+e_pot, e_pot, e_kin]))
-#            db.increase
-#        return db
 
-    def _get_method_from_db():
-        self._method_number = self._db['method']
-        self.method = self._get_method_from_number()
+    @property
+    def _settings(self):
+        if self.model is False:
+            settings = {
+                    'dimensions': {
+                        'frame': 'unlimited',
+                        'nmodes': self.nmodes,
+                        'natoms': self.natoms,
+                        'three': 3,
+                        'one': 1,
+                        },
+                    'variables': {
+                        'modes':  DBVariable(np.double, ('nmodes', 'natoms', 'three')),
+                        'freqs':  DBVariable(np.double, ('nmodes',)),
+                        'atomids': DBVariable(np.integer, ('natoms',)),
+                        'masses': DBVariable(np.double, ('natoms',)),
+                        'method': DBVariable(np.integer, ('one',)),
+                        'crd': DBVariable(np.double, ('frame', 'natoms', 'three')),
+                        'veloc': DBVariable(np.double, ('frame', 'natoms', 'three')),
+                        'state': DBVariable(np.double, ('frame', 'one'))
+                    },
+            }
+
+        if self.model is True:
+            settings = {
+                    'dimensions': {
+                        'frame': 'unlimited',
+                        'nmodes': nmodes,
+                        'three': 3,
+                        'one': 1,
+                        },
+                    'variables': {
+                        'modes':  DBVariable(np.double, ('nmodes','nmodes')),
+                        'freqs':  DBVariable(np.double, ('nmodes',)),
+                        'masses': DBVariable(np.double, ('nmodes',)),
+                        'method': DBVariable(np.integer, ('one',)),
+                        'crd': DBVariable(np.double, ('frame', 'nmodes')),
+                        'veloc': DBVariable(np.double, ('frame', 'nmodes')),
+                        'state': DBVariable(int, ('frame', 'one'))
+                    },
+            }
+        return settings
+
+    def _get_sampler(self):
+        return self._methods[self.method].from_config(self.config['sampling'])
+
+    def _get_method_from_db(self):
+        self._method_number = self._db['method'][0]
+        self.method = self._get_method_from_number(self._method_number)
 
     def _get_method_from_number(self, number):
         return tuple(self._methods.keys())[number]
@@ -213,18 +194,13 @@ class InitialConditions(object):
         return list(self._methods.keys()).index(self.method)
 
     def _setup_method(self):
-        self.method = self.config['sampling']
+        self.method = self.config['sampling'].value
         self._method_number = self._get_number_from_method(self.method)
         
-    def _add_reference_entry():
-
-        init = self.sampler.get_init()
-        molecule = init['molecule']
-        modes = init['modes']
-
+    def _add_reference_entry(self, molecule, modes):
         if self.model is False:
             self._db.set('atomids', molecule.atomids)
-        self._db.set('masses', molecule.masses/U_TO_AMU)
+        self._db.set('masses', molecule.masses)
         self._db.set('modes', np.array([mode.displacements for mode in modes]))
         self._db.set('freqs', np.array([mode.freq for mode in modes]))
         self._db.set('method', self._method_number)
@@ -234,38 +210,12 @@ class InitialConditions(object):
             self._db.append('veloc', np.zeros(molecule.natoms*3, dtype=np.double))
         else: 
             self._db.append('veloc',np.zeros(len(modes), dtype=np.double))
-        self._db.append('energy', np.array([E_zero, E_zero, 0.0]))
         # go to next step
         self._db.increase
 
     def _write_initial_condition(self, cond):
         self._db.append('crd', cond.crd)
         self._db.append('veloc', cond.veloc)
-        self._db.append('state', state)
+        self._db.append('state', self.config['initial state'])
         self._db.increase
 
-
-
-def create_initial_conditions(settings, filename, molecule, modes, E_zero, model=False):
-    # Initialize database
-    if os.path.exists(filename):
-        raise Exception('database "%s" does already exist' % filename)
-    # create database
-    db = Database(filename, settings)
-    # set constants
-    if model is False:
-        db.set('atomids', molecule.atomids)
-    db.set('masses', molecule.masses/U_TO_AMU)
-    db.set('modes', np.array([mode.displacements for mode in modes]))
-    db.set('freqs', np.array([mode.freq for mode in modes]))
-    # add equilibrium values
-    db.append('crd', molecule.crd)
-    if model is False:
-        db.append('veloc', np.zeros(molecule.natoms*3, dtype=np.double))
-    else: 
-        db.append('veloc',np.zeros(len(modes), dtype=np.double))
-    db.append('energy', np.array([E_zero, E_zero, 0.0]))
-    # go to next step
-    db.increase
-    #
-    return db
