@@ -1,6 +1,5 @@
 import os
 from copy import deepcopy
-from collections import namedtuple
 #
 import numpy as np
 import numpy.random as random
@@ -10,13 +9,12 @@ from pysurf.molden import MoldenParser
 from pysurf.database.database import Database
 from pysurf.database.dbtools import DBVariable
 from pysurf.database.dbtools import DatabaseTools
-from wigner import WignerSampling
+from .wigner import WignerSampling
+from .base_initialconditions import InitialCondition
 #
 from pysurf.molecule.molecule import Molecule
 #
 from pysurf.colt import AskQuestions
-#  used to save just InitialConditions (coordinates, velocities) for a given molecule
-InitialCondition = namedtuple("InitialCondition", ['crd', 'veloc'])
 
 
 class InitialConditions(object):
