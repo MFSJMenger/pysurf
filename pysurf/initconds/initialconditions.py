@@ -18,7 +18,46 @@ InitialCondition = namedtuple("InitialCondition", ['crd', 'veloc'])
 
 
 class InitialConditions(object):
-    def __init__(self, filename, logger=None, method=None):
+    def __init__(self, inputfile, logger=None):
+        """ Class to create initial conditions due to user input. Initial conditions are saved 
+            in a file for further usage.
+        """
+
+        question_string = """
+        # database file where the initial conditions are saved or from which the initial conditions
+        # are taken if the file already exists.
+        outputfile = initconds.db
+
+        # Input source for the normal modes and/or frequencies, which are used to generate the 
+        # initial conditions.
+        # Possible options are:
+        # - molden
+        # - frequencies
+        from = none :: str :: [molden, frequencies]
+
+        # Describes which sampling algorithm is used to generate the initial conditions.
+        # The default is wigner.
+        sampling = wigner
+
+        # Number of initial conditions that have to be created.
+        # The default value is 100.
+        number of initial conditions = 100 :: int
+
+        # If initial conditions are generated from a molden file, this subquestion asks for the 
+        # molden file.
+        [from(molden)]
+        moldenfile = none
+
+        # If initial conditions are generated from frequencies, here a list of frequencies has to
+        # be given for the modes. The list can be in the python list format or just comma separated
+        # values.
+        [from(frequencies)]
+        frequencies = none
+        """
+
+        self.logger = get_logger('initconds.log', 'initconds')
+
+        quests = AskQuestions.from_string("INITIAL CONDITIONS", question_string, config=inputfile)
         if logger is None:
             self.logger = get_logger('initconds.log', 'initconds')
         else:
