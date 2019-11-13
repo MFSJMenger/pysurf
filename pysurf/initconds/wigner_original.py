@@ -7,14 +7,14 @@ from collections import namedtuple
 import numpy as np
 import numpy.random as random
 #
-from .molden import MoldenParser
+from pysurf.molden import MoldenParser
 #
-from .database.database import Database
-from .database.dbtools import DBVariable
-from .database.dbtools import DatabaseTools
-from .atominfo import masses as MASSES
-from .atominfo import atomname_to_id
-from .constants import U_TO_AMU, CM_TO_HARTREE
+from pysurf.database.database import Database
+from pysurf.database.dbtools import DBVariable
+from pysurf.database.dbtools import DatabaseTools
+from pysurf.atominfo import masses as MASSES
+from pysurf.atominfo import atomname_to_id
+from pysurf.constants import U_TO_AMU, CM_TO_HARTREE
 #
 Mode = namedtuple("Mode", ["freq", "displacements"])
 #  used to save just InitialConditions (coordinates, velocities) for a given molecule
@@ -78,19 +78,16 @@ class WignerSampling(object):
     @classmethod
     def from_freqs(cls, freqs):
         nfreqs = len(freqs)
-        print('Johannes in from freqs')
         masses = 1./freqs
         mol = Molecule(np.ones(nfreqs), np.zeros(nfreqs, dtype=np.double), np.ones(nfreqs, dtype=np.double))
         mol.masses = masses
         displacement = np.ones(nfreqs, dtype=np.double)
         displacement /= np.linalg.norm(displacement)
         modes = [Mode(freq, displacement) for freq in freqs]
-        print('Johannes modes:', modes) 
         return cls(mol, modes, True)
         
 
     def create_initial_conditions(self, filename, nconditions, E_equil=0.0, model=False):
-        print('Johannes: model ', model)
         return InitialConditions.from_conditions(filename, self.molecule, self.modes, nconditions, E_equil, model)
 
     def to_mass_weighted(self):
@@ -107,6 +104,7 @@ class InitialConditions(object):
     def __init__(self, db, nconditions):        
         self.nconditions = nconditions
         self._db = db
+        self._molecule = None
 
     @classmethod
     def from_conditions(cls, filename, molecule, modes, nconditions=1000, E_equil=0.0, model=False):
@@ -130,7 +128,6 @@ class InitialConditions(object):
 
     @staticmethod
     def generate_settings(natoms=0, nmodes=0, model=False):
-        print('Johannes nmodes:' , nmodes)
         if model is False:
             return {
                     'dimensions': {
@@ -183,6 +180,23 @@ class InitialConditions(object):
         veloc = self._db.get('veloc', idx)
         return InitialCondition(crd, veloc)
 
+    def add_initial_conditions(self, nconditions, state=0):
+        # TODO 
+        # Take the random seed and random counter from the database to assure the consistency with all
+        # the previous conditions
+
+        modes = [Mode(freq, mode) for freq, mode in zip(self._db['freqs'], self._db['modes'])]
+
+        for _ in range(nconditions):
+            e_pot, conds = get_initial_condition(self.molecule, modes)
+            self._db.append('crd', conds.crd)
+            self._db.append('veloc', conds.veloc)
+            self._db.append('state', state)
+            e_kin = compute_ekin(conds.veloc, self.molecule.masses)
+            self._db.append('energy', np.array([e_kin+e_pot, e_pot, e_kin]))
+            self._db.increase
+
+
     @property
     def equilibrium(self):
         return self.get_condition(0)
@@ -196,10 +210,14 @@ class InitialConditions(object):
 
     @property
     def molecule(self):
-        return Molecule(self._db['atomids'], self._db.get('crd', 0), self._db['masses'])
+        if self._molecule is None:
+            self._molecule = Molecule(np.copy(self._db['atomids']),
+                                      np.copy(self._db.get('crd', 0)),
+                                      np.copy(self._db['masses']))
+        return self._molecule
 
     @classmethod
-    def create_initial_conditions(cls, filename, molecule, modes, nconditions, E_equil, model=False):
+    def create_initial_conditions(cls, filename, molecule, modes, nconditions, E_equil, state=0, model=False):
         """ """
         if model is False:
             db = create_initial_conditions(cls.generate_settings(molecule.natoms, len(modes)),
@@ -212,6 +230,7 @@ class InitialConditions(object):
             e_pot, conds = get_initial_condition(molecule, modes)
             db.append('crd', conds.crd)
             db.append('veloc', conds.veloc)
+            db.append('state', state)
             e_kin = compute_ekin(conds.veloc, molecule.masses)
             db.append('energy', np.array([e_kin+e_pot, e_pot, e_kin]))
             db.increase
