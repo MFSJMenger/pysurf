@@ -1,0 +1,13 @@
+[INITIAL CONDITIONS]
+outputfile = initconds.db
+sampling = wigner
+model = True
+initial state = 0
+number of initial conditions = 100
+
+[INITIAL CONDITIONS::sampling(wigner)]
+from = frequencies
+
+[INITIAL CONDITIONS::sampling(wigner)::from(frequencies)]
+frequencies = [1. 1. 1.]
+

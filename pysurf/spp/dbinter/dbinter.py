@@ -285,8 +285,6 @@ class Interpolation():
         return grad
 
 
-class _InterpolatorCore(object):
-
 
 class ShepardInterpolator():
     def __init__(self, crds, values):
@@ -306,6 +304,7 @@ class ShepardInterpolator():
         for i in range(len(self.crds)):
             weights[i] = 1./np.linalg.norm((crd-self.crds[i]))**2
         return weights
+
 
 class MyRBF():
     def __init__(self, crds, values):

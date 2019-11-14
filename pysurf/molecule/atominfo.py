@@ -1,3 +1,5 @@
+U_TO_AMU = 1./5.4857990943e-4   # atomic mass units to multiple of me
+
 atomname_to_id = {
     "Ru": 44,
     "Re": 75,
@@ -345,3 +347,13 @@ masses = {
     102: 259.101024,
     103: 262.109692,
 }
+
+masses_au = masses
+for key in masses_au:
+    masses_au[key] *= U_TO_AMU
+
+
+def get_atom_from_mass(mass):
+    for atom in masses_au:
+        if abs(masses_au[atom]-mass) < 0.1:
+            return atomid_to_name[atom]

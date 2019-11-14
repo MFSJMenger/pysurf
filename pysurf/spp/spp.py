@@ -11,6 +11,7 @@ from ..utils.osutils import exists_and_isfile
 from ..utils.context_utils import DoOnException
 #
 from ..colt import Colt, AskQuestions
+from ..molecule.atominfo import masses_au as atomic_masses
 # fileparser
 from ..fileparser import read_geom
 # logger
@@ -114,9 +115,9 @@ class SurfacePointProvider(Colt):
             # masses are given in an array of shape (natoms, 3) like
             # the coordinates so that they can be easily used in the
             # surface hopping algorithm
-            masses += [[atomic_masses[self.refgeo['atoms'][i]],
-                        atomic_masses[self.refgeo['atoms'][i]],
-                        atomic_masses[self.refgeo['atoms'][i]]]]
+            masses += [[atomic_masses[atomname_to_id[self.refgeo['atoms'][i]]],
+                        atomic_masses[atomname_to_id[self.refgeo['atoms'][i]]],
+                        atomic_masses[atomname_to_id[self.refgeo['atoms'][i]]]]]
         return np.array(masses)
 
     def _error_on_exception(self, txt):
