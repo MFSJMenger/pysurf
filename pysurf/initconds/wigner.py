@@ -10,10 +10,10 @@ from ..molecule.atominfo import masses as MASSES
 from ..molecule.atominfo import atomname_to_id
 from .normalmodes import NormalModes as nm
 from .normalmodes import Mode
+from ..colt import Colt
 
-
-class WignerSampling(object):
-    questions = """
+class WignerSampling(Colt):
+    _questions = """
         # Input source for the normal modes and/or frequencies, which are used to generate the
         # initial conditions.
         # Possible options are:
@@ -30,7 +30,7 @@ class WignerSampling(object):
         # be given for the modes. The list can be in the python list format or just comma separated
         # values.
         [from(frequencies)]
-        frequencies = :: flist
+        frequencies = :: flist_np
     """
 
     def __init__(self, molecule, modes, is_massweighted=False):
@@ -68,9 +68,9 @@ class WignerSampling(object):
         """ """
         if config['from'] == 'molden':
             return cls.from_molden(config['from']['moldenfile'])
-        elif config['from'] == 'freqs':
-            return cls.from_freqs(config['from']['freqs'])
-        raise Exception("only (molden, freqs) implemented")
+        elif config['from'] == 'frequencies':
+            return cls.from_freqs(config['from']['frequencies'])
+        raise Exception("only (molden, frequencies) implemented")
 
     @classmethod
     def from_molden(cls, filename):
@@ -94,7 +94,7 @@ class WignerSampling(object):
     @classmethod
     def from_freqs(cls, freqs):
         nfreqs = len(freqs)
-        masses = 1./freqs
+        masses = 1./np.array(freqs)
         mol = Molecule(np.ones(nfreqs),
                        np.zeros(nfreqs, dtype=np.double),
                        np.ones(nfreqs, dtype=np.double))

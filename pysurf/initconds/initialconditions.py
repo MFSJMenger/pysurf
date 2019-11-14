@@ -18,13 +18,13 @@ from .base_initialconditions import InitialCondition
 from pysurf.molecule.molecule import Molecule
 #
 from pysurf.colt import AskQuestions
-from pysurf.colt import QuestionGenerator
+from pysurf.colt import Colt
 #  used to save just InitialConditions (coordinates, velocities) for a given molecule
 
 
-class InitialConditions(object):
+class InitialConditions(Colt):
     _methods = OrderedDict({'wigner': WignerSampling})
-    questions = """
+    _questions = """
     # database file where the initial conditions are saved or from which the initial conditions
     # are taken if the file already exists.
     outputfile = initconds.db
@@ -45,18 +45,19 @@ class InitialConditions(object):
     number of initial conditions = 100 :: int
     """
 
+    @classmethod
+    def _generate_subquestions(cls, questions):
+        questions.generate_cases("", "sampling", {
+            name: sampling.questions for name, sampling in cls._methods.items()})
+
     def __init__(self, inputfile, logger=None):
         """ Class to create initial conditions due to user input. Initial conditions are saved 
             in a file for further usage.
         """
         # Generate the config
-        quests = QuestionGenerator(self.questions)
-        quests.generate_cases("", "sampling", {
-            name: sampling.questions for name, sampling in self._methods.items()})
-        quests = AskQuestions("INITIAL CONDITIONS", quests.questions, inputfile)
+        quests = AskQuestions("INITIAL CONDITIONS", self.questions, inputfile)
         self.config = quests.ask(inputfile)
         
-
         if logger is None:
             self.logger = get_logger('initconds.log', 'initconds')
         else:
@@ -164,7 +165,7 @@ class InitialConditions(object):
             settings = {
                     'dimensions': {
                         'frame': 'unlimited',
-                        'nmodes': nmodes,
+                        'nmodes': self.nmodes,
                         'three': 3,
                         'one': 1,
                         },
