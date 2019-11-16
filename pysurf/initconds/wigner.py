@@ -155,7 +155,7 @@ def get_initial_condition(molecule, modes):
     #
     # remove translational/rotational dofs
     #
-    return Epot, InitialCondition(crd, veloc)
+    return Epot, InitialCondition(crd, veloc, 0)
 
 
 def wigner_gs(Q, P):

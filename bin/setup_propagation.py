@@ -64,7 +64,6 @@ class SetupPropagation(Colt):
             return
 
         os.mkdir(foldername)
-        print(self.config.keys())
         if exists_and_isfile(self.config['spp inputfile']):
             copy2(self.config['spp inputfile'], foldername)
         else:
@@ -82,7 +81,7 @@ class SetupPropagation(Colt):
         foldername = self.propagationfolder + '/' + self.trajfolder + str(number)
         cond = self.initconds.get_condition(number)
         initcondname = os.path.join(foldername,self.initcondname)
-        InitialConditions.save_condition(cond, initcondname)
+        self.initconds.export_condition(initcondname, number)
 
 
 @click.command()
