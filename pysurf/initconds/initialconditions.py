@@ -108,6 +108,7 @@ class InitialConditions(Colt):
         for _ in range(nconditions):
             cond = sampler.get_condition()
             self._write_initial_condition(cond)
+
     def _setup_db(self):
         sampler = self._methods[self.method].from_config(self.config['sampling'])
         getinit = sampler.get_init()
