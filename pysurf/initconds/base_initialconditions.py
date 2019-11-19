@@ -1,3 +1,3 @@
 from collections import namedtuple
 
-InitialCondition = namedtuple("InitialCondition", ['crd', 'veloc'])
+InitialCondition = namedtuple("InitialCondition", ['crd', 'veloc', 'state'])

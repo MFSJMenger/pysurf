@@ -16,6 +16,7 @@ from .wigner import WignerSampling
 from .base_initialconditions import InitialCondition
 #
 from pysurf.molecule.molecule import Molecule
+from .normalmodes import Mode 
 #
 from pysurf.colt import AskQuestions
 from pysurf.colt import Colt
@@ -50,27 +51,34 @@ class InitialConditions(Colt):
         questions.generate_cases("", "sampling", {
             name: sampling.questions for name, sampling in cls._methods.items()})
 
-    def __init__(self, inputfile, logger=None):
+    @classmethod
+    def from_inputfile(cls, inputfile):
         """ Class to create initial conditions due to user input. Initial conditions are saved 
             in a file for further usage.
         """
         # Generate the config
-        quests = AskQuestions("INITIAL CONDITIONS", self.questions, inputfile)
-        self.config = quests.ask(inputfile)
+        quests = cls.generate_questions('INITIAL CONDITIONS', inputfile)
+        config = quests.ask(inputfile)
         
+        return cls(config)
+
+    def __init__(self, config, logger = None):
         if logger is None:
             self.logger = get_logger('initconds.log', 'initconds')
         else:
             self.logger = logger
 
+        self.config = config
         self._molecule = None 
+        self._modes = None
+        self._model = None
 
         if exists_and_isfile(self.config['outputfile']):
             self.logger.info('Database of initial conditions exists')
             self.logger.info('Taking info from database ' + self.config['outputfile'])
             self._db = Database.load_db(self.config['outputfile'])
             self.nconditions = len(self._db['crd'])
-            self._get_method_from_db()
+            self.method, self._method_number = InitialConditions._get_method_from_db(self._db)
             if self.nconditions < self.config['number of initial conditions']:
                 self.logger.info('Adding additional entries to database of initial conditions')
                 self.add_initial_conditions(self.config['number of initial conditions']
@@ -87,6 +95,26 @@ class InitialConditions(Colt):
             self.add_initial_conditions(self.config['number of initial conditions'])
             self.nconditions = self.config['number of initial conditions']
 
+    @classmethod
+    def from_db(cls, dbfilename):
+        config = {'outputfile': dbfilename}
+        db = Database.load_db(dbfilename)
+        config['number of initial conditions'] = len(db['crd'])
+        config['sampling'] = InitialConditions._get_method_from_db(db)
+        config['initial state'] = None
+        if 'atomids' in db.keys():
+            config['model'] = False
+        else:
+            config['model'] = True
+        return cls(config)
+
+    def export_condition(self, dbfilename, number):
+        db = Database.empty_like(dbfilename, self._db)
+        InitialConditions._add_reference_entry(db, self.molecule, self.modes, self.method, self.model)
+        InitialConditions._write_initial_condition(db, self.get_condition(number))        
+    
+        
+
     def __iter__(self):
         self._start = 1 # skip equilibrium structure
         return self
@@ -97,7 +125,8 @@ class InitialConditions(Colt):
 
         crd = self._db.get('crd', idx)
         veloc = self._db.get('veloc', idx)
-        return InitialCondition(crd, veloc)
+        state = self._db.get('state', idx)
+        return InitialCondition(crd, veloc, state)
 
     def add_initial_conditions(self, nconditions, state=0):
         # TODO 
@@ -117,7 +146,9 @@ class InitialConditions(Colt):
         self.natoms = molecule.natoms
         self.nmodes = len(self.modes)
         self._db = Database(self.config['outputfile'], self._settings)
-        self._add_reference_entry(molecule, self.modes)
+        InitialConditions._add_reference_entry(self._db, molecule, self.modes, self.method, self.model)
+
+
 
     @property
     def equilibrium(self):
@@ -138,6 +169,21 @@ class InitialConditions(Colt):
                                       np.copy(self._db['masses']))
         return self._molecule
 
+    @property
+    def modes(self):
+        if self._modes is None:
+            self._modes = [Mode(freq, mode) for freq, mode in zip(self._db['freqs'],
+                                                                  self._db['modes'])]
+        return self._modes
+
+    @property
+    def model(self):
+        if self._model is None:
+            if 'atomids' in self._db.keys():
+                self._model = False
+            else:
+                self._model = True
+        return self._model
 
     @property
     def _settings(self):
@@ -185,39 +231,46 @@ class InitialConditions(Colt):
     def _get_sampler(self):
         return self._methods[self.method].from_config(self.config['sampling'])
 
-    def _get_method_from_db(self):
-        self._method_number = self._db['method'][0]
-        self.method = self._get_method_from_number(self._method_number)
+    @staticmethod
+    def _get_method_from_db(db):
+        _method_number = db['method'][0]
+        method = InitialConditions._get_method_from_number(_method_number)
+        return method, _method_number
 
-    def _get_method_from_number(self, number):
-        return tuple(self._methods.keys())[number]
-
-    def _get_number_from_method(self, method):
-        return list(self._methods.keys()).index(self.method)
+    @staticmethod
+    def _get_method_from_number(number):
+        return tuple(InitialConditions._methods.keys())[number]
+    
+    @staticmethod
+    def _get_number_from_method(method):
+        return list(InitialConditions._methods.keys()).index(method)
 
     def _setup_method(self):
         self.method = self.config['sampling'].value
-        self._method_number = self._get_number_from_method(self.method)
+        self._method_number = InitialConditions._get_number_from_method(self.method)
         
-    def _add_reference_entry(self, molecule, modes):
-        if self.model is False:
-            self._db.set('atomids', molecule.atomids)
-        self._db.set('masses', molecule.masses)
-        self._db.set('modes', np.array([mode.displacements for mode in modes]))
-        self._db.set('freqs', np.array([mode.freq for mode in modes]))
-        self._db.set('method', self._method_number)
+    @staticmethod
+    def _add_reference_entry(db, molecule, modes, method, model):
+        if model is False:
+            db.set('atomids', molecule.atomids)
+        db.set('masses', molecule.masses)
+        db.set('modes', np.array([mode.displacements for mode in modes]))
+        db.set('freqs', np.array([mode.freq for mode in modes]))
+        _method_number = InitialConditions._get_number_from_method(method)
+        db.set('method', _method_number)
         # add equilibrium values
-        self._db.append('crd', molecule.crd)
-        if self.model is False:
-            self._db.append('veloc', np.zeros(molecule.natoms*3, dtype=np.double))
+        db.append('crd', molecule.crd)
+        if model is False:
+            db.append('veloc', np.zeros(molecule.natoms*3, dtype=np.double))
         else: 
-            self._db.append('veloc',np.zeros(len(modes), dtype=np.double))
+            db.append('veloc',np.zeros(len(modes), dtype=np.double))
         # go to next step
-        self._db.increase
+        db.increase
 
-    def _write_initial_condition(self, cond):
-        self._db.append('crd', cond.crd)
-        self._db.append('veloc', cond.veloc)
-        self._db.append('state', self.config['initial state'])
-        self._db.increase
+    @staticmethod
+    def _write_initial_condition(db, cond):
+        db.append('crd', cond.crd)
+        db.append('veloc', cond.veloc)
+        db.append('state', cond.state)
+        db.increase
 

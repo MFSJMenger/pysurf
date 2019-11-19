@@ -7,7 +7,7 @@ from pysurf.utils.constants import fs2au
 from pysurf.initconds.initialconditions import InitialConditions
 
 def initconds(inputfile):
-    initconds = InitialConditions(inputfile)
+    initconds = InitialConditions.from_inputfile(inputfile)
 
 
 @click.command()
