@@ -4,7 +4,7 @@ import numpy.random as random
 from pysurf.constants import U_TO_AMU, CM_TO_HARTREE
 from pysurf.molden import MoldenParser
 #
-from .base_initialconditions import InitialCondition
+from .base_sampling import InitialCondition
 from ..molecule.molecule import Molecule
 from ..molecule.atominfo import masses as MASSES
 from ..molecule.atominfo import atomname_to_id
