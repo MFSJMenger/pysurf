@@ -33,13 +33,13 @@ def delete_database(filename):
 
 def test_moldeninput(filepath_molden):
     delete_database('initconds.db')
-    initconds = InitialConditions(filepath_molden)
+    initconds = InitialConditions.from_inputfile(filepath_molden)
     assert initconds.get_condition(50).crd.shape == (10,3)
     assert initconds.get_condition(51).veloc.shape == (10,3)
     assert np.array_equal(initconds.equilibrium.crd, pyrazine_crd) 
 
 def test_freqinput(filepath_freq):
     delete_database('initconds.db')
-    initconds = InitialConditions(filepath_freq)
+    initconds = InitialConditions.from_inputfile(filepath_freq)
     assert np.array_equal(initconds.get_condition(0).crd, [0., 0., 0.])
     assert initconds.get_condition(10).veloc.size == 3

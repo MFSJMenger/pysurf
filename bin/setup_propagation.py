@@ -6,7 +6,7 @@ from shutil import copy2
 from pysurf.colt import Colt
 from pysurf.utils.osutils import exists_and_isfile
 from pysurf.logger import get_logger
-from pysurf.initconds.initialconditions import InitialConditions
+from pysurf.sampling.initialconditions import InitialConditions
 
 class SetupPropagation(Colt):
     _questions = """
@@ -37,6 +37,7 @@ class SetupPropagation(Colt):
         """ Class to create initial conditions due to user input. Initial conditions are saved 
             in a file for further usage.
         """
+        self.inputfile = inputfile
         self.propagationfolder = 'prop'
         self.trajfolder = 'traj.'
         self.initcondname = 'initcond.db'
@@ -64,6 +65,8 @@ class SetupPropagation(Colt):
             return
 
         os.mkdir(foldername)
+
+        copy2(self.inputfile, foldername)
         if exists_and_isfile(self.config['spp inputfile']):
             copy2(self.config['spp inputfile'], foldername)
         else:
@@ -85,7 +88,7 @@ class SetupPropagation(Colt):
 
 
 @click.command()
-@click.option('-f', 'filename', default='setup_propagation.inp')
+@click.option('-f', 'filename', default='propagation.inp')
 def command_setup_propagation(filename):
     SetupPropagation(filename)
 
