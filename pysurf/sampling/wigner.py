@@ -10,9 +10,9 @@ from ..molecule.atominfo import masses as MASSES
 from ..molecule.atominfo import atomname_to_id
 from .normalmodes import NormalModes as nm
 from .normalmodes import Mode
-from ..colt import Colt
+from .sampling import SamplingBase
 
-class WignerSampling(Colt):
+class Wigner(SamplingBase):
     _questions = """
         # Input source for the normal modes and/or frequencies, which are used to generate the
         # initial conditions.
