@@ -1,58 +1,24 @@
-======
-pysurf
-======
-
-
-.. image:: https://img.shields.io/pypi/v/pysurf.svg
-        :target: https://pypi.python.org/pypi/pysurf
-
-.. image:: https://img.shields.io/travis/mfsjmenger/pysurf.svg
-        :target: https://travis-ci.org/mfsjmenger/pysurf
-
-.. image:: https://readthedocs.org/projects/pysurf/badge/?version=latest
-        :target: https://pysurf.readthedocs.io/en/latest/?badge=latest
-        :alt: Documentation Status
-
-
-.. image:: https://pyup.io/repos/github/mfsjmenger/pysurf/shield.svg
-     :target: https://pyup.io/repos/github/mfsjmenger/pysurf/
-     :alt: Updates
-
-
+=====================================================
+PATH: Pythonic Approach to Trajectory Surface Hopping
+=====================================================
 
 Python Surface Hopping Code
 
 
 * Free software: GNU General Public License v3
-* Documentation: https://pysurf.readthedocs.io.
-
-
-PYSURF
-------
 
 General:
 ________
 
  * Python 3.6+
  * Testing: pytest
- * Log: logging module
- * flake8 to varify pep8 standard
+ * ~80% test coverage
 
 DB:
 ___
+
  * Format: NetCDF 
 
-
-TASKS
------
-
-Johannes:
----------
- 
-
-Max:
-----
- 
 
 Credits
 -------
