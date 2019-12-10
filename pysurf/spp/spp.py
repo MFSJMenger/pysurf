@@ -1,4 +1,3 @@
-import configparser
 import importlib
 import os
 # Numpy
@@ -10,6 +9,8 @@ from .qminter.qminter import get_qminter
 from ..utils.chemutils import atomic_masses
 from ..utils.osutils import exists_and_isfile
 from ..utils.context_utils import DoOnException
+#
+from ..colt import Colt, AskQuestions
 from ..molecule.atominfo import masses_au as atomic_masses
 # fileparser
 from ..fileparser import read_geom
@@ -17,18 +18,31 @@ from ..fileparser import read_geom
 from ..logger import get_logger, Logger
 
 
-class SurfacePointProvider(object):
+class SurfacePointProvider(Colt):
     """ The Surface Point Provider is the main interface providing the
         providing the information of a system at a specific point. It
         takes care where to take the information from according to the
         specified input file
     """
 
+    _questions = """
+        logging = debug :: str ::
+        mode = ab-initio :: str :: [ab-initio, model]
+        """
+
+
+    @classmethod
+    def from_config(cls, config):
+        """Create new surface point provider from given config file"""
+
     def __init__(self, inputfile, logger=None):
         """ The inputfile for the SPP has to provide the necessary
             information, how to produce the data at a specific point
             in the crdinate space.
         """
+
+        self.config, self.path = self._parse_config(inputfile)
+
         if not isinstance(logger, Logger):
             self.logger = get_logger('spp.log', 'SPP', [])
         else:
@@ -63,9 +77,6 @@ class SurfacePointProvider(object):
 
     def _parse_config(self, inputfile):
         """Parse the config file"""
-        #
-        config = configparser.ConfigParser()
-        #
         if exists_and_isfile(inputfile):
             config.read(inputfile)
             inputfile_full = os.path.abspath(inputfile)
