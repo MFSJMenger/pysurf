@@ -12,38 +12,28 @@ from pysurf.utils.osutils import exists_and_isfile
 from pysurf.database.database import Database
 from pysurf.database.dbtools import DBVariable
 from pysurf.database.dbtools import DatabaseTools
-from .wigner import WignerSampling
 from .base_sampling import Condition
+from pysurf.colt import PluginBase
 #
 from pysurf.molecule.molecule import Molecule
 from .normalmodes import Mode 
 #
-from pysurf.colt import AskQuestions
 from pysurf.colt import Colt
 
+class SamplingFactory(PluginBase):
+    _plugins_storage = '_methods'
+    _is_plugin_factory = True
 
-class Sampling(Colt):
-    _methods = OrderedDict({'wigner': WignerSampling})
     _questions = """
-    # database file where the conditions are saved or from which the conditions
-    # are taken if the file already exists.
-    outputfile = sampling.db
-
-    # Describes which sampling algorithm is used to generate the conditions.
-    # The default is wigner.
-    sampling = wigner :: str :: [wigner]
-
-    # State whether the system you are describing is a model system
-    model = False :: bool
-
-    # Number of conditions that have to be created.
-    number of conditions = 100 :: int
+    method = 
     """
+
 
     @classmethod
     def _generate_subquestions(cls, questions):
-        questions.generate_cases("", "sampling", {
-            name: sampling.questions for name, sampling in cls._methods.items()})
+        questions.generate_cases("method", {name: method.questions
+                                       for name, method in cls._methods.items()})
+
 
     @classmethod
     def from_inputfile(cls, inputfile):
@@ -51,21 +41,55 @@ class Sampling(Colt):
             in a file for further usage.
         """
         # Generate the config
-        print('Johannes: ', cls._questions)
-        quests = cls.generate_questions('SAMPLING', inputfile)
+        quests = cls.generate_questions('SAMPLING', config=inputfile)
         config = quests.ask(inputfile)
-        
         return cls(config)
 
+
+    @classmethod
+    def from_db(cls, dbfilename):
+        config = {'outputfile': dbfilename}
+        db = Database.load_db(dbfilename)
+        config['number of conditions'] = len(db['crd'])
+        config['method'] = SamplingBase._get_method_from_db(db)
+        if 'atomids' in db.keys():
+            config['model'] = False
+        else:
+            config['model'] = True
+        return cls(config)
+
+
+class SamplingBase(SamplingFactory):
+    _register_plugin = False
+    subquestions : 'inherited'
+    _questions = 'inherited'
+
+    def _generate_subquestions(cls, questions):
+        questions.add_questions_to_block("""
+             # database file where the conditions are saved or from which the conditions
+             # are taken if the file already exists.
+             outputfile = sampling.db
+
+             # State whether the system is a model system
+             model = False :: bool
+
+             # State whether the system you are describing is a model system
+             # Number of conditions that have to be created.
+             number of conditions = 100 :: int
+             """)
+
+
     def __init__(self, config, logger = None):
+        self.config = config
+
         if logger is None:
             self.logger = get_logger('sampling.log', 'sampling')
         else:
             self.logger = logger
 
-        self.config = config
         self._molecule = None 
         self._modes = None
+        self._equilibrium = None
         self._model = None
         self.condition = Condition
 
@@ -74,7 +98,7 @@ class Sampling(Colt):
             self.logger.info('Taking info from database ' + self.config['outputfile'])
             self._db = Database.load_db(self.config['outputfile'])
             self.nconditions = len(self._db['crd'])
-            self.method, self._method_number = Sampling._get_method_from_db(self._db)
+            self.method, self._method_number = SamplingBase._get_method_from_db(self._db)
             if self.nconditions < self.config['number of conditions']:
                 self.logger.info('Adding additional entries to database of conditions')
                 self.add_conditions(self.config['number of conditions']
@@ -91,22 +115,11 @@ class Sampling(Colt):
             self.add_conditions(self.config['number of conditions'])
             self.nconditions = self.config['number of conditions']
 
-    @classmethod
-    def from_db(cls, dbfilename):
-        config = {'outputfile': dbfilename}
-        db = Database.load_db(dbfilename)
-        config['number of conditions'] = len(db['crd'])
-        config['sampling'] = Sampling._get_method_from_db(db)
-        if 'atomids' in db.keys():
-            config['model'] = False
-        else:
-            config['model'] = True
-        return cls(config)
 
     def export_condition(self, dbfilename, number):
         db = Database.empty_like(dbfilename, self._db)
-        Sampling._add_reference_entry(db, self.molecule, self.modes, self.method, self.model)
-        Sampling._write_condition(db, self.get_condition(number))        
+        SamplingBase._add_reference_entry(db, self.molecule, self.modes, self.method, self.model)
+        SamplingBase._write_condition(db, self.get_condition(number))        
     
         
 
@@ -131,20 +144,15 @@ class Sampling(Colt):
             self._write_condition(self._db, cond)
 
     def _setup_db(self):
-        sampler = self._methods[self.method].from_config(self.config['sampling'])
+        sampler = self._methods[self.method].from_config(self.config['method'])
         getinit = sampler.get_init()
         molecule = getinit['molecule']
         self._modes = getinit['modes']
         self.natoms = molecule.natoms
         self.nmodes = len(self.modes)
         self._db = Database(self.config['outputfile'], self._settings)
-        Sampling._add_reference_entry(self._db, molecule, self.modes, self.method, self.model)
+        SamplingBase._add_reference_entry(self._db, molecule, self.modes, self.method, self.model)
 
-
-
-    @property
-    def equilibrium(self):
-        return self.get_condition(0)
 
     def __next__(self):
         cond = self.get_condition(self._start)
@@ -152,6 +160,18 @@ class Sampling(Colt):
             self._start += 1
             return cond
         raise StopIteration
+
+
+    @property
+    def equilibrium(self):
+        if self._equilibrium is None:
+            return self.get_condition(0)
+        else:
+            return self._equilibrium
+
+    @equilibrium.setter
+    def equilibrium(self, value):
+        self._equilibrium = value
 
     @property
     def molecule(self):
@@ -161,12 +181,20 @@ class Sampling(Colt):
                                       np.copy(self._db['masses']))
         return self._molecule
 
+    @molecule.setter
+    def molecule(self, value):
+        self._molecule = value
+
     @property
     def modes(self):
         if self._modes is None:
             self._modes = [Mode(freq, mode) for freq, mode in zip(self._db['freqs'],
                                                                   self._db['modes'])]
         return self._modes
+
+    @modes.setter
+    def modes(self, value):
+        self._modes = value
 
     @property
     def model(self):
@@ -176,6 +204,10 @@ class Sampling(Colt):
             else:
                 self._model = True
         return self._model
+
+    @model.setter
+    def model(self, value):
+        self._model = value
 
     @property
     def _settings(self):
@@ -217,25 +249,25 @@ class Sampling(Colt):
         return settings
 
     def _get_sampler(self):
-        return self._methods[self.method].from_config(self.config['sampling'])
+        return self._methods[self.method].from_config(self.config['method'])
 
     @staticmethod
     def _get_method_from_db(db):
         _method_number = db['method'][0]
-        method = Sampling._get_method_from_number(_method_number)
+        method = SamplingBase._get_method_from_number(_method_number)
         return method, _method_number
 
     @staticmethod
     def _get_method_from_number(number):
-        return tuple(Sampling._methods.keys())[number]
+        return tuple(SamplingBase._methods.keys())[number]
     
     @staticmethod
     def _get_number_from_method(method):
-        return list(Sampling._methods.keys()).index(method)
+        return list(SamplingBase._methods.keys()).index(method)
 
     def _setup_method(self):
-        self.method = self.config['sampling'].value
-        self._method_number = Sampling._get_number_from_method(self.method)
+        self.method = self.config['method'].value
+        self._method_number = SamplingBase._get_number_from_method(self.method)
         
     @staticmethod
     def _add_reference_entry(db, molecule, modes, method, model):
@@ -244,7 +276,7 @@ class Sampling(Colt):
         db.set('masses', molecule.masses)
         db.set('modes', np.array([mode.displacements for mode in modes]))
         db.set('freqs', np.array([mode.freq for mode in modes]))
-        _method_number = Sampling._get_number_from_method(method)
+        _method_number = SamplingBase._get_number_from_method(method)
         db.set('method', _method_number)
         # add equilibrium values
         db.append('crd', molecule.crd)
@@ -255,4 +287,7 @@ class Sampling(Colt):
     def _write_condition(db, cond):
         db.append('crd', cond.crd)
         db.increase
+
+
+
 
