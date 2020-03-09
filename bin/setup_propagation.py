@@ -20,7 +20,7 @@ class SetupPropagation(Colt):
     number of trajectories = 100 :: int
 
     # Database containing all the initial conditions
-    database with the initial conditions = initconds.db :: str
+    database with the initial conditions = sampling.db :: str
 
     # Filepath for the inputfile of the Surface Point Provider
     spp inputfile = spp.inp :: str
@@ -72,7 +72,7 @@ class SetupPropagation(Colt):
         else:
             self.logger.error('spp inputfile not found!')
 
-        if self.config['copy database'] is True:
+        if self.config['copy database'] == 'yes':
             if exists_and_isfile(self.config['copy database']['database filename']):
                 copy2(self.config['copy database']['database filename'], foldername)
             else:
