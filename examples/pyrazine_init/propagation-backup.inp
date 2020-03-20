@@ -1,0 +1,11 @@
+[SURFACE HOPPING]
+propagation time in fs = 100.0
+time step in fs = 0.5
+number of trajectories = 100
+database with the initial conditions = sampling.db
+spp inputfile = spp.inp
+copy database = yes
+
+[SURFACE HOPPING::copy database(yes)]
+database filename = db.dat
+

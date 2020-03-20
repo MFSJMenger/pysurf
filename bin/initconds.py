@@ -3,6 +3,7 @@ import numpy as np
 import click
 
 from pysurf.colt import Colt
+from pysurf.colt import FromCommandline
 from pysurf.utils.constants import fs2au
 from pysurf.sampling.initialconditions import InitialConditions
 
@@ -20,10 +21,15 @@ from pysurf.sampling.initialconditions import InitialConditions
 #        initconds = InitialConditions.from_inputfile(answer['inputfile'])
 
 
+#@FromCommandline("""
+#inputfile = initconds.inp :: file 
+#""")
 @click.command()
-@click.option('-f', 'filename', default='initconds.inp')
-def command_setup_initconds(filename):
-    initconds = InitialConditions.from_inputfile(filename)
+@click.option('-f', 'inputfile', default='initconds.inp')
+def command_setup_initconds(inputfile):
+    initconds = InitialConditions.from_inputfile(inputfile)
+#    for cond in initconds:
+#        print(cond.veloc)
 
 if __name__=="__main__":
     command_setup_initconds()
