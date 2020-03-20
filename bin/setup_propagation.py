@@ -1,9 +1,9 @@
 import os
 import numpy as np
-import click
 from shutil import copy2
 
 from pysurf.colt import Colt
+from pysurf.colt import FromCommandline
 from pysurf.utils.osutils import exists_and_isfile
 from pysurf.logger import get_logger
 from pysurf.sampling.initialconditions import InitialConditions
@@ -20,7 +20,7 @@ class SetupPropagation(Colt):
     number of trajectories = 100 :: int
 
     # Database containing all the initial conditions
-    database with the initial conditions = initconds.db :: str
+    database with the initial conditions = sampling.db :: str
 
     # Filepath for the inputfile of the Surface Point Provider
     spp inputfile = spp.inp :: str
@@ -72,7 +72,7 @@ class SetupPropagation(Colt):
         else:
             self.logger.error('spp inputfile not found!')
 
-        if self.config['copy database'] is True:
+        if self.config['copy database'] == 'yes':
             if exists_and_isfile(self.config['copy database']['database filename']):
                 copy2(self.config['copy database']['database filename'], foldername)
             else:
@@ -87,10 +87,11 @@ class SetupPropagation(Colt):
         self.initconds.export_condition(initcondname, number)
 
 
-@click.command()
-@click.option('-f', 'filename', default='propagation.inp')
-def command_setup_propagation(filename):
-    SetupPropagation(filename)
+@FromCommandline("""
+inputfile = propagation.inp :: file
+""")
+def command_setup_propagation(inputfile):
+    SetupPropagation(inputfile)
 
 if __name__=="__main__":
     command_setup_propagation()

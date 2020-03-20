@@ -80,4 +80,3 @@ class NMSampler(Colt):
 
        
 
-    def get_condition( 
