@@ -1,11 +1,12 @@
 import os
 import numpy as np
-import click
 
 from pysurf.database.database import Database
+from pysurf.colt import FromCommandline
 
-@click.command()
-@click.option('-o', 'outfile', default='population.dat')
+@FromCommandline("""
+outfile = population.dat :: file
+""")
 def get_population_command(outfile):
     get_population(outfile)
 

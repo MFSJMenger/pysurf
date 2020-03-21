@@ -2,7 +2,6 @@
 import sys
 import os 
 import numpy as np
-import click
 
 from pysurf.database.database import Database
 from pysurf.database.dbtools import DatabaseRepresentation
@@ -10,6 +9,7 @@ from pysurf.database.dbtools import DatabaseTools
 from pysurf.database.dbtools import DBVariable
 from pysurf.database.dbtools import load_database
 from pysurf.molecule.atominfo import get_atom_from_mass
+from pysurf.colt import FromCommandline
 
 from pysurf.utils.constants import au2ev
 
@@ -20,10 +20,10 @@ def write_state(state, step):
     string += 'step {0} : {1}\n'.format(step, state)
     return string
 
-
-@click.command()
-@click.option('-f', 'infile', default='prop.db')
-@click.option('-o', 'outfile', default='states.dat')
+@FromCommandline("""
+infile = prop.db :: file_exists
+outfile = states.dat :: file
+""")
 def get_states_command(infile, outfile):
     get_states(infile, outfile)
 

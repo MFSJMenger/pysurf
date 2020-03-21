@@ -1,7 +1,6 @@
 import sys
 import os 
 import numpy as np
-import click
 
 from pysurf.database.database import Database
 from pysurf.database.dbtools import DatabaseRepresentation
@@ -9,6 +8,7 @@ from pysurf.database.dbtools import DatabaseTools
 from pysurf.database.dbtools import DBVariable
 from pysurf.database.dbtools import load_database
 from pysurf.molecule.atominfo import get_atom_from_mass
+from pysurf.colt import FromCommandline
 
 from pysurf.utils.constants import au2ev
 
@@ -22,9 +22,10 @@ def write_energy(energy, step):
     return string
 
 
-@click.command()
-@click.option('-o', 'outfile', default='energy.dat')
-@click.option('-f', 'infile', default='prop.db')
+@FromCommandline("""
+outfile = energy.dat :: file
+infile = prop.db :: file
+""")
 def get_energies_command(infile, outfile):
     get_energies(infile, outfile)
 

@@ -1,7 +1,6 @@
 import sys
 import os 
 import numpy as np
-import click
 
 from pysurf.database.database import Database
 from pysurf.database.dbtools import DatabaseRepresentation
@@ -11,6 +10,7 @@ from pysurf.database.dbtools import load_database
 from pysurf.molecule.atominfo import get_atom_from_mass
 
 from pysurf.utils.constants import bohr2angstrom
+from pysurf.colt import FromCommandline
 
 def write_veloc(atoms, crd, step):
     string = str(len(crd)) + '\n'
@@ -28,9 +28,10 @@ def write_veloc_model(crd, step):
     string += '\n'
     return string
 
-@click.command()
-@click.option('-f', 'infile', default='prop.db')
-@click.option('-o', 'outfile', default='veloc.dat')
+@FromCommandline("""
+infile = prop.db :: file_exists
+outfile = veloc.dat :: file
+""")
 def get_velocs_command(infile, outfile):
     get_velocs(infile, outfile)
 

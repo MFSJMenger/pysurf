@@ -1,18 +1,19 @@
 import os
-import click
 import numpy as np
 import matplotlib.pyplot as plt
 
 from pysurf.utils.design import colors
+from pysurf.colt import FromCommandline
 
-@click.command()
-@click.option('-f','filename', default='population.dat')
-@click.option('-o', 'outfile', default='population.png')
-def plot_population(filename, outfile):
+@FromCommandline("""
+infile = population.dat :: file_exists
+outfile = population.png :: file
+""")
+def plot_population(infile, outfile):
 
-    if os.path.isfile(filename):
-        with open(filename) as infile:
-            lines = infile.readlines()
+    if os.path.isfile(infile):
+        with open(infile) as infilev:
+            lines = infilev.readlines()
         nstates = len(lines[0].split())-1
         nsteps = len(lines)
         x = np.empty(nsteps, dtype=float)

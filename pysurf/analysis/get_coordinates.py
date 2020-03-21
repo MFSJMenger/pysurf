@@ -1,9 +1,7 @@
 #! /data/ehrmaier/anaconda3/bin/python3
 import sys
 import os 
-import cli
 import numpy as np
-import click
 
 from pysurf.database.database import Database
 from pysurf.database.dbtools import DatabaseRepresentation
@@ -11,6 +9,7 @@ from pysurf.database.dbtools import DatabaseTools
 from pysurf.database.dbtools import DBVariable
 from pysurf.database.dbtools import load_database
 from pysurf.molecule.atominfo import get_atom_from_mass
+from pysurf.colt import FromCommandline
 
 from pysurf.utils.constants import bohr2angstrom
 
@@ -34,9 +33,10 @@ def write_crd(crd, step):
     return string
 
 
-@click.command()
-@click.option('-f', 'infile', default='prop.db')
-@click.option('-o', 'outfile', default='crd.xyz')
+@FromCommandline("""
+infile = prop.db :: file_exists
+outfile = crd.xyz :: file
+""")
 def get_coordinates_command(infile, outfile):
     get_coordinates(infile, outfile)
 

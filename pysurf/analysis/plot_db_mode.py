@@ -1,15 +1,17 @@
 import numpy as np
-import click
 
 from pysurf.database.database import Database
 from pysurf.molden import MoldenParser
 from pysurf.wigner import WignerSampling
 from pysurf.spp.spp import SurfacePointProvider
 
-@click.command()
-@click.argument('molden')
-@click.argument('spp')
-@click.argument('mode')
+from pysurf.colt import FromCommandline
+
+FromCommandline("""
+molden = :: file
+spp = spp.inp :: file
+mode = 1 :: int
+""")
 def plot_db_mode_command(molden, spp, mode):
     plot_db_mode(molden, spp, mode)
 

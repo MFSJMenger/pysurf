@@ -1,9 +1,9 @@
-import click
+
 import numpy as np
 from scipy.spatial import cKDTree
 
 from pysurf.database.database import Database
-#from pysurf.spp.dbinter.dbinter import get_min_dist
+from pysurf.colt import FromCommandline
 
 """ This class has to be moved to spp.dbinter.dbinter.
     at the moment I cannot change dbinter, but it has to be done in futere
@@ -20,9 +20,10 @@ class NextNeighbor():
     def get(self, crd):
         return self.tree.query(crd.flatten(), k=1)
 
-@click.command()
-@click.argument('database1')
-@click.argument('database2')
+@FromCommandline("""
+database1 = :: file_exists
+database2 = :: file_exists
+""")
 def combine_dbs_command(database1, database2):
     combine_dbs(database1, database2)
 

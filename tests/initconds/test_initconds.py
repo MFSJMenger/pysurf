@@ -4,7 +4,7 @@ import numpy as np
 
 
 
-from pysurf.initconds.initialconditions import InitialConditions
+from pysurf.sampling.initialconditions import InitialConditions
 from pysurf.utils.osutils import exists_and_isfile
 
 

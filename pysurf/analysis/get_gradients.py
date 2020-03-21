@@ -1,7 +1,6 @@
 import sys
 import os 
 import numpy as np
-import click
 
 from pysurf.database.database import Database
 from pysurf.database.dbtools import DatabaseRepresentation
@@ -9,6 +8,7 @@ from pysurf.database.dbtools import DatabaseTools
 from pysurf.database.dbtools import DBVariable
 from pysurf.database.dbtools import load_database
 from pysurf.molecule.atominfo import get_atom_from_mass
+from pysurf.colt import FromCommandline
 
 from pysurf.utils.constants import bohr2angstrom
 
@@ -33,10 +33,10 @@ def write_gradient_model(gradient, step):
     string += '\n'
     return string
 
-
-@click.command()
-@click.option('-f', 'infile', default='prop.db')
-@click.option('-o', 'outfile', default='gradient.dat')
+@FromCommandline("""
+infile = prop.db :: file_exists
+outfile = gradient.dat :: file
+""")
 def get_gradients_command(infile, outfile):
     get_gradient(infile, outfile)
 

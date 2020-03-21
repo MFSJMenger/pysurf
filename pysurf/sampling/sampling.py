@@ -127,6 +127,13 @@ class SamplingBase(SamplingFactory):
         self._start = 1 # skip equilibrium structure
         return self
 
+    def __next__(self):
+        cond = self.get_condition(self._start)
+        if cond is not None:
+            self._start += 1
+            return cond
+        raise StopIteration
+
     def get_condition(self, idx): 
         if idx >= self.nconditions:
             return None
@@ -152,14 +159,6 @@ class SamplingBase(SamplingFactory):
         self.nmodes = len(self.modes)
         self._db = Database(self.config['outputfile'], self._settings)
         SamplingBase._add_reference_entry(self._db, molecule, self.modes, self.method, self.model)
-
-
-    def __next__(self):
-        cond = self.get_condition(self._start)
-        if cond is not None:
-            self._start += 1
-            return cond
-        raise StopIteration
 
 
     @property

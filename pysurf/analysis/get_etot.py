@@ -1,7 +1,6 @@
 import sys
 import os 
 import numpy as np
-import click
 
 from pysurf.database.database import Database
 from pysurf.database.dbtools import DatabaseRepresentation
@@ -11,6 +10,7 @@ from pysurf.database.dbtools import load_database
 from pysurf.molecule.atominfo import get_atom_from_mass
 
 from pysurf.utils.constants import au2ev
+from pysurf.colt import FromCommandline
 
 
 
@@ -21,10 +21,10 @@ def write_etot(ekin, epot, etot, step):
     return string
 
 
-
-@click.command()
-@click.option('-f', 'infile', default='prop.db')
-@click.option('-o', 'outfile', default='etot.dat')
+@FromCommandline("""
+infile = prop.db :: file_exists
+outfile = etot.dat :: file
+""")
 def get_etot_command(infile, outfile):
     get_etot(infile, outfile)
 

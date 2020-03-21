@@ -1,14 +1,14 @@
 #! /data/ehrmaier/anaconda3/bin/python3
-import click
-import sys
 import os
 import numpy as np
 
 from pysurf.database.database import Database
+from pysurf.colt import FromCommandline
 
-@click.command()
-@click.option('-f', 'infile', default='db.dat')
-@click.option('-key', 'key', default='energy')
+@FromCommandline("""
+infile = :: file
+key = :: str
+""")
 def open_db_command(infile, key):
     open_db(infile, key)
 

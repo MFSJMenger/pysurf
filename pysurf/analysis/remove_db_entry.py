@@ -1,10 +1,10 @@
-import click
-
 from pysurf.database.database import Database
+from pysurf.colt import FromCommandline
 
-@click.command()
-@click.argument('db')
-@click.argument('rm_entry')
+@FromCommandline("""
+db = :: file
+rm_entry = :: int
+""")
 def remove_entry_command(db, rm_entry)
     remove_entry(db, rm_entry)
 
