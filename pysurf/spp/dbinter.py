@@ -45,6 +45,7 @@ class DataBaseInterpolation(Colt):
         crd = double :: (frame, natoms, three)
         energy = double :: (frame, nstates)
         gradient = double :: (frame, nstates, natoms, three)
+        dipol = double :: (frame, nstates, 3)
         """
         return Database(filename, data)
 
@@ -57,6 +58,7 @@ class DataBaseInterpolation(Colt):
         self._db.append('crd', result['crd'])
         self._db.append('energy', result['energy'])
         self._db.append('gradient', result['gradient'])
+        self._db.append('dipol', result['dipol'])
         self._db.increase
         result = {key: result[key] for key in request.keys() if key != 'crd'}
         return result
