@@ -27,7 +27,7 @@ class DataBaseInterpolation(Colt):
         self._write_only = config['write_only']
         #
         self._interface = interface
-        self.properties = properties
+        self.properties = dynamics_properties
         self.natoms = natoms
         self.nstates = nstates
         #

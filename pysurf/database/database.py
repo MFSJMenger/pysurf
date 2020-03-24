@@ -51,7 +51,7 @@ class Database(object):
         #
         self._closed = True
         #
-        self._db, self._handle = self._rep.create_database(filename, read_only)
+        self._db, self._handle = self._rep.create_database(filename, False)
         #
         self._closed = False
         #

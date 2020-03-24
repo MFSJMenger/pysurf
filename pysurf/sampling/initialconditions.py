@@ -26,6 +26,8 @@ class InitialConditionsFactory(SamplingBase):
             # State on which trajectories start
             initial state = 0 :: int
             """)
+        questions.generate_cases("method", {name: method.questions
+                                 for name, method in cls._methods.items()})
 
 
 class InitialConditionsBase(InitialConditionsFactory):

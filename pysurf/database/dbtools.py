@@ -234,7 +234,7 @@ class DatabaseRepresentation(object):
         """Create a new database"""
         return create_dataset(filename, self)
 
-    def _load_database(self, filename, read_only=True):
+    def _load_database(self, filename, read_only=False):
         """Load an existing database and check
            that it is compatable with the existing one"""
         if read_only is True:

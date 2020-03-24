@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from copy import deepcopy
 #
 import numpy as np
 #
@@ -66,7 +67,7 @@ class SamplingBase(SamplingFactory):
     _register_plugin = False
     _questions = "inherited"
     #
-    condition = Condition
+    Condition = Condition
 
     def __init__(self, config, logger=None):
         """Setup sampling routine"""
@@ -81,7 +82,7 @@ class SamplingBase(SamplingFactory):
         self._equilibrium = None
         self._model = None
         # get sampling method
-        self.method, self._method_number = self._get_method(config['method'].value)
+        self.method, self._method_number = self._get_method(config['method'][0])
         # setup sampler
         self.sampler = self._get_sampler(config['method'])
         # setup database
@@ -89,8 +90,8 @@ class SamplingBase(SamplingFactory):
         # check for conditions
         if self.nconditions < config['number of conditions']:
             self.logger.info('Adding additional entries to database of conditions')
-            self.add_conditions(config['number of conditions'] - self.nconditions)
-            self.nconditions = config['number of conditions']
+            #self.add_conditions(config['number of conditions'] - self.nconditions)
+            #self.nconditions = config['number of conditions']
 
     def _setup_database(self, config):
         """Load database, if it does not exist, create a new one"""
@@ -114,11 +115,15 @@ class SamplingBase(SamplingFactory):
         self._add_reference_entry(db, self.molecule, self.modes, self.method, self.model)
         self._write_condition(db, self.get_condition(number))
 
+    def write_xyz(self, filename, number):
+        molecule = deepcopy(self.molecule)
+        molecule.crd = self._db.get('crd', number)
+        molecule.write_xyz(filename)
+
     def __iter__(self):
         self._start = 1  # skip equilibrium structure
         return self
 
-    @abstractmethod
     def get_condition(self, idx):
         if idx >= self.nconditions:
             return None
@@ -131,7 +136,7 @@ class SamplingBase(SamplingFactory):
         # assure the consistency with all
         # the previous conditions
         for _ in range(nconditions):
-            cond = self.get_condition()
+            cond = self.sampler.get_condition()
             self._write_condition(self._db, cond)
 
     def _setup_db(self, config):
@@ -240,7 +245,7 @@ class SamplingBase(SamplingFactory):
 
     def _get_method(self, method):
         number = tuple(self._methods.keys()).index(method)
-        return value, number
+        return method, number
 
     @classmethod
     def _get_method_from_db(cls, db):

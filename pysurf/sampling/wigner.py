@@ -36,22 +36,30 @@ class Wigner(InitialConditionsBase):
         frequencies = :: flist_np
     """
 
-    def __init__(self, molecule, modes, is_massweighted=False):
+    def __init__(self, molecule, modes, check=True, is_massweighted=False):
         """Initialize a new Wigner Sampling with a molecule class
            and a normal Mode class"""
         self.molecule = molecule
         self.modes = modes
         self.is_massweighted = is_massweighted
-        self._check_modes()
+        if check is True:
+            self._check_modes()
 
     @classmethod
     def from_config(cls, config):
         """ """
+        if not isinstance(config, dict):
+            return cls.from_db(config)
         if config['from'] == 'molden':
             return cls.from_molden(config['from']['moldenfile'])
         elif config['from'] == 'frequencies':
             return cls.from_freqs(config['from']['frequencies'])
         raise Exception("only (molden, frequencies) implemented")
+
+    @classmethod
+    def from_db(cls, database):
+        return cls(None, None, check=False)
+
 
     def get_init(self):
         """Return all infos needed for the initial condition parser"""

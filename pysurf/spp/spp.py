@@ -32,7 +32,7 @@ class AbinitioFactory(PluginBase):
 
     @classmethod
     def instance_from_config(cls, config):
-        return cls.software[config['software'].value](config['software'].subquestion_answers)
+        return cls.software[config['software'].value].from_config(config['software'].subquestion_answers)
 
 
 class ModelFactory(PluginBase):
@@ -65,6 +65,7 @@ class SurfacePointProvider(Colt):
     _questions = """
         logging = debug :: str ::
         mode = ab-initio
+        use_db = no 
 
         """
     _modes = {'ab-initio': AbinitioFactory,
