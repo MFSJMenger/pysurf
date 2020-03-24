@@ -1,4 +1,4 @@
-from .atominfo import atomid_to_name
+from .molecule.atominfo import ATOMID_TO_NAME
 #
 from .utils.osutils import exists_and_isfile
 from .utils.constants import angstrom2bohr
@@ -40,7 +40,7 @@ def _read_xyz(filename):
 
     if atoms_are_numbers is True:
         for idx, atom in enumerate(atoms):
-            atoms[idx] = atomid_to_name[int(atom)]
+            atoms[idx] = ATOMID_TO_NAME[int(atom)]
     else:
         for idx, atom in enumerate(atoms):
             atom = atom[0].upper() + atom[1:].lower()

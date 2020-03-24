@@ -17,7 +17,6 @@ def log(func):
     return _wrapper
 
 
-
 def timeit(func):
 
     global _total_times

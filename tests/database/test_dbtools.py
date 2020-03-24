@@ -1,26 +1,24 @@
 from pytest import fixture
 import numpy as np
 
-from pysurf.database.dbtools import DatabaseRepresentation, DBVariable
+from pysurf.database.dbtools import DatabaseRepresentation
 
 
 @fixture
 def db_representation_basic():
-    return {
-      'dimensions': {
-                'frames': 'unlimited', 
-                'natoms': 10,
-       }
-    }
+    return """
+      [dimensions]
+      frames = unlimited
+      natoms = 10
+      """
 
 @fixture
 def db_representation_basic_changed():
-    return {
-      'dimensions': {
-                'frames': 'unlimited', 
-                'natoms': 12,
-                }
-    }
+    return """
+      [dimensions]
+      frames = unlimited
+      natoms = 12
+      """
 
 
 def test_database_same_basic_representation(db_representation_basic): 

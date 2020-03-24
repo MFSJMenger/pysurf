@@ -17,11 +17,22 @@ class Database(object):
              }
           }
 
+    or string:
+
+    dct = "
+
+    [dims]
+    frame = unlimited
+    natoms = natoms
+    three = 3
+    [vars]
+    crd = double :: (frame, natoms, three)
+
     """
 
     __slots__ = ('filename', '_rep', '_db', '_handle', '_closed', '_icurrent')
 
-    def __init__(self, filename, settings):
+    def __init__(self, filename, settings, read_only=False):
         """Initialize new Database,
         if db exists:
            load existing database
@@ -33,9 +44,14 @@ class Database(object):
         """
         self.filename = filename
         #
-        self._rep = DatabaseRepresentation(settings)
+        if isinstance(settings, dict):
+            self._rep = DatabaseRepresentation(settings)
+        elif isinstance(settings, str):
+            self._rep = DatabaseRepresentation.from_string(settings)
         #
-        self._db, self._handle = self._rep.create_database(filename)
+        self._closed = True
+        #
+        self._db, self._handle = self._rep.create_database(filename, read_only)
         #
         self._closed = False
         #
@@ -50,8 +66,7 @@ class Database(object):
     @classmethod
     def empty_like(cls, filename, db):
         """ create an empty database with the same dimensions as db
-            filename is the name of the new empty db
-        """
+            filename is the name of the new empty db """
         return cls(filename, {'variables': db._rep.variables, 'dimensions': db._rep.dimensions})
 
     def __getitem__(self, key):
@@ -105,4 +120,5 @@ class Database(object):
             variable[:] = value
 
     def __del__(self):
-        self._db.close()
+        if self._closed is False:
+            self._db.close()

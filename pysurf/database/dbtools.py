@@ -1,10 +1,12 @@
 """Tools to store information on the Variables and Dimensions in the Database"""
 import netCDF4
+import numpy as np
+from ..colt.generator import GeneratorBase
 
 from ..utils.osutils import exists_and_isfile
 
 
-class DBVariable(object):
+class _DBVariable(object):
     """Store info for Database and easy comparison"""
 
     __slots__ = ('type', 'dimensions')
@@ -24,13 +26,14 @@ class DBVariable(object):
         return True
 
     def __str__(self):
-        return f"DBVariable(type = {self.type}, dimension = {self.dimensions})"
+        return f"_DBVariable(type = {self.type}, dimension = {self.dimensions})"
 
+DBVariable = _DBVariable
 
 def get_variable_info(db, key):
     """Get the info of a variable as a namedtuple"""
     variable = db.variables[key]
-    return DBVariable(variable.datatype, variable.dimensions)
+    return _DBVariable(variable.datatype, variable.dimensions)
 
 
 def get_dimension_info(db, key):
@@ -53,6 +56,79 @@ class DatabaseTools(object):
         return result
 
 
+
+
+class DatabaseGenerator(GeneratorBase):
+
+    default = "DIM"
+
+    leafnode_type = (str, int, _DBVariable)
+
+    def __init__(self, string):
+        tree, _keys = self._configstring_to_keys_and_tree(string)
+        if 'vars' in tree:
+            tree['variables'] = tree.pop('vars')
+        if 'dims' in tree:
+            tree['dimensions'] = tree.pop('dims')
+
+        self.tree = tree
+
+    def leaf_from_string(self, name, value, parent):
+        """Create a leaf from an entry in the config file
+
+        Args:
+            name (str):
+                name of the entry
+
+            value (str):
+                value of the entry in the config
+
+        Kwargs:
+            parent (str):
+                identifier of the parent node
+
+        Returns:
+            A leaf node
+
+        Raises:
+            ValueError:
+                If the value cannot be parsed
+        """
+        if parent in ["vars", "variables"]:
+            typ, dims = value.split(self.seperator)
+            # get rid of brackets
+            dims = dims.replace("(", "").replace(")", "")
+            # split according to , or not
+            if "," in dims:
+                dims = [ele.strip() for ele in dims.split(',')]
+            else:
+                dims = dims.split()
+            # return DBVariable
+            return _DBVariable(self.select_type(typ), dims)
+        elif parent in ["dims", "dimensions"]:
+            if value in ['unlimited', 'unlim']:
+                return 'unlimited'
+            return int(value)
+        else:
+            raise ValueError("Database can only have Dimensions and Variables")
+
+    @staticmethod
+    def select_type(typ):
+        """select type"""
+        types = {
+            'int': np.int,
+            'float': np.float,
+            'double': np.double,
+            'complex': np.complex,
+        }
+        typ = typ.strip().lower()
+        
+        value = types.get(typ, None)
+        if value is not None:
+            return value
+        raise ValueError(f"Only except values of {', '.join(key for key in types.keys())}")
+
+
 class DatabaseRepresentation(object):
     """Store abstract representation of the Variables and
     Dimensions stored in the Database. This class makes
@@ -62,11 +138,17 @@ class DatabaseRepresentation(object):
 
     __slots__ = ('variables', 'dimensions', 'unlimited', '_created', '_db', '_handle')
 
+
     def __init__(self, settings):
         self._parse(settings)
         self._created = False
         self._db = None
         self._handle = None
+
+    @classmethod
+    def from_string(cls, string):
+        settings = DatabaseGenerator(string).tree
+        return cls(settings)
 
     @classmethod
     def from_db(cls, db):
@@ -76,12 +158,12 @@ class DatabaseRepresentation(object):
         return cls({'variables': variables, 'dimensions': dimensions})
 
     def __str__(self):
-        print("Dimensions: ")
-        for item in self['dimensions']:
-            print(item)
-        for item in self['variables']:
-            print(item)
-        return ""
+        dims = ", ".join(item for item in self['dimensions'])
+        var = ", ".join(item for item in self['dimensions'])
+        return f"""Database:
+                    dimensions: {dims}
+                    variables: {var}
+                """
 
     def _parse(self, settings):
         """Parse given database"""
@@ -107,10 +189,18 @@ class DatabaseRepresentation(object):
         else:
             raise KeyError("Only ['dimension', 'variables'] are allowed keys!")
 
-    def create_database(self, filename):
+    def create_database(self, filename, read_only=False):
         """Create the database from the representation"""
         if self._created is True:
             return self._db, self._handle
+
+        if read_only is True:
+            if not exists_and_isfile(filename):
+                raise Exception(f"Database {filename} needs to exists")
+            else:
+                self._created = True
+                self._db, self._handle = self._load_database(filename)
+                return self._db, self._handle
 
         if exists_and_isfile(filename):
             self._db, self._handle = self._load_database(filename)
@@ -144,10 +234,13 @@ class DatabaseRepresentation(object):
         """Create a new database"""
         return create_dataset(filename, self)
 
-    def _load_database(self, filename):
+    def _load_database(self, filename, read_only=True):
         """Load an existing database and check
            that it is compatable with the existing one"""
-        db = load_database(filename)
+        if read_only is True:
+            db = load_database(filename, io_options='r')
+        else:
+            db = load_database(filename)
         ref = DatabaseRepresentation.from_db(db)
 
         if ref != self:
