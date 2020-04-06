@@ -31,8 +31,8 @@ class AbinitioFactory(PluginBase):
         questions.add_branching("software", {name: software.questions for name, software in cls.software.items()})
 
     @classmethod
-    def instance_from_config(cls, config):
-        return cls.software[config['software'].value].from_config(config['software'].subquestion_answers)
+    def instance_from_config(cls, config, atomids, nstates):
+        return cls.software[config['software'].value].from_config(config['software'].subquestion_answers, atomids, nstates)
 
 
 class ModelFactory(PluginBase):
@@ -82,7 +82,7 @@ class SurfacePointProvider(Colt):
         questions.generate_cases("mode", {name: mode.questions for name, mode in cls._modes.items()})
         questions.generate_cases("use_db", {name: mode.questions for name, mode in cls._database.items()})
 
-    def __init__(self, inputfile, properties, natoms, nstates, logger=None):
+    def __init__(self, inputfile, properties, natoms, nstates, atomids, logger=None):
         """ The inputfile for the SPP has to provide the necessary
             information, how to produce the data at a specific point
             in the coordinate space.
@@ -113,9 +113,9 @@ class SurfacePointProvider(Colt):
         # get config
         config = self._parse_config(inputfile)
         #
-        self._interface = self._select_interface(config, properties, natoms, nstates)
+        self._interface = self._select_interface(config, properties, natoms, nstates, atomids)
 
-    def _select_interface(self, config, properties, natoms, nstates):
+    def _select_interface(self, config, properties, natoms, nstates, atomids):
         """Select the correct interface based on the mode"""
         if config['mode'] == 'model':
             self.logger.info('Using model to generate the PES')
@@ -125,7 +125,7 @@ class SurfacePointProvider(Colt):
             self.logger.info('Ab initio calculations are used to generate the PES')
             # make sure that AB INITIO section is in the inputfile
             # add path to AB INITIO section
-            interface = AbinitioFactory.instance_from_config(config['mode'])
+            interface = AbinitioFactory.instance_from_config(config['mode'], atomids, nstates)
         else:
             # is atomatically caught through colt!
             self.logger.error("Mode has to be 'model' or 'ab-initio'")
