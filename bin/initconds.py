@@ -1,9 +1,11 @@
 import os
 import numpy as np
-
+#
 from pysurf.colt import Colt
 from pysurf.colt import FromCommandline
-from pysurf.sampling.initialconditions import InitialConditions
+#
+from pysurf.utils.constants import fs2au
+from pysurf.sampling.initialconditions import InitialConditionsFactory
 
 
 @FromCommandline("""

@@ -6,25 +6,28 @@ from pysurf.molden import MoldenParser
 #
 from .base_sampling import InitialCondition
 from ..molecule.molecule import Molecule
-from ..molecule.atominfo import masses as MASSES
-from ..molecule.atominfo import atomname_to_id
+from ..molecule.atominfo import MASSES
+from ..molecule.atominfo import ATOMNAME_TO_ID
 from .normalmodes import NormalModes as nm
 from .normalmodes import Mode
-from .sampling import SamplingBase
+from .initialconditions import InitialConditionsBase
 
-class Wigner(SamplingBase):
+
+class Wigner(InitialConditionsBase):
+
     _questions = """
         # Input source for the normal modes and/or frequencies, which are used to generate the
         # initial conditions.
         # Possible options are:
-        # - molden
-        # - frequencies
-        from = :: str :: [molden, frequencies]
+        #    - molden
+        #    - frequencies
+        #
+        from = :: str
 
         # If initial conditions are generated from a molden file, this subquestion asks for the
         # molden file.
         [from(molden)]
-        moldenfile =
+        moldenfile = molden.in :: str
 
         # If initial conditions are generated from frequencies, here a list of frequencies has to
         # be given for the modes. The list can be in the python list format or just comma separated
@@ -33,13 +36,30 @@ class Wigner(SamplingBase):
         frequencies = :: flist_np
     """
 
-    def __init__(self, molecule, modes, is_massweighted=False):
+    def __init__(self, molecule, modes, check=True, is_massweighted=False):
         """Initialize a new Wigner Sampling with a molecule class
            and a normal Mode class"""
         self.molecule = molecule
         self.modes = modes
         self.is_massweighted = is_massweighted
-        self._check_modes()
+        if check is True:
+            self._check_modes()
+
+    @classmethod
+    def from_config(cls, config):
+        """ """
+        if not isinstance(config, dict):
+            return cls.from_db(config)
+        if config['from'] == 'molden':
+            return cls.from_molden(config['from']['moldenfile'])
+        elif config['from'] == 'frequencies':
+            return cls.from_freqs(config['from']['frequencies'])
+        raise Exception("only (molden, frequencies) implemented")
+
+    @classmethod
+    def from_db(cls, database):
+        return cls(None, None, check=False)
+
 
     def get_init(self):
         """Return all infos needed for the initial condition parser"""
@@ -64,20 +84,11 @@ class Wigner(SamplingBase):
         print("[" + ", ".join(map(to_strg, img)) + "]")
 
     @classmethod
-    def from_config(cls, config):
-        """ """
-        if config['from'] == 'molden':
-            return cls.from_molden(config['from']['moldenfile'])
-        elif config['from'] == 'frequencies':
-            return cls.from_freqs(config['from']['frequencies'])
-        raise Exception("only (molden, frequencies) implemented")
-
-    @classmethod
     def from_molden(cls, filename):
         molden = MoldenParser(filename, ['Info', 'Freqs', 'FrCoords', 'FrNormCoords'])
         # get molecule info
         atoms = [atom for atom, _, _, _ in molden['FrCoords']]
-        atomids = np.array([atomname_to_id[atom] for atom in atoms])
+        atomids = np.array([ATOMNAME_TO_ID[atom] for atom in atoms])
         crd = np.array([[x, y, z] for _, x, y, z in molden['FrCoords']])
         masses = np.array([MASSES[idx]*U_TO_AMU for idx in atomids])
         # create molecule

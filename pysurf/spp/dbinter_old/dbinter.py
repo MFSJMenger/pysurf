@@ -6,31 +6,62 @@ from copy import deepcopy
 from pysurf.database.database import Database
 from pysurf.database.dbtools import DBVariable
 from pysurf.utils.strutils import split_str
+from ...colt import PluginBase
 from ..qminter.qminter import get_qminter
 
 
-class DBInter():
+class QMFactory(PluginBase):
+    """Helper Class to create any interface used by the 
+       Surface Point Provider
+    """
+    __plugins_storage = '_software'
+    __is_plugin_factory = True
+
+    _questions = """
+        software =
+    """
+
+    @classmethod
+    def _generate_subquestions(cls, questions):
+        questions.generate_cases("software", {name: software.questions
+                                              for name, software in cls._software.items()})
+
+
+class DBInter(Colt):
     """This class handels all the interaction with the database and
-        the surface point provider, 
+        the surface point provider,
         saves the data and does the interpolation
     """
-    def __init__(self, dbpath, config, logger, refgeo):
-        self.dbpath = dbpath
-        self.config = config
+
+    _questions = """
+            #
+            database = yes :: str :: [yes, no]
+            software = 
+            #
+            reference energy = -264.0285520805
+            #
+            number of states = 4 :: int
+            energy only = false :: bool
+            properties = energy gradient :: list
+            simulate = false :: bool
+
+            [database(yes)]
+            type = :: str :: [read, write, readwrite]
+
+            [database(no)]
+
+    """
+
+    @classmethod
+    def _generate_subquestions(cls, questions):
+        questions.generate_cases("", "software", {name: software.questions for name, software in cls._software.items()})
+
+    def __init__(self, config, logger, refgeo):
         self.logger = logger
         self.refgeo = refgeo
         self.natoms = len(self.refgeo['atoms'])
-        self.nstates = int(self.config['number of states'])
-
-        try:
-            self.inter_grad = self.config.getboolean('interpolate gradient')
-            if self.inter_grad is None:
-                self.inter_grad = False
-                self.config['interpolate gradient'] = 'False'
-        except:
-            self.inter_grad = False
-            self.config['interpolate gradient'] = 'False'
-
+        self.nstates = config['number of states']
+        self.inter_grad = config['interpolate gradient']
 
         if 'properties' in config.keys():
             self.properties = split_str(config['properties'])
@@ -63,7 +94,6 @@ class DBInter():
                 self.thr = 0.25
                 self.logger.info('Using default max distance for'
                                  + ' interpolation of 0.25')
-
 
     def create_db(self, filename='db.dat'):
         variables = {}
@@ -101,7 +131,7 @@ class DBInter():
 
 
         if self.interpol:
-            self.logger.debug('Number of DB entries: ' 
+            self.logger.debug('Number of DB entries: '
                                + str(len(self.db['crd'])))
             # if db empty, start qm calculation
             if len(self.db['crd']) == 0:
@@ -125,7 +155,7 @@ class DBInter():
                     if self.inter_grad is True:
                         request['gradient'] = self.interpolator.calc_grad(crd)
                     return request
-                
+
                 res = self.interpolator.get(crd)
                 success = True
                 for key in res.keys():
@@ -142,7 +172,7 @@ class DBInter():
 
         else:
             res = self.get_qm(request)
-            
+
         print('Johannes res:', res)
         return res
 
@@ -159,7 +189,7 @@ class DBInter():
         if 'energy' in res.keys():
             self.db.append('energy', res['energy'])
         if increase: self.db.increase
-        
+
         self.interpolator = Interpolation(self.db, self.config,
                                                   self.logger,
                                                   self.refgeo)
@@ -184,7 +214,7 @@ class DBInter():
         return res
 
 
-class Interpolation():
+class Interpolation(Colt):
     def __init__(self, db, config, logger, refgeo):
         self.db = db
         self.config = config
@@ -194,7 +224,7 @@ class Interpolation():
 
         # The interpolate gradient key has been added in DBInter
         self.inter_grad = self.config.getboolean('interpolate gradient')
-        
+
         if self.config['interpolation'] == 'rbf':
             noc = len(self.db['crd'])
             crds = np.empty((noc, self.natoms*3), dtype=float)
@@ -285,12 +315,11 @@ class Interpolation():
         return grad
 
 
-
 class ShepardInterpolator():
     def __init__(self, crds, values):
         self.crds = crds
         self.values = values
-    
+
     def __call__(self, crd):
         weights = self._get_weights(crd)
         res = 0.0

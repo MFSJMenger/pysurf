@@ -2,8 +2,8 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 
-from pysurf.spp.dbinter.dbinter import ShepardInterpolator
-from pysurf.spp.dbinter.dbinter import MyRBF
+from pysurf.spp.dbinter_old.dbinter import ShepardInterpolator
+from pysurf.spp.dbinter_old.dbinter import MyRBF
 
 start = -1.2
 stop = 1.2

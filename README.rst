@@ -7,8 +7,8 @@ Python Surface Hopping Code
 
 * Free software: GNU General Public License v3
 
-General:
-________
+General Aim:
+____________
 
  * Python 3.6+
  * Testing: pytest

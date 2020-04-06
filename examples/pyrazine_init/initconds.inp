@@ -1,13 +1,10 @@
-
-
 method = Wigner
-outputfile = sampling.db
-model = False
+filename = sampling.db
 number of conditions = 100
 initial state = 0
 
 [method(Wigner)]
 from = molden
 
-[method(Wigner)from(molden)]
+[method(Wigner)::from(molden)]
 moldenfile = molden.in

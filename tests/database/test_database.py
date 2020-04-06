@@ -3,7 +3,7 @@ import os
 import numpy as np
 
 from pysurf.database.database import Database
-from pysurf.database.dbtools import DBVariable, DatabaseRepresentation
+from pysurf.database.dbtools import DatabaseRepresentation
 
 
 @fixture
@@ -12,17 +12,16 @@ def filepath():
 
 @fixture
 def default_settings():
-    return {
-      'dimensions': {
-                'frames': 'unlimited', 
-                'natoms': 10,
-                'three': 3,
-                'one': 1,
-       },
-       'variables': {
-                'dipole': DBVariable(np.double, ('frames', 'three'))
-       }
-    }
+    return """
+     [dims]
+     frames = unlimited 
+     natoms = 10
+     three = 3
+     one = 1
+     [variables]
+     dipole = double :: (frames, three)
+     """
+    
 
 
 @fixture

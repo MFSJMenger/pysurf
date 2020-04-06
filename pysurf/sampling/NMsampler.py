@@ -52,7 +52,7 @@ class NMSampler(Colt):
         molden = MoldenParser(filename, ['Info', 'Freqs', 'FrCoords', 'FrNormCoords'])
         # get molecule info
         atoms = [atom for atom, _, _, _ in molden['FrCoords']]
-        atomids = np.array([atomname_to_id[atom] for atom in atoms])
+        atomids = np.array([ATOMNAME_TO_ID[atom] for atom in atoms])
         crd = np.array([[x, y, z] for _, x, y, z in molden['FrCoords']])
         masses = np.array([MASSES[idx]*U_TO_AMU for idx in atomids])
         # create molecule
