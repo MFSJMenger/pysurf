@@ -2,12 +2,20 @@ import os
 # Numpy
 import numpy as np
 # Database related
-#
 from ..colt import Colt, PluginBase
 # logger
 from ..logger import get_logger, Logger
 # Interpolation
 from .dbinter import DataBaseInterpolation
+#
+from request import RequestGenerator
+
+"""
+TODO:
+    - What happens to user properties that are asked 
+      if no database is set?
+
+"""
 
 
 class NoFurtherQuestions(Colt):
@@ -66,7 +74,6 @@ class SurfacePointProvider(Colt):
         logging = debug :: str ::
         mode = ab-initio
         use_db = no 
-
         """
     _modes = {'ab-initio': AbinitioFactory,
               'model': ModelFactory,
@@ -113,7 +120,7 @@ class SurfacePointProvider(Colt):
         # get config
         config = self._parse_config(inputfile)
         #
-        self._interface = self._select_interface(config, properties, natoms, nstates, atomids)
+        self._request, self._interface = self._select_interface(config, properties, natoms, nstates, atomids)
 
     def _select_interface(self, config, properties, natoms, nstates, atomids):
         """Select the correct interface based on the mode"""
@@ -129,15 +136,19 @@ class SurfacePointProvider(Colt):
         else:
             # is atomatically caught through colt!
             self.logger.error("Mode has to be 'model' or 'ab-initio'")
-        # check properties!
+        # check default
         self._check_properties(properties, interface)
         # use databse
         if config['use_db'] == 'yes':
             self.logger.info("Setting up database...")
             interface = DataBaseInterpolation(interface, config['use_db'],
                                                natoms, nstates, properties)
+            request = RequestGenerator(nstates, config['use_db']['properties'])
             self.logger.info("Database ready to use")
-        return interface
+        else:
+            request = RequestGenerator(nstates)
+        #
+        return request, interface
 
     def _check_properties(self, properties, interface):
         """Sanity check for properties"""
@@ -152,6 +163,10 @@ Implemented: {interface.implemented}
         """Parse the config file"""
         questions = self.generate_questions("spp", config=None)
         return questions.check_only(inputfile)
+
+    def request(self, crd, properties, states=None):
+        request = self._request.request(crd, properties, states)
+        return self.get(request)
 
     def get(self, request):
         """ The get method is the method which should be called by
