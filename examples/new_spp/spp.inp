@@ -1,0 +1,10 @@
+mode = ab-initio
+logging = debug
+use_db = no
+
+[mode(ab-initio)]
+software = QChem
+
+[mode(ab-initio)::software(QChem)]
+exe = qchem
+basis = 6-31g

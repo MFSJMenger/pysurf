@@ -19,13 +19,13 @@ class RequestGenerator:
 
     def _request(self, crd, properties, states=None):
         """add more sanity checks!"""
-        properties = properties + self._request_all
+        properties = properties + self._request_always
         if states is None:
             return Request(crd, properties, list(range(self.nstates)))
         return Request(crd, properties, states)
 
     def _request_all(self, crd, properties, states=None):
-        properties = properties + self._request_all
+        properties = properties + self._request_always
         return Request(crd, properties, list(range(self.nstates)))
 
 

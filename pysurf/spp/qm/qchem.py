@@ -1,11 +1,13 @@
 from collections.abc import MutableMapping
 from copy import deepcopy
+import os
 #
 from jinja2 import Template
 #
-from qctools import generate_filereader
+from qctools import generate_filereader, Event
 #
 from . import AbinitioBase
+from ...molecule import Molecule
 
 
 qchem = """
@@ -128,6 +130,14 @@ class QChem(AbinitioBase):
     remsection = :: literal
     chg = 0 :: int
     mult = 1 :: int
+    exchange = pbe0
+    basis = cc-pvdz
+    max_scf_cycles = 500 :: int
+    xc_grid = 000075000302
+    mem_static = 4000 :: int
+    mem_total = 16000 :: int
+    sym_ignore = true :: bool
+    set_iter = 50 :: int
 
     """
 
@@ -138,12 +148,12 @@ class QChem(AbinitioBase):
     settings = {
         'set_iter': 50,
         'exchange': 'pbe0',
-        'basis': 'sto-3g', 
-        'MAX_SCF_CYCLES': 500,
+        'basis': 'cc-pvdz',
+        'max_scf_cycles': 500,
         'xc_grid': '000075000302',
         'mem_static': 4000,
         'mem_total': 16000,
-        'SYM_IGNORE': 'true',
+        'sym_ignore': 'true',
     }
 
     excited_state_settings = {
@@ -157,7 +167,7 @@ class QChem(AbinitioBase):
     #
     implemented = ['energy', 'gradient']
 
-    def __init__(self, atomids, nstates, chg, mult, qchemexe):
+    def __init__(self, config, atomids, nstates, chg, mult, qchemexe):
         self.molecule = Molecule(atomids, None)
         self.exe = qchemexe
         self.chg = chg
@@ -165,11 +175,14 @@ class QChem(AbinitioBase):
         self.filename = 'qchem.in'
         self.nstates = nstates
         self.reader._events['ExcitedState'].nmax = nstates
-        self._update_dct(settings)
+        self._update_settings(config)
+
+    def _update_settings(self, config):
+        self.settings = {key: config[key] for key in self.settings}
 
     @classmethod
     def from_config(cls, config, atomids, nstates):
-        return cls(atomids, nstates, config['chg'], config['mult'], config['exe'])
+        return cls(config, atomids, nstates, config['chg'], config['mult'], config['exe'])
 
     def get(self, request):
         # update coordinates
@@ -194,7 +207,7 @@ class QChem(AbinitioBase):
 
     def _do_energy(self, request):
         settings = UpdatableDict(self.settings, self.excited_state_settings)
-        settings['jobtype'] = 'force'
+        settings['jobtype'] = 'sp'
         self._write_input(self.filename, settings.items())
         output = self.submit(self.filename)
         out = self.reader(output, ['SCFEnergy', 'ExcitedState'])

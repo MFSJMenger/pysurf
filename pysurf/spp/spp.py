@@ -8,7 +8,7 @@ from ..logger import get_logger, Logger
 # Interpolation
 from .dbinter import DataBaseInterpolation
 #
-from request import RequestGenerator
+from .request import RequestGenerator
 
 """
 TODO:
@@ -141,9 +141,8 @@ class SurfacePointProvider(Colt):
         # use databse
         if config['use_db'] == 'yes':
             self.logger.info("Setting up database...")
-            interface = DataBaseInterpolation(interface, config['use_db'],
-                                               natoms, nstates, properties)
-            request = RequestGenerator(nstates, config['use_db']['properties'])
+            interface = DataBaseInterpolation(interface, config['use_db'], natoms, nstates, properties)
+            request = RequestGenerator(nstates, properties + config['use_db']['properties'])
             self.logger.info("Database ready to use")
         else:
             request = RequestGenerator(nstates)
