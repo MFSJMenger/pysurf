@@ -1,6 +1,6 @@
 mode = ab-initio
 logging = debug
-use_db = no
+use_db = yes
 
 [mode(ab-initio)]
 software = QChem

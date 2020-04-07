@@ -51,23 +51,15 @@ class DataBaseInterpolation(Colt):
     def get(self, request):
         """Get result of request"""
         #
-        request_all = self._request_all(request)
-        result = self._interface.get(request_all)
+        result = self._interface.get(request)
         #
         self._db.append('crd', result['crd'])
         self._db.append('energy', result['energy'])
-        self._db.append('gradient', result['gradient'])
+        grad = []
+        for key in sorted(result['gradient']):
+            grad.append(result['gradient'][key])
+        self._db.append('gradient', grad)
         #self._db.append('dipol', result['dipol'])
         self._db.increase
         result = {key: result[key] for key in request.keys() if key != 'crd'}
         return result
-
-    def _request_all(self, request):
-        """for database its important to save all properties
-           therefor each time no interpolation can be performed
-           all properties need to be computed and saved!"""
-        if 'energy' not in request: 
-            request['energy'] = None
-        if 'gradient' not in request: 
-            request['gradient'] = None
-        return request
