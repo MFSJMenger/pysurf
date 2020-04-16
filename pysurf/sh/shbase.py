@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from ..random import RandomNumberGenerator
+from ..random.shrandom import RandomNumberGeneratorNP
 
 
 class SurfaceHoppingBase(ABC):
@@ -47,7 +47,7 @@ class SurfaceHoppingBase(ABC):
         pass
 
     def init_random(self, seed=16661):
-        self._random = RandomNumberGenerator(seed)
+        self._random = RandomNumberGeneratorNP(seed)
 
     def random(self):
         return self._random.get()
@@ -58,7 +58,7 @@ class SurfaceHoppingBase(ABC):
         crd += v*dt + 0.5*a*dt*dt
         return crd
 
-    @staticmetho
+    @staticmethod
     def v_update(v, a_old, a, dt):
         v += 0.5 * (a_old + a) * dt
         return v

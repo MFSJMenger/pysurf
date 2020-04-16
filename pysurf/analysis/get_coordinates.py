@@ -34,7 +34,7 @@ def write_crd(crd, step):
 
 
 @FromCommandline("""
-infile = prop.db :: file_exists
+infile = prop.db :: existing_file
 outfile = crd.xyz :: file
 """)
 def get_coordinates_command(infile, outfile):
@@ -47,7 +47,7 @@ def get_coordinates(infile, outfile):
     
     db = Database.load_db(infile)
     try:
-        mass = db['mass']
+        mass = db['masses']
         if len(mass.shape) == 1:
             model = True
         else:

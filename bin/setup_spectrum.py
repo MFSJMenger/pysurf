@@ -8,14 +8,8 @@ from pysurf.utils.osutils import exists_and_isfile
 from pysurf.logger import get_logger
 from pysurf.sampling import Sampling
 
-class SetupPropagation(Colt):
+class SetupSpectrum(Colt):
     _questions = """
-    # Total propagation time in fs
-    propagation time in fs = 100 :: float
-
-    # Time step in fs for the propagation
-    time step in fs = 0.5 :: float
-    
     # Number of trajectories for the propagation
     n_traj = 100 :: int
 
@@ -24,12 +18,6 @@ class SetupPropagation(Colt):
 
     # Filepath for the inputfile of the Surface Point Provider
     spp = spp.inp :: file
-
-    # Decide whether database for the propagation should be copied to the trajectory folder
-    copy_db = yes :: str :: [yes, no]
-
-    [copy_db(yes)]
-    db_file = none :: str
     """
     
 
@@ -38,11 +26,11 @@ class SetupPropagation(Colt):
             in a file for further usage.
         """
         self.inputfile = inputfile
-        self.propagationfolder = 'prop'
-        self.trajfolder = 'traj_'
-        self.logger = get_logger('setup_propagation.log', 'setup_propagation')
+        self.propagationfolder = 'spectrum'
+        self.trajfolder = 'init_'
+        self.logger = get_logger('setup_spectrum.log', 'setup_spectrum')
         
-        quests = self.generate_questions("SURFACE HOPPING", config=inputfile)
+        quests = self.generate_questions("SPECTRUM", config=inputfile)
         self.config = quests.ask(inputfile)
 
         if not(os.path.isdir(self.propagationfolder)):
@@ -61,22 +49,17 @@ class SetupPropagation(Colt):
             return
 
         os.mkdir(foldername)
-
         copy2(self.inputfile, foldername)
         copy2(self.config['spp'], foldername)
-
-        if self.config['copy_db'] == 'yes':
-            copy2(self.config['copy_db']['db_file'], foldername)
-
         initname = os.path.join(foldername, 'init_{:04d}.db'.format(number))
         self.sampling.export_condition(initname, number)
 
 
 @FromCommandline("""
-inputfile = propagation.inp :: file
+inputfile = spectrum.inp :: file
 """)
-def command_setup_propagation(inputfile):
-    SetupPropagation(inputfile)
+def command_setup_spectrum(inputfile):
+    SetupSpectrum(inputfile)
 
 if __name__=="__main__":
-    command_setup_propagation()
+    command_setup_spectrum()

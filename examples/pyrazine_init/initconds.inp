@@ -1,10 +1,11 @@
+
+
+conditions = 100
 method = Wigner
-filename = sampling.db
-number of conditions = 100
-initial state = 0
+sampling_db = /data/ehrmaier/pysurf/examples/pyrazine_init/sampling.db
 
 [method(Wigner)]
 from = molden
 
-[method(Wigner)::from(molden)]
+[method(Wigner)from(molden)]
 moldenfile = molden.in

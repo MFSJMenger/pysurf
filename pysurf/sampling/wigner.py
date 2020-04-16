@@ -4,16 +4,15 @@ import numpy.random as random
 from pysurf.constants import U_TO_AMU, CM_TO_HARTREE
 from pysurf.molden import MoldenParser
 #
-from .base_sampling import InitialCondition
 from ..molecule.molecule import Molecule
 from ..molecule.atominfo import MASSES
 from ..molecule.atominfo import ATOMNAME_TO_ID
 from .normalmodes import NormalModes as nm
 from .normalmodes import Mode
-from .initialconditions import InitialConditionsBase
+from .base_sampler import DynSamplerBase, DynCondition
 
 
-class Wigner(InitialConditionsBase):
+class Wigner(DynSamplerBase):
 
     _questions = """
         # Input source for the normal modes and/or frequencies, which are used to generate the
@@ -48,11 +47,9 @@ class Wigner(InitialConditionsBase):
     @classmethod
     def from_config(cls, config):
         """ """
-        if not isinstance(config, dict):
-            return cls.from_db(config)
-        if config['from'] == 'molden':
+        if config['from'].value == 'molden':
             return cls.from_molden(config['from']['moldenfile'])
-        elif config['from'] == 'frequencies':
+        elif config['from'].value == 'frequencies':
             return cls.from_freqs(config['from']['frequencies'])
         raise Exception("only (molden, frequencies) implemented")
 
@@ -166,7 +163,7 @@ def get_initial_condition(molecule, modes):
     #
     # remove translational/rotational dofs
     #
-    return Epot, InitialCondition(crd, veloc, 0)
+    return Epot, DynSamplerBase.condition(crd, veloc, 0)
 
 
 def wigner_gs(Q, P):
