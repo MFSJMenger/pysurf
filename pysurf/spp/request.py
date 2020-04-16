@@ -1,4 +1,5 @@
 from collections import UserDict
+import numpy as np
 
 
 class RequestGenerator:
@@ -28,16 +29,31 @@ class RequestGenerator:
         properties = properties + self._request_always
         return Request(crd, properties, list(range(self.nstates)))
 
+class StateData:
+
+    def __init__(self, states, natoms):
+        self._states = states
+        self.data = np.empty((len(states), natoms*3), dtype=np.double)
+
+    def __setitem__(self, istate, value):
+        self.data[istate] = value
+
+    def __getitem__(self, istate):
+        return self.data[istate]
+
 
 class Request(UserDict):
 
     def __init__(self, crd, properties, states):
+        UserDict.__init__(self)
+        #
         data = {prop: None for prop in properties}
         # add state loop
         data['states'] = states
         # add crd
         data['crd'] = crd
-        UserDict.__init__(self)
+        if 'gradient' in data:
+            data['gradient'] = StateData(states, len(crd))
         self.data.update(data)
         # store properties
         self.properties = properties

@@ -4,6 +4,7 @@ import subprocess as sp
 from . import AbinitioBase
 from ...fileparser import  read_geom
 from .xtbhelp import XTBReader
+from ...molecule import Molecule
 
 
 def run_interface(script, name):
@@ -41,27 +42,31 @@ class XTBInterface(AbinitioBase):
 
     implemented = ['energy', 'gradient']
 
-    def __init__(self, executable, name, refgeom, filename):
+    def __init__(self, executable, name, atomids, filename):
+        self.natoms = len(atomids)
+        self.molecule = Molecule(atomids, None)
         self.name = name
         self.executable = executable
-        self.natoms, self.atomnames, self.coords = read_geom(refgeom)
+#        self.natoms, self.atomnames, self.coords = read_geom(refgeom)
         self.ifile = filename
 
     @classmethod
-    def from_config(cls, config):
-        return cls(config['executable'], config['name'], config['refgeom'], config['filename'])
+    def from_config(cls, config, atomids, nstates):
+        if nstates > 1:
+            raise Exception("Only Groundstate calculations possible")
+        return cls(config['executable'], config['name'], atomids, config['filename'])
     
     def get(self, request):
-        self.coords = request['crd']
+        self.molecule.crd = request['crd']
         self._write_general_inputs()
         (en, dip), grad, _ = self._run_gradient()
+        request['gradient'][0] = grad
         request.update({'energy': en,
-                        'gradient': grad,
                         'dipol': dip, })
         return request
 
     def _write_general_inputs(self):
-        self.write_xyz_file(self.ifile, self.natoms, self.name, self.coords)
+        self.molecule.write_xyz(self.ifile)
 
     def _run_energy(self):
         command = "%s %s --sp --copy > output_energy" % (self.executable, self.ifile)
@@ -99,13 +104,6 @@ class XTBInterface(AbinitioBase):
     def _read_xtb_hessian(self, filename):
         xtb = XTBReader(filename, ["Hessian"], {"NAtoms": self.natoms})
         return xtb["Hessian"]
-
-    def write_xyz_file(self, filename, NAtoms, comment, coords):
-        txt = "".join(["%d\n" % NAtoms, 
-                       "%s\n" % comment,
-                        "".join(self.get_coordinates(atomid, coord) for atomid, coord in zip(self.atomnames, self.coords))
-                      ])
-        write_content_to_file(filename, txt)
 
     @classmethod
     def get_coordinates(cls, atomid, coords):

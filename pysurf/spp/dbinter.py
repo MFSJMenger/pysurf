@@ -55,10 +55,7 @@ class DataBaseInterpolation(Colt):
         #
         self._db.append('crd', result['crd'])
         self._db.append('energy', result['energy'])
-        grad = []
-        for key in sorted(result['gradient']):
-            grad.append(result['gradient'][key])
-        self._db.append('gradient', grad)
+        self._db.append('gradient', result['gradient'].data)
         #self._db.append('dipol', result['dipol'])
         self._db.increase
         result = {key: result[key] for key in request.keys() if key != 'crd'}
