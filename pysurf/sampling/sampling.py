@@ -54,7 +54,7 @@ class Sampling(Colt):
     def from_inputfile(cls, inputfile):
         # Generate the config
         quests = cls.generate_questions('SAMPLING', config=None)
-        config = quests.check_only(inputfile)
+        config = quests.ask(inputfile)
         return cls.from_config(config)    
 
 

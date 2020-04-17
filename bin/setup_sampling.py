@@ -6,7 +6,7 @@ from pysurf.colt import Colt
 from pysurf.colt import FromCommandline
 from pysurf.utils.osutils import exists_and_isfile
 from pysurf.logger import get_logger
-from pysurf.sampling.sampling import SamplingBase
+from pysurf.sampling.sampling import Sampling
 
 class SetupSampling(Colt):
 
@@ -41,7 +41,7 @@ class SetupSampling(Colt):
             os.mkdir(self.propagationfolder)
         
         # Open DB of initial conditions once, so that it is available
-        self.initconds = SamplingBase.from_db(config['sampling_db'])
+        self.initconds = Sampling.from_db(config['sampling_db'])
 
         for i in range(config['njobs']):
             self._setup_trajectory_folder(i)

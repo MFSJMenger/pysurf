@@ -11,7 +11,7 @@ from pysurf.database.dbtools import DBVariable
 from pysurf.utils.constants import fs2au
 from pysurf.utils.strutils import split_str
 from pysurf.sh.landau_zener import landau_zener_surfacehopping
-from pysurf.sampling import SamplingBase
+from pysurf.sampling import Sampling
 
 class RunTrajectory(Colt):
     _questions = """
@@ -22,19 +22,19 @@ class RunTrajectory(Colt):
     time step in fs = 0.5 :: float                                                                   
      
     # File with initial condition                                                                    
-    initial condition = sampling.db :: str                                                          
+    initial condition = init.db :: str                                                          
     
     #Filepath for the inputfile of the Surface Point Provider
     spp inputfile = spp.inp :: str    
     """
-    def __init__(self, inputfile):
+    def __init__(self, config):
         self.logger = logging.getLogger('runtrajectory')
         self.inputfile = inputfile
 
         quests = self.generate_questions("SURFACE HOPPING", config=inputfile)
         self.config = quests.ask(inputfile)
 
-        self.initcond = SamplingBase.from_db(self.config['initial condition'])
+        self.initcond = Sampling.from_db(self.config['initial condition'])
 
         self.logger.info('Start propagation of trajectory')
         landau_zener_surfacehopping(self.initcond.get_condition(1),
@@ -43,3 +43,8 @@ class RunTrajectory(Colt):
                                                 self.config['spp inputfile'],
                                                 self.config['time step in fs']*fs2au)
     
+    @classmethod
+    def from_inputfile(cls,inputfile):
+        quests = cls.generate_questions(config=inputfile)
+        config = quests.ask(inputfile)
+        return cls(config)
