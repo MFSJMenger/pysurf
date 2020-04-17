@@ -29,8 +29,6 @@ class SetupSpectrum(SetupBase):
         logger = get_logger('setup_spectrum.log', 'setup_spectrum')
         SetupBase.__init__(self, logger)
         #
-        quests = self.generate_questions(config=inputfile)
-        config = quests.ask(inputfile)
         sampling = Sampling.from_db(config['sampling_db'])
         #
         self.setup_folders(range(config['n_traj']), config, sampling, skip_existing=True)
