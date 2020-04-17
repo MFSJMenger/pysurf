@@ -1,15 +1,15 @@
 import os
-import numpy as np
 from shutil import copy2 as copy
 #
-from pysurf.colt import Colt
-from pysurf.colt import FromCommandline
-from pysurf.utils import SubfolderHandle
 from pysurf.logger import get_logger
 from pysurf.sampling import Sampling
+from pysurf.setup import SetupBase
 
 
-class SetupPropagation(Colt):
+class SetupPropagation(SetupBase):
+
+    folder = 'prop'
+    subfolder = 'traj'
 
     _questions = """
     # Total propagation time in fs
@@ -34,28 +34,25 @@ class SetupPropagation(Colt):
     db_file = none :: str
     """
 
-
-    def __init__(self, inputfile):
+    def __init__(self, config):
         """ Class to create initial conditions due to user input. Initial conditions are saved 
             in a file for further usage.
         """
-        self.inputfile = inputfile
-        self.logger = get_logger('setup_propagation.log', 'setup_propagation')
-
-        fhandle = SubfolderHandle('prop', 'traj')
-        
-        quests = self.generate_questions(config=inputfile)
-        config = quests.ask(inputfile)
+        logger = get_logger('setup_propagation.log', 'setup_propagation')
+        SetupBase.__init__(self, logger)
 
         n_traj = config['n_traj']
 
         # Open DB of initial conditions once, so that it is available
-        self.sampling = Sampling.from_db(config['sampling_db'])
+        sampling = Sampling.from_db(config['sampling_db'])
+        #
+        self.setup_folders(range(n_traj), config, sampling)
 
-        for i, folder in enumerate(fhandle.folderiter(range(n_traj))):
-            self._setup_trajectory_folder(i, folder, config)
+    @classmethod
+    def from_config(cls, config):
+        return cls(config)
 
-    def _setup_trajectory_folder(self, number, foldername, config):
+    def setup_folder(self, number, foldername, config, sampling):
         copy(self.inputfile, foldername)
         copy(config['spp'], foldername)
 
@@ -63,15 +60,8 @@ class SetupPropagation(Colt):
             copy(config['copy_db']['db_file'], foldername)
 
         initname = os.path.join(foldername, 'init.db')
-        self.sampling.export_condition(initname, number)
-
-
-@FromCommandline("""
-inputfile = propagation.inp :: file
-""")
-def command_setup_propagation(inputfile):
-    SetupPropagation(inputfile)
+        sampling.export_condition(initname, number)
 
 
 if __name__=="__main__":
-    command_setup_propagation()
+    SetupPropagation.from_commandline()
