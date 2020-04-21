@@ -25,7 +25,7 @@ class SetupBase(Colt, SubfolderHandle):
 
     def setup_folders(self, lst, *args, **kwargs):
         self.logger.info(f'Start setting up folders\n')
-        for i, folder in enumerate(self.folderiter(lst, skip_existing)):
+        for i, folder in enumerate(self.folderiter(lst)):
             self.logger.info(f'Create folder {folder}\n')
             self.setup_folder(i, folder, *args, **kwargs)
 
