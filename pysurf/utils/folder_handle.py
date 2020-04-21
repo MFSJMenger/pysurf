@@ -42,10 +42,20 @@ class SubfolderHandle:
             name = os.path.join(folder, filename)
             if os.path.isfile(name):
                 yield name
+                
+    def setupiter(self, filename): 
+        """Returns an iterator over all files with name
+           filename in folder/subfolder_*/ """
+        for idx in lst:
+            name = self_folder_path(idx)
+            if not os.path.exists(name):
+                create_folder(name)
+                yield idx, name
 
     def folderiter(self, lst):
-        """iterates of the folders with a certain id
-           if they do not exist they are created """
+        """iterates of the folders idx and names of folders 
+           with a certain idx which do not exists yet and creates them
+         """
         for idx in lst:
             name = self._folder_path(idx)
             create_folder(name)
