@@ -138,6 +138,7 @@ class QChem(AbinitioBase):
     mem_total = 16000 :: int
     sym_ignore = true :: bool
     set_iter = 50 :: int
+    input_bohr = true :: bool
 
     """
 
@@ -154,6 +155,7 @@ class QChem(AbinitioBase):
         'mem_static': 4000,
         'mem_total': 16000,
         'sym_ignore': 'true',
+        'input_bohr': True,
     }
 
     excited_state_settings = {
