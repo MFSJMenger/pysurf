@@ -110,6 +110,7 @@ class DatabaseGenerator(GeneratorBase):
                 return 'unlimited'
             return int(value)
         else:
+            print(parent)
             raise ValueError("Database can only have Dimensions and Variables")
 
     @staticmethod

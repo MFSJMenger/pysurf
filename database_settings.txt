@@ -1,0 +1,44 @@
+
+frame
+natoms
+nstates
+nmodes
+three
+two
+
+generate_database(name, data=[], dimensions={'natoms': 3, 'nstates': 4, 'nmodes': 15}, units=None, attributes=None, descriptition=None, model=False, sp=True)
+load_database(name, data=[], dimensions={}, units=None, attributes=None, descriptition=None, model=False, read_only=False)
+load_database(name, read_only=True)
+check: data, model, units
+
+ plugin/
+    qchem/
+        ...
+    gaussian/
+        ...
+
+
+ name          descresc             Dimensions
+---------------------------------------------------------------
+ crd_equi                            natoms, 3
+ atomids                             natoms
+ freqs                               nmodes
+ modes                               nmodes
+ masses                              natoms/nmodes (in case of model)
+ ----------frames----------------------------------------------
+ crd           coordinates           natoms, 3/nmodes
+ veloc         velocities            natoms, 3/nmodes
+ accel         acceleration          natoms, 3/nmodes
+ energy        energies              nstates
+ gradient      gradients             nstates, natoms, 3/nstates, nmodes
+ fosc          oscilatorstaerke      nstates 
+ transmom      transition dipol      nstates, 3
+ currstate     current state         one
+ ekin          ekin                  one
+ epot                                one
+ etot                                one
+ nacs                                nstates, nstates, natoms, 3
+
+1. wanns kreiiert
+2. descript: 
+3. units: pro varibale

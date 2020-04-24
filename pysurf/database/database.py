@@ -1,4 +1,4 @@
-from .dbtools import DatabaseRepresentation
+from .dbtools import DatabaseRepresentation, DatabaseGenerator
 from .dbtools import load_database
 
 
@@ -122,3 +122,89 @@ class Database(object):
     def __del__(self):
         if self._closed is False:
             self._db.close()
+
+
+class DBSettings:
+
+    dimensions = {
+            'frame': 'unlimited',
+            'natoms': None,
+            'nstates': None,
+            'nmodes': None,
+            'three': 3,
+            'two': 2,
+            'one': 1,
+    }
+    variables = DatabaseGenerator("""
+        [variables]
+        crd_equi  = double :: (natoms, three)
+        atomids   = double :: (natoms)
+        freqs     = double :: (nmodes)
+        modes     = double :: (nmodes)
+        masses    = double :: (natoms)
+
+        crd       = double :: (frame, natoms, three)
+        veloc     = double :: (frame, natoms, three)
+        accel     = double :: (frame, natoms, three)
+        energy    = double :: (frame, nstates)
+        gradient  = double :: (frame, nstates, natoms, three)
+        fosc      = double :: (frame, nstates)
+        transmom  = double :: (frame, nstates, three)
+        currstate = double :: (frame, one)
+        ekin      = double :: (frame, one)
+        epot      = double :: (frame, one)
+        etot      = double :: (frame, one)
+        nacs      = double :: (frame, nstates, nstates, natoms, three)
+    """)['variables']
+
+
+    @classmethod
+    def _get_settings(cls, variables):
+        out = {'variables': {}, 'dimensions': {}}
+        varis = out['variables']
+        dims = out['dimensions']
+        
+        for var in variables:
+            try:
+                varis[var] = cls.variables[var]
+            except:
+                raise Exception("Variable {var} unknown")
+            for dim in varis[var].dimensions:
+                try:
+                    dims[dim] = cls.dimensions[dim]
+                except:
+                    raise Exception("Dimension {dim} unknown")
+        return out
+
+    @classmethod
+    def _prepare_settings(cls, settings, dimensions, model, single_point):
+        dims = settings['dimensions']
+        for dim, value in settings['dimensions'].items():
+            if value is None:
+                dims[dim] = dimensions[dim]
+            if value == 'unlimited' and single_point is True:
+                dims[dim] = 1
+        # TODO: modify dimensions for the case db, etc
+    
+    @classmethod
+    def generate_database(cls, filename, data=None, dimensions=None, units=None, attributes=None, descriptition=None, model=False, sp=False):
+        if dimensions is None:
+            dimensions = {}
+        if data is None:
+            data = []
+        settings = cls._get_settings(data)
+        cls._prepare_settings(settings, dimensions, model, sp)
+        return Database(filename, settings)
+
+
+    def load_database(cls, filename, data=None, dimensions=None, units=None, attributes=None, descriptition=None, model=False, sp=False, read_only=False):
+        if read_only is True:
+            return Database(filename, read_only=read_only)
+        #
+        if not exists_and_isfile(filename):
+            raise Exception(f"Cannot load database {filename}")
+        return cls.generate_database(filename, data, dimensions, units, attributes, descriptition, model, sp)
+
+
+generate_database = DBSettings.generate_database
+load_database = DBSettings.load_database
