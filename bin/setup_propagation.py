@@ -76,7 +76,7 @@ class SetupPropagation(SetupBase):
 
         initname = os.path.join(foldername, 'init.db')
         #setup new database 
-        new_sampling = Sampling.new_db(initname, sampling.info['variables'], sampling.info['dimensions'], sampling.molecule, sampling.modes, model=sampling.model, sp=True)
+        new_sampling = Sampling.create_db(initname, sampling.info['variables'], sampling.info['dimensions'], sampling.molecule, sampling.modes, model=sampling.model, sp=True)
         #copy condition to new db
         condition = sampling.get_condition(number)
         new_sampling.write_condition(condition, 0)

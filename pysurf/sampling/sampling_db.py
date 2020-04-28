@@ -122,10 +122,6 @@ class SamplingDB(PySurfDB):
     def nconditions(self):
         return len(self['crd'])
 
-    @property
-    def model(self):
-        return self['model']
-
 #    @classmethod
 #    def _get_method_from_db(cls, db):
 #        _method_number = db['method']

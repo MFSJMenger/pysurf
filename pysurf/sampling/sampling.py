@@ -36,7 +36,7 @@ class Sampling(Colt):
         if exists_and_isfile(config['sampling_db']):
             logger.info(f"Found existing database {config['sampling_db']}")
             db = SamplingDB.from_db(config['sampling_db'])
-            logger.info(f"There are already {sdb.nconditions} conditions in the database")
+            logger.info(f"There are already {db.nconditions} conditions in the database")
             sampler = None
         else:
             logger.info(f"Loading sampler {config['method'].value}")
@@ -57,7 +57,7 @@ class Sampling(Colt):
 
     @classmethod 
     def create_db(cls, dbfilename, variables, dimensions, molecule, modes, model=False, sp=False):
-        db = SamplingDB.create_db(dbfilename, data=variables, dimensions=dimensions, model=model, sp=sp)
+        db = SamplingDB.create_db(dbfilename, variables, dimensions=dimensions, molecule=molecule, modes=modes, model=model, sp=sp)
         config = db.get_config()
         config['sampling_db'] = dbfilename
         return cls(config, db, db.dynsampling)
@@ -100,7 +100,13 @@ class Sampling(Colt):
         # the previous conditions
         for _ in range(nconditions):
             cond = self.sampler.get_condition()
-            self.append_condition(cond)
+            self._db.append_condition(cond)
+    
+    def write_condition(self, condition, idx):
+        self._db.write_condition(condition, idx)
+
+    def set(self, key, value, idx):
+        self._db.set(key, value, idx)
 
     def __iter__(self):
         self._start = 1  # skip equilibrium structure

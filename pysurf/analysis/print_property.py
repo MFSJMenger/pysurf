@@ -2,11 +2,7 @@ import sys
 import os 
 import numpy as np
 
-from pysurf.database.database import Database
-from pysurf.database.dbtools import DatabaseRepresentation
-from pysurf.database.dbtools import DatabaseTools
-from pysurf.database.dbtools import DBVariable
-from pysurf.database import load_database
+from pysurf.database import PySurfDB
 from pysurf.molecule.atominfo import get_atom_from_mass
 from pysurf.colt import Colt
 
@@ -41,7 +37,7 @@ class PrintProperty(Colt):
         """
 
     def __init__(self, config):
-        db = Database.load_db(config['infile'])
+        db = PySurfDB.load_database(config['infile'], read_only=True)
         
         for idx, entry in enumerate(db[config['property']]):
             print('\nEntry: {}'.format(idx))

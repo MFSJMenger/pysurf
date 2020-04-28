@@ -1,1 +1,1 @@
-from .database import PySurfDB
+from .pysurf_db import PySurfDB
