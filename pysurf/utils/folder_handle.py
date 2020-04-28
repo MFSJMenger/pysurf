@@ -1,6 +1,6 @@
 import os
 import re
-
+from .osutils import exists_and_isfile
 
 def create_folder(folder): 
     if os.path.exists(folder):
@@ -30,6 +30,7 @@ class SubfolderHandle:
 
     def __init__(self, folder, subfolder, digits=8): 
         """ """
+        self.parent = os.getcwd()
         self.main_folder = self._create_main_folder(folder)
         self.template, self.reg = self._setup(subfolder, digits)
         self._sanity_check()
@@ -43,11 +44,11 @@ class SubfolderHandle:
             if os.path.isfile(name):
                 yield name
                 
-    def setupiter(self, filename): 
+    def setupiter(self, lst): 
         """Returns an iterator over all files with name
            filename in folder/subfolder_*/ """
         for idx in lst:
-            name = self_folder_path(idx)
+            name = self._folder_path(idx)
             if not os.path.exists(name):
                 create_folder(name)
                 yield idx, name
@@ -61,6 +62,13 @@ class SubfolderHandle:
             create_folder(name)
             yield name
         self._update_folders()
+
+    def get_file(self, filename, idx):
+        filepath = os.path.join(self.main_folder, self._folder_name(idx), filename)
+        if exists_and_isfile(filepath):
+            return filepath
+        else:
+            return None
 
     def generate_folders(self, lst):
         """Generates folders"""

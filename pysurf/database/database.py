@@ -1,5 +1,6 @@
+from pysurf.utils import exists_and_isfile
 from .dbtools import DatabaseRepresentation, DatabaseGenerator
-from .dbtools import load_database
+from .dbtools import load_database as l_db
 
 
 class Database(object):
@@ -59,7 +60,7 @@ class Database(object):
 
     @classmethod
     def load_db(cls, filename):
-        nc = load_database(filename)
+        nc = l_db(filename)
         rep = DatabaseRepresentation.from_db(nc)
         return cls(filename, {'variables': rep.variables, 'dimensions': rep.dimensions})
 
@@ -99,6 +100,10 @@ class Database(object):
     def increase(self):
         self._icurrent += 1
 
+    @property
+    def info(self):
+        return {'variables': list(self.get_keys()), 'dimensions': dict(self._rep.dimensions)}
+
     def append(self, key, value):
         """Append only for unlimited variables!"""
         variable = self._handle[key]
@@ -124,9 +129,9 @@ class Database(object):
             self._db.close()
 
 
-class DBSettings:
+class PySurfDB(Database):
 
-    dimensions = {
+    _dimensions = {
             'frame': 'unlimited',
             'natoms': None,
             'nstates': None,
@@ -135,13 +140,14 @@ class DBSettings:
             'two': 2,
             'one': 1,
     }
-    variables = DatabaseGenerator("""
+    _variables = DatabaseGenerator("""
         [variables]
         crd_equi  = double :: (natoms, three)
-        atomids   = double :: (natoms)
-        freqs     = double :: (nmodes)
-        modes     = double :: (nmodes)
+        atomids   = int    :: (natoms)
+        freqs_equi= double :: (nmodes)
+        modes_equi= double :: (nmodes, natoms, three)
         masses    = double :: (natoms)
+        model     = int    :: (one)
 
         crd       = double :: (frame, natoms, three)
         veloc     = double :: (frame, natoms, three)
@@ -163,17 +169,17 @@ class DBSettings:
         out = {'variables': {}, 'dimensions': {}}
         varis = out['variables']
         dims = out['dimensions']
-        
+       
         for var in variables:
             try:
-                varis[var] = cls.variables[var]
+                varis[var] = cls._variables[var]
             except:
-                raise Exception("Variable {var} unknown")
+                raise Exception(f"Variable {var} unknown")
             for dim in varis[var].dimensions:
                 try:
-                    dims[dim] = cls.dimensions[dim]
+                    dims[dim] = cls._dimensions[dim]
                 except:
-                    raise Exception("Dimension {dim} unknown")
+                    raise Exception(f"Dimension {dim} unknown")
         return out
 
     @classmethod
@@ -187,6 +193,17 @@ class DBSettings:
         # TODO: modify dimensions for the case db, etc
     
     @classmethod
+    def info_database(cls, filename):
+        db = Database.load_db(filename)
+        info = {'variables':[]}
+        for var in cls._variables.keys():
+            if var in db:
+                info['variables'] += [var]
+        info['dimensions'] = db._rep.dimensions
+        info['length'] = len(db['crd'])
+        return info
+
+    @classmethod
     def generate_database(cls, filename, data=None, dimensions=None, units=None, attributes=None, descriptition=None, model=False, sp=False):
         if dimensions is None:
             dimensions = {}
@@ -194,17 +211,24 @@ class DBSettings:
             data = []
         settings = cls._get_settings(data)
         cls._prepare_settings(settings, dimensions, model, sp)
-        return Database(filename, settings)
+        return cls(filename, settings)
 
-
+    @classmethod
     def load_database(cls, filename, data=None, dimensions=None, units=None, attributes=None, descriptition=None, model=False, sp=False, read_only=False):
         if read_only is True:
-            return Database(filename, read_only=read_only)
+            return Database.load_db(filename)
         #
         if not exists_and_isfile(filename):
             raise Exception(f"Cannot load database {filename}")
         return cls.generate_database(filename, data, dimensions, units, attributes, descriptition, model, sp)
 
+    def add_reference_entry(self, molecule, modes, model):
+        self.set('model', model, 0)
+        if model is False:
+            self.set('atomids', molecule.atomids, 0)
+        self.set('masses', molecule.masses, 0)
+        self.set('modes_equi', np.array([mode.displacements for mode in modes]), 0)
+        self.set('freqs_equi', np.array([mode.freq for mode in modes]), 0)
+        # add equilibrium values
+        self.set('crd_equi', molecule.crd, 0)
 
-generate_database = DBSettings.generate_database
-load_database = DBSettings.load_database

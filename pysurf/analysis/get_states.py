@@ -21,7 +21,7 @@ def write_state(state, step):
     return string
 
 @FromCommandline("""
-infile = prop.db :: file_exists
+infile = prop.db :: existing_file
 outfile = states.dat :: file
 """)
 def get_states_command(infile, outfile):

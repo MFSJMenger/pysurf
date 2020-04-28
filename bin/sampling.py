@@ -16,8 +16,7 @@ def command_setup_sampling(inputfile):
     If inputfile doesn't exist, colt will ask all necessary questions
     """
     sampling = Sampling.from_inputfile(inputfile)
-    sampling = Sampling.from_db('sampling.db')
-    print(sampling.get_condition(30))
+#    sampling = Sampling.from_db('sampling.db')
 
 if __name__=="__main__":
     command_setup_sampling()

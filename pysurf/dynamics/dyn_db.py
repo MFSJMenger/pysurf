@@ -1,77 +1,40 @@
 import numpy as np
 
-from pysurf.database import Database
-from pysurf.database.dbtools import DBVariable
+from pysurf.database import PySurfDB
 
-class DynDB(Database):
+class DynDB(PySurfDB):
+    variables = ['crd_equi', 'modes_equi', 'model', 'atomids', 'freqs_equi', 'masses', 'currstate', 'crd', 'veloc', 'energy', 'ekin', 'epot', 'etot']
 
-    @staticmethod
-    def _settings(natoms, nstates, model=False, nmodes=0):
-
-        variables = {}
-        variables['curr_state'] = DBVariable(int, ('frame', 'one'))
-        variables['energy'] = DBVariable(np.double, ('frame', 'nstates'))
-        variables['ekin'] = DBVariable(np.double, ('frame', 'one'))
-        variables['epot'] = DBVariable(np.double, ('frame', 'one'))
-        variables['etot'] = DBVariable(np.double, ('frame', 'one'))
-        #check whether model or abinit calculations
-        if model == False:
-            variables['crd'] = DBVariable(np.double, ('frame', 'natoms', 'three'))
-            variables['gradient'] = DBVariable(np.double, ('frame', 'nstates', 'natoms', 'three'))
-            variables['mass'] = DBVariable(np.double, ('natoms'))
-            variables['veloc'] = DBVariable(np.double, ('frame','natoms', 'three'))
-            # more things can be stored if necessary
-            dct = {'dimensions':{'frame': 'unlimited',
-                                 'natoms': natoms,
-                                 'nstates': nstates,
-                                 'three': 3,
-                                 'one': 1},
-                   'variables': variables
-                   }
-
-        else:
-            variables['crd'] = DBVariable(np.double, ('frame', 'nmodes'))
-            variables['veloc'] = DBVariable(np.double, ('frame', 'nmodes'))
-            variables['mass'] = DBVariable(np.double, ('nmodes',))
-            variables['gradient'] = DBVariable(np.double, ('frame', 'nstates', 'nmodes'))
-            # more things can be stored if necessary
-            dct = {'dimensions':{'frame': 'unlimited',
-                                 'nmodes': nmodes,
-                                 'nstates': nstates,
-                                 'three': 3,
-                                 'one': 1},
-                   'variables': variables
-        }
-
-        return dct    
-    
-    @classmethod
-    def append(db, data, veloc, curr_state, ekin, epot, etot):
-        db.append('crd', data['crd'])
-        db.append('gradient', data['gradient'])
-        db.append('energy', data['energy'])
-        db.append('veloc', veloc)
-        db.append('curr_state', curr_state)
-        db.append('ekin', ekin)
-        db.append('epot', epot)
-        db.append('etot', etot)
-        db.increase
-
-        with open('prop.out','a') as outfile:
-            outfile.write('{0} {1} {2}\n'.format(ekin, epot, etot))
-            
     @classmethod
     def from_dynamics(cls, dbfile):
-        return cls.load_db(dbfile)
+        info = info_database(dbfile)
+        return cls.load_database(dbfile, info['variables'], info['dimensions'])
 
     @classmethod
-    def create_db(cls, dbfile, natoms, nstates, model, nmodes):
-        return cls(dbfile, cls._settings(natoms, nstates, model, nmodes))
+    def create_db(cls, dbfile, sampling, nstates, props):
+        variables = cls.variables
+        for prop in props:
+            if prop not in variables:
+                variables += [prop]
+        dims = sampling.info['dimensions']
+        dims['nstates'] = nstates
+        db = cls.generate_database(dbfile, variables, dims, model=sampling.model, sp=False)
+        db.add_reference_entry(sampling.molecule, sampling.modes, sampling.model)
+        return db
+
+    def add_step(self, data, veloc, currstate, ekin, epot, etot):
+        for entry in data:
+            print('Johannes:', entry)
+            print('Johannes:', data[entry])
+            if entry == 'gradient':
+                for state in entry:
+                    self.append(entry, state, entry[state])
+                continue
+            self.append(entry, data[entry])
+        self.append('currstate', currstate)
+        self.append('ekin', ekin)
+        self.append('epot', epot)
+        self.append('etot', etot)
+        self.increase
 
 
-    def add_mass(self, mass):
-        self.set('mass', mass)
-
-    @property
-    def len(self):
-        return len(self['crd'])

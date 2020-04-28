@@ -26,11 +26,11 @@ class LogBlock(BaseContextDecorator):
 
     def __enter__(self):
         self.logger.info(f"\nEnter '{self.txt}' at: "
-                         f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+                         f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
     def __exit__(self, exception_type, exception_value, traceback):
-        self.logger.info(f"\nLeave '{self.txt}' at: "
-                         f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+        self.logger.info(f"Leave '{self.txt}' at: "
+                         f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
 
 
 class _LoggerBase(object):
@@ -61,6 +61,31 @@ class _LoggerBase(object):
 
     def debug(self, txt):
         self.fhandle.write(f"Debug: {txt}\n")
+
+    def header(self, name, dct=None):
+        txt = '********************************************************************************\n'
+        txt += '*{:^78}*\n'.format(name)
+        txt += '*{:^78}*\n'.format(' ')
+        txt += f"* {'Date':15}: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}".ljust(79) + '*\n'
+        txt += '*{:^78}*\n'.format(' ')
+        if dct is not None:
+            for key in dct:
+                inter = f"* {key:15}: {dct[key]}"
+                if len(inter) < 80:
+                    inter = inter.ljust(79) + '*\n'
+                else:
+                    inter_new = inter[0:79] + '*\n'
+                    inter = inter[79:]
+                    while len(inter) > 60:
+                        inter_new += "* {:^15}  ".format(' ') + inter[0:60] + '*\n'
+                        inter = inter[60:]
+                    inter_new += "* {:^15}  ".format(' ') + inter.ljust(60) + '*\n'
+                    inter = inter_new
+                txt += inter
+        txt += '*{:^78}*\n'.format(' ')
+        txt += '********************************************************************************\n\n\n'
+        self.fhandle.write(f"{txt}\n")
+
 
     def info(self, txt):
         self.fhandle.write(f"{txt}\n")

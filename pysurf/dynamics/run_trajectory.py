@@ -1,10 +1,9 @@
-import logging
 import os
 import numpy as np
-import logging
 
 from collections import namedtuple
 
+from pysurf.logger import Logger, get_logger
 from pysurf.colt import Colt
 from pysurf.database.database import Database
 from pysurf.database.dbtools import DBVariable
@@ -26,8 +25,8 @@ class RunTrajectory(Colt):
     # File with initial condition                                                                    
     initial condition = init.db :: str                                                          
    
-    # Number of excited states
-    n_states = 1 :: int
+    # Number of total states
+    n_states = 2 :: int
 
     method = LandauZener :: str
 
@@ -43,26 +42,20 @@ class RunTrajectory(Colt):
                                  for name, method in PropagatorFactory._methods.items()})
 
     def __init__(self, config):
-        self.logger = logging.getLogger('runtrajectory')
+        self.logger = get_logger('prop.log', 'prop')
+        self.logger.header('PROPAGATION', config)
 
         sampling = Sampling.from_db(config['initial condition'])
-        print('Johannes get_condition:', sampling.get_condition(1))
 
         self.nsteps = int(np.ceil(config['time_final [fs]'] / config['timestep [fs]']))
-
-        atomids = sampling.get_atomids()
-        natoms = len(atomids)
+        natoms = len(sampling.atomids)
 
         self.logger.info('Start propagation of trajectory')
 
         #get propagator
         propagator = PropagatorFactory._methods[config['method'].value](config['spp'], 
-                                                                        natoms,
-                                                                        config['n_states'],
-                                                                        atomids,
-                                                                        sampling.mass,
-                                                                        sampling.get_condition(1))
-
+                                                                        sampling,
+                                                                        config['n_states'])
         propagator.run(self.nsteps, config['timestep [fs]']*fs2au)
     
     @classmethod

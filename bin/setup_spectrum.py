@@ -4,7 +4,11 @@ from shutil import copy2 as copy
 from pysurf.logger import get_logger
 from pysurf.sampling import Sampling
 from pysurf.setup import SetupBase
+from pysurf.utils import exists_and_isfile
+from pysurf.spp import SurfacePointProvider
+from pysurf.database import generate_database
 
+from sp_calc import SinglePointCalculation
 
 class SetupSpectrum(SetupBase):
 
@@ -12,14 +16,23 @@ class SetupSpectrum(SetupBase):
     subfolder = 'condition'
 
     _questions = """
-    # Number of trajectories for the propagation
-    n_traj = 100 :: int
+    # Number of conditions
+    n_cond = 100 :: int
+
+    # Number of states
+    nstates = 2 :: int
+   
+    #Properties that should be calculated
+    properties = ['energy', 'fosc'] :: list
 
     # Database containing all the initial conditions
     sampling_db = sampling.db :: existing_file
 
     # Filepath for the inputfile of the Surface Point Provider
     spp = spp.inp :: file
+
+    # Filepath for the inputfile of the Single Point Calculation
+    sp_calc = sp_calc.inp :: file
     """
 
     def __init__(self, config):
@@ -27,22 +40,55 @@ class SetupSpectrum(SetupBase):
             in a file for further usage.
         """
         logger = get_logger('setup_spectrum.log', 'setup_spectrum')
+        logger.header('SETUP SPECTRUM', config)
         SetupBase.__init__(self, logger)
         #
+        logger.info(f"Opening sampling database {config['sampling_db']}")
         sampling = Sampling.from_db(config['sampling_db'])
-        #
-        self.setup_folders(range(config['n_traj']), config, sampling, skip_existing=True)
+
+        if not exists_and_isfile(config['spp']):
+            presets="""
+                use_db = :: [no]
+                """
+            logger.info(f"Setting up SPP inputfile: {config['spp']}")
+            SurfacePointProvider.generate_input(config['spp'], config=None, presets=presets)
+        else:
+            logger.info(f"Using SPP inputfile as it is")
+            
+        if not exists_and_isfile(config['sp_calc']):
+            presets=f"""
+                properties = {config['properties']}
+                nstates = {config['nstates']}
+                init_db = init.db
+                """
+            logger.info(f"Setting up inputfile for the single point calculations")
+            SinglePointCalculation.generate_input(config['sp_calc'], config=None, presets=presets)
+        else:
+            logger.info(f"Using inputfile for the single point calculations as it is")
+
+        logger.info("Starting to prepare the folders...")
+        self.setup_folders(range(config['n_cond']), config, sampling)
 
     @classmethod
     def from_config(cls, config):
         return cls(config)
 
     def setup_folder(self, number, foldername, config, sampling):
-        copy(inputfile, foldername)
         copy(config['spp'], foldername)
-        initname = os.path.join(foldername, 'init_{:04d}.db'.format(number))
-        sampling.export_condition(initname, number)
+        copy(config['sp_calc'], foldername)
 
+        #name of new database
+        initname = os.path.join(foldername, 'init.db')
+        #get info from old db and adjust
+        variables = sampling._db.info['variables']
+        variables += config['properties']
+        dimensions = sampling._db.info['dimensions']
+        dimensions['nstates'] = config['nstates']
+        #setup new database 
+        new_sampling = Sampling.new_db(initname, variables, dimensions, sampling.molecule, sampling.modes, model=sampling.model, sp=True)
+        #copy condition to new db
+        condition = sampling.get_condition(number)
+        new_sampling.write_condition(condition, 0)
 
 if __name__=="__main__":
     SetupSpectrum.from_commandline()

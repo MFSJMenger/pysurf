@@ -1,4 +1,3 @@
-#! /data/ehrmaier/anaconda3/bin/python3
 import sys
 import os 
 import numpy as np
@@ -7,7 +6,7 @@ from pysurf.database.database import Database
 from pysurf.database.dbtools import DatabaseRepresentation
 from pysurf.database.dbtools import DatabaseTools
 from pysurf.database.dbtools import DBVariable
-from pysurf.database.dbtools import load_database
+from pysurf.database import load_database
 from pysurf.molecule.atominfo import get_atom_from_mass
 from pysurf.colt import Colt
 

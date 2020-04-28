@@ -2,7 +2,6 @@ from abc import abstractmethod
 import numpy as np
 
 from pysurf.colt import PluginBase
-from pysurf.random.shrandom import RandomNumberGeneratorNP
 from pysurf.spp import SurfacePointProvider
 from pysurf.utils import exists_and_isfile
 from pysurf.logger import get_logger
@@ -30,42 +29,40 @@ class PropagatorBase(PropagatorFactory):
     def run(self, nsteps, dt, *args, **kwargs):
         """propagation routine"""
 
-    def __init__(self, spp_inp, natoms, nstates, atomids, mass, init_cond, logger=None):
+    def __init__(self, spp_inp, sampling, nstates, logger=None):
         """Setup surface hopping using config in `configfile`
         and a SurfacePointProvider (SPP) abstract class
 
         The system is completely defined via the SPP model
         """
+        self.nstates = nstates
+
         if logger is None:
             self.logger = get_logger('prop.log', 'propagator')
+            info = {'spp inputfile': spp_inp}
+            self.logger.header('PROPAGATION', info)
         else:
             self.logger = logger
 
-        self.init = init_cond
+        self.init = sampling.get_condition(0)
         # setup SPP
-        self.spp = SurfacePointProvider(spp_inp, self.properties, natoms, nstates, atomids)
+        self.spp = SurfacePointProvider(spp_inp, self.properties, sampling.natoms, nstates-1, sampling.atomids)
         
         if exists_and_isfile('prop.db'):
             self.db = DynDB.from_dynamics('prop.db')
-            if self.db.len > 0:
+            if len(self.db['crd']) > 0:
                 self.restart = True
             else:
                 self.restart = False
         else:
-            if init_cond is None:
+            if self.init is None:
                 self.logger.error('No initial condition or restart file for the Propagator')
             else:
-                self.db = DynDB.create_db('prop.db', natoms, nstates, model=False, nmodes=0)
+                self.db = DynDB.create_db('prop.db', sampling, nstates, self.properties)
             self.restart = False
        
         if self.restart is True:
-            self.mass = np.array(self.db['mass'])
+            self.masses =  np.array(self.db['masses'])
         else:
-            self.mass = np.array(mass)
-            self.db.add_mass(self.mass)
+            self.masses = sampling.masses
 
-    def init_random(self, seed=16661):
-        self._random = RandomNumberGeneratorNP(seed)
-
-    def random(self):
-        return self._random.get()

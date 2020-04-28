@@ -28,13 +28,12 @@ class CopyExecute(Colt):
         setup = SubfolderHandle(config['folder'], config['subfolder'])
 
         for subfolder in setup:
-            print(subfolder)
             for item in config['copy']:
                 copy(item, subfolder)
         
             os.chdir(subfolder)
             os.system(config['exe'])
-            os.chdir(setup.main_folder)
+            os.chdir(setup.parent)
 
 if __name__=="__main__":
     CopyExecute.from_commandline()

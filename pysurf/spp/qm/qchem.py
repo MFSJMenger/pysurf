@@ -5,6 +5,7 @@ import os
 from jinja2 import Template
 #
 from qctools import generate_filereader, Event
+from qctools.events import join_events
 #
 from . import AbinitioBase
 from ...molecule import Molecule
@@ -20,6 +21,15 @@ grep = : excitation energy (eV) = :: 1 :: 1
 split = 5 :: float
 settings = multi=true
 
+[fosc]
+grep = Strength :: 1 :: 0
+split =  2 :: float
+settings = multi=true
+
+[transmom]
+grep = Trans. Mom. :: 1 :: 0
+split = 2, 4, 6 :: float
+settings = mulit=true
 """
 
 
@@ -58,6 +68,11 @@ CisGradient = Event('CisGradient',
 
 # change by hand the events, to clear them up!
 QChemReader = generate_filereader("QChemReader", qchem)
+ex_st = QChemReader._events['ExcitedState']
+osc = QChemReader._events['fosc']
+tm = QChemReader._events['transmom']
+together = join_events(ex_st, tm, osc)
+QChemReader.add_event('ExcitedStateInfo', together)
 QChemReader.add_event("SCFGradient", SCFGradient)
 QChemReader.add_event("CisGradient", CisGradient)
 
@@ -167,7 +182,7 @@ class QChem(AbinitioBase):
 
     runtime = ['jobtype',]
     #
-    implemented = ['energy', 'gradient']
+    implemented = ['energy', 'gradient', 'fosc', 'transmom']
 
     def __init__(self, config, atomids, nstates, chg, mult, qchemexe):
         self.molecule = Molecule(atomids, None)
@@ -176,7 +191,7 @@ class QChem(AbinitioBase):
         self.mult = mult
         self.filename = 'qchem.in'
         self.nstates = nstates
-        self.reader._events['ExcitedState'].nmax = nstates
+        self.reader._events['ExcitedStateInfo'].nmax = nstates
         self._update_settings(config)
 
     def _update_settings(self, config):
@@ -212,8 +227,24 @@ class QChem(AbinitioBase):
         settings['jobtype'] = 'sp'
         self._write_input(self.filename, settings.items())
         output = self.submit(self.filename)
-        out = self.reader(output, ['SCFEnergy', 'ExcitedState'])
-        request['energy'] = [out['SCFEnergy']] + out['ExcitedState']
+        out = self.reader(output, ['SCFEnergy', 'ExcitedStateInfo'])
+        if not isinstance(out['ExcitedState'], list):
+            outst = [out['ExcitedState']]
+        else:
+            outst = out['ExcitedState']
+        request['energy'] = [out['SCFEnergy']] + outst
+        if 'fosc' in request:
+            if not isinstance(out['fosc'], list):
+                outfosc = [0.] + [out['fosc']]
+            else:
+                outfosc = [0.] + out['fosc']
+            request['fosc'] = outfosc
+        if 'transmom' in request:
+            if not isinstance(out['transmom'], list):
+                outtransmom = [0.] + [out['transmom']]
+            else:
+                outtransmom = [0.] + out['transmom']
+            request['transmom'] = outtransmom
 
     def _do_gs_gradient(self, request):
         settings = UpdatableDict(self.settings)

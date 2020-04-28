@@ -4,6 +4,9 @@ from shutil import copy2 as copy
 from pysurf.logger import get_logger
 from pysurf.sampling import Sampling
 from pysurf.setup import SetupBase
+from pysurf.spp import SurfacePointProvider
+from pysurf.dynamics import RunTrajectory
+from pysurf.utils import exists_and_isfile
 
 
 class SetupPropagation(SetupBase):
@@ -20,15 +23,15 @@ class SetupPropagation(SetupBase):
 
     # Filepath for the inputfile of the Surface Point Provider
     spp = spp.inp :: file
+    
+    # initial excited state for the trajectory
+    initial state = 1 :: int
 
     #Filepath for the inputfile of the Propagation
-    prop = prop.inp
+    prop = prop.inp :: file
 
     # Decide whether database for the propagation should be copied to the trajectory folder
-    copy_db = yes :: str :: [yes, no]
-
-    #[copy_db(yes)]
-    #db_file = none :: str
+    copy_db = none :: str
     """
 
     def __init__(self, config):
@@ -38,26 +41,46 @@ class SetupPropagation(SetupBase):
         logger = get_logger('setup_propagation.log', 'setup_propagation')
         SetupBase.__init__(self, logger)
 
-        n_traj = config['n_traj']
 
         # Open DB of initial conditions once, so that it is available
         sampling = Sampling.from_db(config['sampling_db'])
+
+        #Make sure that inputfile for the SPP exists and is complete
+        
+        if exists_and_isfile(config['spp']): lconfig = config['spp']
+        else: lconfig = None
+        SurfacePointProvider.generate_input(config['spp'], config=lconfig)
+
+        #Make sure that inputfile for RunTrajectory exists and is complete
+        if exists_and_isfile(config['prop']): lconfig = config['prop']
+        else: lconfig=None
+        RunTrajectory.generate_input(config['prop'], config=lconfig)
+
         #
-        self.setup_folders(range(n_traj), config, sampling)
+        if sampling.nconditions < config['n_traj']:
+            logger.error(f"Too few initial conditions in {config['sampling_db']}")
+
+        self.setup_folders(range(config['n_traj']), config, sampling)
+
 
     @classmethod
     def from_config(cls, config):
         return cls(config)
 
     def setup_folder(self, number, foldername, config, sampling):
-        copy(self.inputfile, foldername)
+        copy(config['prop'], foldername)
         copy(config['spp'], foldername)
 
-        if config['copy_db'] == 'yes':
-            copy(config['copy_db']['db_file'], foldername)
+        if config['copy_db'] != 'none':
+            copy(config['copy_db'], foldername)
 
         initname = os.path.join(foldername, 'init.db')
-        sampling.export_condition(initname, number)
+        #setup new database 
+        new_sampling = Sampling.new_db(initname, sampling.info['variables'], sampling.info['dimensions'], sampling.molecule, sampling.modes, model=sampling.model, sp=True)
+        #copy condition to new db
+        condition = sampling.get_condition(number)
+        new_sampling.write_condition(condition, 0)
+        new_sampling.set('currstate', config['initial state'], 0)
 
 
 if __name__=="__main__":

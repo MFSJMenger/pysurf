@@ -47,9 +47,9 @@ def get_coordinates(infile, outfile):
     
     db = Database.load_db(infile)
     try:
-        mass = db['masses']
+        mass = db['mass']
         if len(mass.shape) == 1:
-            model = True
+            model = False
         else:
             model = False
     except:
@@ -62,7 +62,7 @@ def get_coordinates(infile, outfile):
         for m in range(len(db['crd'][0])):
             atoms+=['Q']
     if model is False:
-        for m in mass[:,0]:
+        for m in mass:
             atoms += [get_atom_from_mass(m)]
     
     

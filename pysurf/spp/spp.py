@@ -117,9 +117,9 @@ class SurfacePointProvider(Colt):
             self.logger = logger
 
         # get config
-        config = self._parse_config(inputfile)
+        self.config = self._parse_config(inputfile)
         #
-        self._request, self._interface = self._select_interface(config, properties, natoms, nstates, atomids)
+        self._request, self._interface = self._select_interface(self.config, properties, natoms, nstates, atomids)
 
     def _select_interface(self, config, properties, natoms, nstates, atomids):
         """Select the correct interface based on the mode"""
@@ -159,7 +159,7 @@ Implemented: {interface.implemented}
 
     def _parse_config(self, inputfile):
         """Parse the config file"""
-        questions = self.generate_questions("spp", config=None)
+        questions = self.generate_questions(config=None)
         return questions.check_only(inputfile)
 
     def request(self, crd, properties, states=None):

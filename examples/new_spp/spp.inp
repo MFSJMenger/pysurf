@@ -1,10 +1,24 @@
-mode = ab-initio
+
 logging = debug
-use_db = yes
+mode = ab-initio
+use_db = no
 
 [mode(ab-initio)]
 software = QChem
 
 [mode(ab-initio)::software(QChem)]
 exe = qchem
-basis = 6-31g
+chg = 0
+mult = 1
+exchange = pbe0
+basis = cc-pvdz
+max_scf_cycles = 500
+xc_grid = 000075000302
+mem_static = 4000
+mem_total = 16000
+sym_ignore = True
+set_iter = 50
+
+[mode(ab-initio)::software(QChem)::remsection]
+None
+[use_db(no)]

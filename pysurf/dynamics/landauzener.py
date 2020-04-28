@@ -1,9 +1,8 @@
 import numpy as np
+from pysurf.random.shrandom import RandomNumberGeneratorNP
 
 from pysurf.spp import SurfacePointProvider
 #from pysurf.dynamics import *
-from pysurf.database import Database
-from pysurf.database.dbtools import DBVariable
 
 from .base_propagator import PropagatorBase
 
@@ -16,100 +15,156 @@ class LandauZener(PropagatorBase):
     
     properties = ['energy', 'gradient'] 
     
-    def run(self, nsteps, dt):
-        e_curr = None
-        e_prev_step = None
-        e_two_step_prev = None
+    def run(self, nsteps, dt, seed=16661):
+        self.dt = dt
+        self.nsteps = nsteps
+        self.e_curr = None
+        self.e_prev_step = None
+        self.e_two_step_prev = None
         
+        # set random number
+        self.init_random(seed)
+
         if self.restart is False:
-            iactive = int(self.init.state)
-            print('Johannes condition:', self.init)
+            self.setup_new()
+        else:
+            self.setup_from_db()
+
+        if self.start > self.nsteps:
+            self.logger.info("Dynamics already performed for more steps!")
+            return 
+
+        for istep in range(self.start, nsteps+1):
+            # 1) write step info
+            # 2) call interface
+            self.crd = vv_xstep(self.crd, self.v, self.a, self.dt)
+            data = self.call_spp()
+            #
+            # update acceleration
+            self.a_old = self.a
+            self.a = get_acceleration(data['gradient'][self.iactive], self.masses)
+            # 
+            self.v = vv_vstep(self.v, self.a_old, self.a, self.dt)
+
+            # Landau Zener:
+            self.iselected = self.lz_select()
+            if self.iselected is not None:
+                # change active state
+                self.dE = data['energy'][iselected] - data['energy'][self.iactive]
+                self.ekin = calc_ekin(self.masses, self.v)
+                if (self.dE > self.ekin):
+                    self.logger.info(f"Too few energy -> no hop")
+                else:
+                    self.iactive = self.iselected
+                    self.logger.info(f"new selected state: {iselected}")
+                    # rescale velocity
+                    self.v = rescale_velocity(self.ekin, self.dE, self.v)
+                    # get acceleration
+                    data = self.call_spp()
+                    self.a = get_acceleration(data['gradient'][self.iactive], self.masses)
+            self.ekin = calc_ekin(self.masses, self.v)
+            self.epot = self.e_curr[self.iactive]
+            self.etot = self.ekin + self.epot
     
-            # set random number
-            self.init_random()
+            print(self.iactive, self.ekin, self.epot, self.etot)
+            self.db.add_step(data, self.v, self.iactive, self.ekin, self.epot, self.etot)
+
+    def call_spp(self, crd=None, gradstate=None):
+        if crd is None:
+            crd = self.crd
+        if gradstate is None:
+            gradstate = self.iactive
+        res = self.spp.request(crd, self.properties, states=[gradstate])
+        return res
+
+    def setup_new(self):
+            self.iactive = int(self.init.state)
             # set starting crds
-            crd = self.init.crd
-            #
-            v = self.init.veloc
+            self.crd = self.init.crd
+            # set starting veloc
+            self.v = self.init.veloc
             # start
-            print('Johannes first crd: ', crd)
-            data = self.get_data(crd, iactive)
-            print('Johannes data:', data)
+            data = self.call_spp()
             nstates = len(data['energy'])
-            print('Johannes: ', iactive)
-            print('Johannes: ', data['gradient'][iactive], self.mass)
-            a = get_acceleration(data['gradient'][iactive], self.mass)
-            print('Johannes gradient: ', data['gradient'][iactive])
-            print('Johannes all: ', crd, v, a, dt)
+            self.a = get_acceleration(data['gradient'][self.iactive], self.masses)
             #
-            e_curr = data['energy']
+            self.e_curr = data['energy']
             #
             for istep in range(2):
                 # If not restart, first 2 steps are just to save energy!
-                crd = vv_xstep(crd, v, a, dt)
-                print('Johannes before get_data:', crd)
-                data = self.get_data(crd, iactive) 
-                print('Johannes after get_data:', crd)
+                self.crd = vv_xstep(self.crd, self.v, self.a, self.dt)
+                data = self.call_spp() 
                 # update acceleration
-                a_old = a
-                a = get_acceleration(data['gradient'][iactive], self.mass)
-                v = vv_vstep(v, a_old, a, dt)
-                if e_prev_step is None:
-                    e_prev_step = e_curr
-                    e_curr = data['energy']
+                self.a_old = self.a
+                self.a = get_acceleration(data['gradient'][self.iactive], self.masses)
+                self.v = vv_vstep(self.v, self.a_old, self.a, self.dt)
+                if self.e_prev_step is None:
+                    self.e_prev_step = self.e_curr
+                    self.e_curr = data['energy']
                     continue
-                e_two_step_prev = e_prev_step
-                e_prev_step = e_curr
-                e_curr = data['energy']
-                
-            # check whether ab initio calculation
-            eref = 0
-    
-        for istep in range(nsteps):
-            # 1) write step info
-            # 2) call interface
-            crd = vv_xstep(crd, v, a, dt)
-            data = self.get_data(crd, iactive)
-            #
-            # update acceleration
-            a_old = a
-            a = get_acceleration(data['gradient'][iactive], self.mass)
-            # 
-            v = vv_vstep(v, a_old, a, dt)
-            # Landau Zener:
-            iselected = LandauZener.landau_zener(iactive, nstates, dt, 
-                    e_curr, e_prev_step, e_two_step_prev)
-            if iselected is not None:
-                # change active state
-                dE = data['energy'][iselected] - data['energy'][iactive]
-                ekin = calc_ekin(self.mass, v)
-                if (dE > ekin):
-                    print(f"Too few energy -> no hop")
-                else:
-                    iactive = iselected
-                    print(f"new selected state: {iselected}")
-                    # rescale velocity
-                    v = rescale_velocity(ekin, dE, v)
-                    # get acceleration
-                    data = self.get_data(crd, iactive)
-                    a = get_acceleration(data['gradient'][iactive], self.mass)
-            ekin = calc_ekin(self.mass, v)
-            epot = e_curr[iactive]
-            etot = ekin + epot
-    
-            # If total energy changes too much stop the dynamics
-            # This is likely to happen for interpolated data
-            if istep == 0:
-                eref = etot
-            else:
-                if eref < 0.5*etot or eref > 2.*etot:
-                    break
-            print(iactive, ekin, epot, etot)
-            self.db.append(data, v, iactive, ekin, epot, etot)
+                self.e_two_step_prev = self.e_prev_step
+                self.e_prev_step = self.e_curr
+                self.e_curr = data['energy']
+            self.start = 0
 
-    def get_data(self, crd, gradstate):
-        res = self.spp.request(crd, self.properties, states=[gradstate])
-        return res
+    def setup_from_db(self):
+        #two previous steps are needed
+        if self.db.len < 2:
+            return self.setup_new()
+        else:
+            self.crd = self.db.get('crd', -1)
+            self.iactive = int(self.db.get('curr_state', -1))
+            self.v = self.db.get('veloc', -1)
+            grad = self.db.get('gradient', -1)
+            self.a = get_acceleration(grad, self.masses)
+            self.e_curr = self.db.get('energy',-1)
+            self.e_prev_step = self.db.get('energy', -2)
+            self.e_two_step_prev = self.db.get('energy', -3)
+            self.start = self.db.len            
+
+    def lz_select(self):
+        """"takes in the (adiabatic?) energies at
+            the current, the previous, and the two steps previous time step
+            select which state is the most likely to hop to
+        """
+        iselected = None
+        prob = -1.0
+        for istate in range(self.nstates):
+            #
+            if istate == self.iactive:
+                continue
+            # compute energy differences
+            d_two_step_prev = compute_diff(self.e_two_step_prev, self.iactive, istate)
+            d_prev_step = compute_diff(self.e_prev_step, self.iactive, istate)
+            d_curr = compute_diff(self.e_curr, self.iactive, istate)
+            # compute probability
+            if (abs_gt(d_curr, d_prev_step) and abs_gt(d_two_step_prev, d_prev_step)):
+                curr_hop_prob = _lz_probability(self, self.dt, d_curr, d_prev_step, d_two_step_prev)
+                if curr_hop_prob > prob:
+                    prob = curr_hop_prob
+                    iselected = istate
+        #
+        if iselected is None:
+            return None
+        if prob > self.random():
+            return iselected
+        return None
+
+
+    def _lz_probability(self, dt, d_curr, d_prev_step, d_two_step_prev):
+        """compute landau zener sh probability between two states"""
+        # compute the second derivative of the energy difference by time
+        finite_difference_grad = ((d_curr + d_two_step_prev - 2 * d_prev_step) / dt**2)
+        # compute the hopping probability
+        return np.exp((-np.pi/2.0) * np.sqrt(d_prev_step**3 / finite_difference_grad))
+
+
+    def init_random(self, seed=16661):
+        self._random = RandomNumberGeneratorNP(seed)
+
+    def random(self):
+        return self._random.get()
+
 
 def calc_ekin(masses, veloc):
     ekin = 0.0
@@ -150,8 +205,16 @@ def vv_xstep(crd, v, a, dt):
     crd += v*dt + 0.5*a*dt*dt
     return crd
 
-
 def vv_vstep(v, a_old, a, dt):
     v += 0.5 * (a_old + a) * dt
     return v
+
+def compute_diff(e, i, j):
+    """return e[i] - e[j]"""
+    return e[i] - e[j]
+
+def abs_gt(a, b):
+    return abs(a) > abs(b)
+
+
 
