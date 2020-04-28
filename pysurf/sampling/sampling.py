@@ -1,9 +1,12 @@
+import numpy as np
+
 from .sampling_db import SamplingDB
 from .base_sampler import SamplerFactory
 
 from pysurf.utils import exists_and_isfile
 from pysurf.logger import Logger, get_logger
-
+from pysurf.colt import Colt
+from pysurf.molecule import Molecule
 
 
 class Sampling(Colt):
@@ -54,9 +57,17 @@ class Sampling(Colt):
 
     @classmethod 
     def create_db(cls, dbfilename, variables, dimensions, molecule, modes, model=False, sp=False):
-        db = PySurfDB.create_db(dbfilename, data=variables, dimensions=dimensions, model=model, sp=sp)
+        db = SamplingDB.create_db(dbfilename, data=variables, dimensions=dimensions, model=model, sp=sp)
         config = db.get_config()
-        return cls.(config, db, db.dynsampling)
+        config['sampling_db'] = dbfilename
+        return cls(config, db, db.dynsampling)
+
+    @classmethod
+    def from_db(cls, dbfilename):
+        db = SamplingDB.from_db(dbfilename)
+        config = db.get_config()
+        config['sampling_db'] = dbfilename
+        return cls(config, db, db.dynsampling)
     
     def __init__(self, config, db, dynsampling, sampler=None, logger=None):
         """ Sampling always goes with a database, if not needed use Sampler class
@@ -102,6 +113,8 @@ class Sampling(Colt):
             return cond
         raise StopIteration
 
+    def get_condition(self, idx):
+        return self._db.get_condition(idx)
 
     @staticmethod
     def _get_sampler(config):
@@ -136,15 +149,11 @@ class Sampling(Colt):
 
     @property
     def modes(self):
-        self._modes = [Mode(freq, mode) for freq, mode in zip(self._db['freqs_equi'],
-                                                                  self._db['modes_equi'])]
-        return self._modes
+        return self._db.modes
 
     @property
     def model(self):
-        if self._model is None:
-            self._model = bool(self._db['model'])
-        return False
+        return self._db.model
 
     @property
     def nconditions(self):
@@ -152,6 +161,4 @@ class Sampling(Colt):
 
     @property
     def masses(self):
-        if self._masses is None:
-            self._masses = np.array(self._db['masses'])
-        return self._masses
+        return self._db.masses

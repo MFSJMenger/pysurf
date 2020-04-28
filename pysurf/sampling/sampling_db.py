@@ -112,7 +112,7 @@ class SamplingDB(PySurfDB):
             return False
 
     @property
-    def condition(self)
+    def condition(self):
         if self.dynsampling:
             return DynCondition
         else:
@@ -122,6 +122,9 @@ class SamplingDB(PySurfDB):
     def nconditions(self):
         return len(self['crd'])
 
+    @property
+    def model(self):
+        return self['model']
 
 #    @classmethod
 #    def _get_method_from_db(cls, db):

@@ -1,3 +1,5 @@
+import numpy as np
+
 from pysurf.utils import exists_and_isfile
 from .dbtools import DatabaseRepresentation, DatabaseGenerator
 from .dbtools import load_database as l_db
@@ -232,3 +234,6 @@ class PySurfDB(Database):
         # add equilibrium values
         self.set('crd_equi', molecule.crd, 0)
 
+    @property
+    def masses(self):
+        return np.array(self['masses'])

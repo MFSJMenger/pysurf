@@ -7,7 +7,7 @@ class DynDB(PySurfDB):
 
     @classmethod
     def from_dynamics(cls, dbfile):
-        info = info_database(dbfile)
+        info = cls.info_database(dbfile)
         return cls.load_database(dbfile, info['variables'], info['dimensions'])
 
     @classmethod
