@@ -11,6 +11,18 @@ from pysurf.molecule import Molecule, Mode
 
 class PySurfDB(Database):
 
+    _modes = None
+    _molecule = None
+    _natoms = None
+    _nstates = None
+    _atomids = None
+    _info = None
+    _masses = None
+    _crd_equi = None
+    _model = None
+    _nmodes = None
+    _len = None
+
     _dimensions = {
             'frame': 'unlimited',
             'natoms': None,
@@ -114,21 +126,48 @@ class PySurfDB(Database):
 
     @property
     def masses(self):
-        return np.array(self['masses'])
+        if self._masses is None:
+            self._masses = np.array(self['masses'])
+        return self._masses
 
     @property
     def modes(self):
-        self._modes = [Mode(freq, mode) for freq, mode in zip(np.copy(self['freqs_equi']), np.copy(self['modes_equi']))]
+        if self._modes is None:
+            self._modes = [Mode(freq, mode) for freq, mode in zip(np.copy(self['freqs_equi']), np.copy(self['modes_equi']))]
         return self._modes
-
 
     @property
     def molecule(self):
-        self._molecule = Molecule(np.copy(self['atomids']),
+        if self._molecule is None:
+            self._molecule = Molecule(np.copy(self['atomids']),
                                       np.copy(self['crd_equi']),
                                       np.copy(self['masses']))
         return self._molecule 
 
     @property
+    def dimensions(self):
+        return self._rep.dimensions
+
+    @property
+    def natoms(self):
+        if self._natoms is None:
+            self._natoms = self.dimensions['natoms']
+        return self._natoms
+
+    @property
+    def nstates(self):
+        if self._nstates is None:
+            self._nstates = self.dimensions['nstates']
+        return self._nstates
+
+    @property
+    def len(self):
+        if self._len is None:
+            self._len = len(self['crd'])
+        return self._len
+
+    @property
     def model(self):
-            return bool(self['model'])
+        if self._model is None:
+            self._model =  bool(self['model'])
+        return self._model

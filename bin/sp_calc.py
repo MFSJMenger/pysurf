@@ -62,7 +62,7 @@ class SinglePointCalculation(Colt):
             self.logger = logger
         #
         self.logger.info(f"Taking information from {config['init_db']}")
-        sampling = Sampling.from_db(config['init_db'])
+        sampling = Sampling.from_db(config['init_db'], logger=self.logger)
 
         if not(exists_and_isfile(config['spp'])):
             SurfacePointProvider.generate_input(config['spp'])

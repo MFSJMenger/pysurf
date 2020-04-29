@@ -44,7 +44,6 @@ class RunTrajectory(Colt):
     def __init__(self, config):
         self.logger = get_logger('prop.log', 'prop')
         self.logger.header('PROPAGATION', config)
-
         sampling = Sampling.from_db(config['initial condition'])
 
         self.nsteps = int(np.ceil(config['time_final [fs]'] / config['timestep [fs]']))
@@ -55,7 +54,8 @@ class RunTrajectory(Colt):
         #get propagator
         propagator = PropagatorFactory._methods[config['method'].value](config['spp'], 
                                                                         sampling,
-                                                                        config['n_states'])
+                                                                        config['n_states'],
+                                                                        logger = self.logger)
         propagator.run(self.nsteps, config['timestep [fs]']*fs2au)
     
     @classmethod

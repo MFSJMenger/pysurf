@@ -6,7 +6,6 @@ from pysurf.sampling import Sampling
 from pysurf.setup import SetupBase
 from pysurf.utils import exists_and_isfile
 from pysurf.spp import SurfacePointProvider
-from pysurf.database import generate_database
 
 from sp_calc import SinglePointCalculation
 
@@ -44,7 +43,7 @@ class SetupSpectrum(SetupBase):
         SetupBase.__init__(self, logger)
         #
         logger.info(f"Opening sampling database {config['sampling_db']}")
-        sampling = Sampling.from_db(config['sampling_db'])
+        sampling = Sampling.from_db(config['sampling_db'], logger=logger)
 
         if not exists_and_isfile(config['spp']):
             presets="""
@@ -80,12 +79,12 @@ class SetupSpectrum(SetupBase):
         #name of new database
         initname = os.path.join(foldername, 'init.db')
         #get info from old db and adjust
-        variables = sampling._db.info['variables']
+        variables = sampling.info['variables']
         variables += config['properties']
-        dimensions = sampling._db.info['dimensions']
+        dimensions = sampling.info['dimensions']
         dimensions['nstates'] = config['nstates']
         #setup new database 
-        new_sampling = Sampling.new_db(initname, variables, dimensions, sampling.molecule, sampling.modes, model=sampling.model, sp=True)
+        new_sampling = Sampling.create_db(initname, variables, dimensions, sampling.molecule, sampling.modes, model=sampling.model, sp=True)
         #copy condition to new db
         condition = sampling.get_condition(number)
         new_sampling.write_condition(condition, 0)

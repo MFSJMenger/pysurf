@@ -5,6 +5,7 @@ from pysurf.colt import PluginBase
 from pysurf.spp import SurfacePointProvider
 from pysurf.utils import exists_and_isfile
 from pysurf.logger import get_logger
+from pysurf.qctools.converter import Converter, time_converter
 
 from .dyn_db import DynDB
 
@@ -66,3 +67,10 @@ class PropagatorBase(PropagatorFactory):
         else:
             self.masses = sampling.masses
 
+        self.t_converter = time_converter.get_converter(tin='au', tout='fs')
+
+    def log_step(self, time, state, dE, ekin, epot, etot, infotext=None):
+        self.logger.info(f"Time: {self.t_converter(time):6.2f} fs{'energy diff.:':>57} {dE:6.5f}")
+        if infotext is not None: self.logger.info(infotext)
+        self.logger.info(f"    {'curr. state':20}: {state:20}")
+        self.logger.info(f"    {'ekin, epot, etot':20}: {ekin:10.6f}, {epot:10.6f}, {etot:10.6f}\n")

@@ -35,6 +35,7 @@ class LandauZener(PropagatorBase):
             return 
 
         for istep in range(self.start, nsteps+1):
+            infotext = None
             # 1) write step info
             # 2) call interface
             self.crd = vv_xstep(self.crd, self.v, self.a, self.dt)
@@ -53,10 +54,10 @@ class LandauZener(PropagatorBase):
                 self.dE = data['energy'][iselected] - data['energy'][self.iactive]
                 self.ekin = calc_ekin(self.masses, self.v)
                 if (self.dE > self.ekin):
-                    self.logger.info(f"Too few energy -> no hop")
+                    infotext = (f"*   Frustrated hop: Too few energy -> no hop\n")
                 else:
+                    infotext = (f"*   LandauZener hop: {self.iactive} -> {iselected}\n")
                     self.iactive = self.iselected
-                    self.logger.info(f"new selected state: {iselected}")
                     # rescale velocity
                     self.v = rescale_velocity(self.ekin, self.dE, self.v)
                     # get acceleration
@@ -65,9 +66,15 @@ class LandauZener(PropagatorBase):
             self.ekin = calc_ekin(self.masses, self.v)
             self.epot = self.e_curr[self.iactive]
             self.etot = self.ekin + self.epot
-    
-            print(self.iactive, self.ekin, self.epot, self.etot)
+            
+            time = dt * istep
+            if istep == 0:
+                dE = 0.
+            else:
+                dE = self.etot - etot_old
+            self.log_step(time, self.iactive, dE, self.ekin, self.epot, self.etot, infotext) 
             self.db.add_step(data, self.v, self.iactive, self.ekin, self.epot, self.etot)
+            etot_old = self.etot
 
     def call_spp(self, crd=None, gradstate=None):
         if crd is None:
@@ -113,7 +120,7 @@ class LandauZener(PropagatorBase):
             return self.setup_new()
         else:
             self.crd = self.db.get('crd', -1)
-            self.iactive = int(self.db.get('curr_state', -1))
+            self.iactive = int(self.db.get('currstate', -1))
             self.v = self.db.get('veloc', -1)
             grad = self.db.get('gradient', -1)
             self.a = get_acceleration(grad, self.masses)
@@ -192,7 +199,6 @@ def get_acceleration(g, m):
 
 def rescale_velocity(ekin, dE, v):
     factor = (1. - dE/ekin)
-    print(f"factor = {factor}")
     v *= np.sqrt(factor)
     return v
 

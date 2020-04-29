@@ -56,18 +56,18 @@ class Sampling(Colt):
         return cls.from_config(config, logger=logger)    
 
     @classmethod 
-    def create_db(cls, dbfilename, variables, dimensions, molecule, modes, model=False, sp=False):
+    def create_db(cls, dbfilename, variables, dimensions, molecule, modes, model=False, sp=False, logger=None):
         db = SamplingDB.create_db(dbfilename, variables, dimensions=dimensions, molecule=molecule, modes=modes, model=model, sp=sp)
         config = db.get_config()
         config['sampling_db'] = dbfilename
-        return cls(config, db, db.dynsampling)
+        return cls(config, db, db.dynsampling, logger=logger)
 
     @classmethod
-    def from_db(cls, dbfilename):
+    def from_db(cls, dbfilename, logger=None):
         db = SamplingDB.from_db(dbfilename)
         config = db.get_config()
         config['sampling_db'] = dbfilename
-        return cls(config, db, db.dynsampling)
+        return cls(config, db, db.dynsampling, logger=logger)
     
     def __init__(self, config, db, dynsampling, sampler=None, logger=None):
         """ Sampling always goes with a database, if not needed use Sampler class
@@ -105,7 +105,7 @@ class Sampling(Colt):
     def write_condition(self, condition, idx):
         self._db.write_condition(condition, idx)
 
-    def set(self, key, value, idx):
+    def set(self, key, value, idx=None):
         self._db.set(key, value, idx)
 
     def __iter__(self):

@@ -24,13 +24,14 @@ class DynDB(PySurfDB):
 
     def add_step(self, data, veloc, currstate, ekin, epot, etot):
         for entry in data:
-            print('Johannes:', entry)
-            print('Johannes:', data[entry])
             if entry == 'gradient':
-                for state in entry:
-                    self.append(entry, state, entry[state])
+                grad = np.empty((self.nstates, self.natoms, 3))
+                for state in data[entry]:
+                    grad[state, :, :] = data[entry][state]
+                self.append(entry, grad)
                 continue
-            self.append(entry, data[entry])
+            if entry in ['crd', 'fosc', 'energy', 'transmom']:
+                self.append(entry, data[entry])
         self.append('currstate', currstate)
         self.append('ekin', ekin)
         self.append('epot', epot)
