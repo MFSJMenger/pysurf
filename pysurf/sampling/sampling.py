@@ -105,6 +105,15 @@ class Sampling(Colt):
     def write_condition(self, condition, idx):
         self._db.write_condition(condition, idx)
 
+    def append_condition(self, condition, idx):
+        self._db.append_condition(condition, idx)
+    
+    def append(self, key, value):
+        self._db.append(key, value)
+
+    def get(self, key, idx=None):
+        return self._db.get(key, idx)
+
     def set(self, key, value, idx=None):
         self._db.set(key, value, idx)
 
@@ -140,6 +149,9 @@ class Sampling(Colt):
                                       np.copy(self._db['crd_equi']),
                                       np.copy(self._db['masses']))
         return self._molecule
+    @property
+    def increase(self):
+        return self._db.increase
 
     @property
     def natoms(self):

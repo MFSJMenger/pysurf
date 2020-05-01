@@ -72,7 +72,7 @@ class LandauZener(PropagatorBase):
                 dE = 0.
             else:
                 dE = self.etot - etot_old
-            self.log_step(time, self.iactive, dE, self.ekin, self.epot, self.etot, infotext) 
+            self.log_step(istep, time, self.iactive, dE, self.ekin, self.epot, self.etot, infotext) 
             self.db.add_step(data, self.v, self.iactive, self.ekin, self.epot, self.etot)
             etot_old = self.etot
 

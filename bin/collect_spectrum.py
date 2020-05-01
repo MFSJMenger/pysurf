@@ -34,23 +34,23 @@ class CollectSpectrum(SubfolderHandle, Colt):
         specfile = os.path.join(self.folder, 'spectrum.db')
 
         if exists_and_isfile(specfile):
-            self.sampling = Sampling.from_db(specfile)
+            self.sampling = Sampling.from_db(specfile, logger=self.logger)
             self.dimensions = self.sampling.info['dimensions']
             self.variables = self.sampling.info['variables']
             if not self._check_sampling(self.sampling):
                 logger.error(f"Existing spectrum db is corrupted")
             for counter in range(self.sampling.nconditions, len(subfolderhandle)):
-                snew = Sampling.from_db(subfolderhandle.get_file(self.file, counter))
+                snew = Sampling.from_db(subfolderhandle.get_file(self.file, counter), logger=self.logger)
                 if self._check_sampling(snew):
                     self.add_condition(snew)
                 
         else:
             counter = 0
             for file in subfolderhandle.fileiter('init.db'):
-                snew = Sampling.from_db(file)
+                snew = Sampling.from_db(file, logger=self.logger)
                 if counter == 0:
-                    self.sampling = Sampling.new_db(specfile, snew.info['variables'], snew.info['dimensions'],
-                                                    snew.molecule, snew.modes, snew.model, sp=False)
+                    self.sampling = Sampling.create_db(specfile, snew.info['variables'], snew.info['dimensions'],
+                                                    snew.molecule, snew.modes, snew.model, sp=False, logger=self.logger)
                     self.dimensions = self.sampling.info['dimensions']
                     self.variables = self.sampling.info['variables']
                 self.add_condition(snew)

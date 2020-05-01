@@ -169,5 +169,5 @@ class PySurfDB(Database):
     @property
     def model(self):
         if self._model is None:
-            self._model =  bool(self['model'])
+            self._model =  bool(self['model'][0])
         return self._model

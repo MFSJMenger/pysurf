@@ -1,5 +1,6 @@
 from abc import abstractmethod
 import numpy as np
+import time
 
 from pysurf.colt import PluginBase
 from pysurf.spp import SurfacePointProvider
@@ -27,8 +28,18 @@ class PropagatorBase(PropagatorFactory):
     properties = ['energy', 'gradient']
 
     @abstractmethod
+    def _run(self, nsteps, db, *args, **kwargs):
+
     def run(self, nsteps, dt, *args, **kwargs):
         """propagation routine"""
+#       start timer
+#       ....
+        self.output_header(self)
+        self.start_time = time.perf_counter()
+        self._run(self, nsteps, dt, *args, **kwargs)
+
+    def get_runtime(self):
+        return (time.perf_counter() - self.start_time)
 
     def __init__(self, spp_inp, sampling, nstates, logger=None):
         """Setup surface hopping using config in `configfile`
@@ -37,6 +48,7 @@ class PropagatorBase(PropagatorFactory):
         The system is completely defined via the SPP model
         """
         self.nstates = nstates
+        self.start_time = time.perf_counter()
 
         if logger is None:
             self.logger = get_logger('prop.log', 'propagator')
@@ -68,9 +80,14 @@ class PropagatorBase(PropagatorFactory):
             self.masses = sampling.masses
 
         self.t_converter = time_converter.get_converter(tin='au', tout='fs')
+        self.output = get_logger('prop.out')
 
-    def log_step(self, time, state, dE, ekin, epot, etot, infotext=None):
-        self.logger.info(f"Time: {self.t_converter(time):6.2f} fs{'energy diff.:':>57} {dE:6.5f}")
-        if infotext is not None: self.logger.info(infotext)
-        self.logger.info(f"    {'curr. state':20}: {state:20}")
-        self.logger.info(f"    {'ekin, epot, etot':20}: {ekin:10.6f}, {epot:10.6f}, {etot:10.6f}\n")
+    def output_header(self):
+        self.output.info('#'+('='*119))
+        self.output.info(f"#{'Step':^6}|{'Time':^6}|{'State':^7}|{'Energy':^28}|{'Gradient':^10}|{'Runtime':^9}|")
+        self.output.info(f"#{:6}|{:^6}|{:^7}|{'kin':^6}|{'pot':^6}|{'tot':^6}|{'diff':^6}|{'RMS:^10}|{:^9}|")
+        self.output.info(f"#{:6}|{[fs] :^6}|{:^7}|{'[au]':^21}|{'[au]':^10}|{'[sec]':^9}|")
+        self.output.info('#' + ('='*119) + '\n')
+
+    def output_step(self, step, time, state, dE, ekin, epot, etot):
+        self.output.info(f"{step:8}{self.t_converter(time):6.2f}{ekin:7.5f}{epot:7.5f}{etot:7.5f}{ediff:7.5f}{:11}{self.get_runtime():9}")

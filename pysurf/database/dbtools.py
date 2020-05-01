@@ -21,7 +21,6 @@ class _DBVariable(object):
             return False
         if self.type != rhs.type or any(self.dimensions[i] != rhs.dimensions[i]
                                         for i in range(len(self.dimensions))):
-            print(self, rhs)
             return False
         return True
 
@@ -117,7 +116,7 @@ class DatabaseGenerator(GeneratorBase):
     def select_type(typ):
         """select type"""
         types = {
-            'int': np.int,
+            'int': np.int64,
             'float': np.float,
             'double': np.double,
             'complex': np.complex,
