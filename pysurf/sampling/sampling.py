@@ -49,8 +49,7 @@ class Sampling(Colt):
     def from_inputfile(cls, inputfile):
         logger = get_logger('sampling.log', 'sampling')
         # Generate the config
-        quests = cls.generate_questions(config=inputfile)
-        config = quests.ask(inputfile)
+        config = cls.generate_input(inputfile)
         logger.header('SAMPLING', config)
         logger.info(f"Took information from inputfile {inputfile}")
         return cls.from_config(config, logger=logger)    

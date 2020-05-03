@@ -16,10 +16,10 @@ class SetupSpectrum(SetupBase):
 
     _questions = """
     # Number of conditions
-    n_cond = 100 :: int
+    n_cond = :: int
 
     # Number of states
-    nstates = 2 :: int
+    nstates = :: int
    
     #Properties that should be calculated
     properties = ['energy', 'fosc'] :: list

@@ -25,7 +25,7 @@ class SetupPropagation(SetupBase):
     spp = spp.inp :: file
     
     # initial excited state for the trajectory
-    initial state = 1 :: int
+    initial state =  :: int
 
     #Filepath for the inputfile of the Propagation
     prop = prop.inp :: file
@@ -53,7 +53,7 @@ class SetupPropagation(SetupBase):
 
         #Make sure that inputfile for RunTrajectory exists and is complete
         if exists_and_isfile(config['prop']): lconfig = config['prop']
-        else: lconfig=None
+        else: lconfig = None
         RunTrajectory.generate_input(config['prop'], config=lconfig)
 
         #

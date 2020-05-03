@@ -71,7 +71,7 @@ class SinglePointCalculation(Colt):
         spp = SurfacePointProvider(config['spp'], 
                                   config['properties'],
                                   sampling.natoms,
-                                  config['nstates']-1,
+                                  config['nstates'],
                                   sampling.atomids)
 
         crd = sampling.get_condition(0).crd
@@ -107,6 +107,8 @@ class SinglePointCalculation(Colt):
             if 'nstates' in info['dimensions']:
                 if (info['dimensions']['nstates'] >= config['nstates']) and (info['dimensions']['natoms'] == sampling._db.info['dimensions']['natoms']):
                     check2=True
+                else:
+                    check2 = False
             else:
                 check2 = False
             if check1 and check2:

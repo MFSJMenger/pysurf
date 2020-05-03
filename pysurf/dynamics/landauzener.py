@@ -15,7 +15,7 @@ class LandauZener(PropagatorBase):
     
     properties = ['energy', 'gradient'] 
     
-    def run(self, nsteps, dt, seed=16661):
+    def _run(self, nsteps, dt, seed=16661):
         self.dt = dt
         self.nsteps = nsteps
         self.e_curr = None
@@ -27,6 +27,8 @@ class LandauZener(PropagatorBase):
 
         if self.restart is False:
             self.setup_new()
+            if self.nsteps < 2:
+                return
         else:
             self.setup_from_db()
 
@@ -35,15 +37,17 @@ class LandauZener(PropagatorBase):
             return 
 
         for istep in range(self.start, nsteps+1):
-            infotext = None
-            # 1) write step info
-            # 2) call interface
+            # 1) update coordinates
             self.crd = vv_xstep(self.crd, self.v, self.a, self.dt)
-            data = self.call_spp()
+            # 2) get data
+            self.data = self.call_spp()
+            self.e_two_step_prev = self.e_prev_step
+            self.e_prev_step = self.e_curr
+            self.e_curr = self.data['energy']
             #
             # update acceleration
             self.a_old = self.a
-            self.a = get_acceleration(data['gradient'][self.iactive], self.masses)
+            self.a = get_acceleration(self.data['gradient'][self.iactive], self.masses)
             # 
             self.v = vv_vstep(self.v, self.a_old, self.a, self.dt)
 
@@ -51,30 +55,29 @@ class LandauZener(PropagatorBase):
             self.iselected = self.lz_select()
             if self.iselected is not None:
                 # change active state
-                self.dE = data['energy'][iselected] - data['energy'][self.iactive]
+                self.dE = self.data['energy'][iselected] - self.data['energy'][self.iactive]
                 self.ekin = calc_ekin(self.masses, self.v)
                 if (self.dE > self.ekin):
-                    infotext = (f"*   Frustrated hop: Too few energy -> no hop\n")
+                    self.logger.info(f"*   Frustrated hop: Too few energy -> no hop\n")
                 else:
-                    infotext = (f"*   LandauZener hop: {self.iactive} -> {iselected}\n")
+                    self.logger.info(f"*   LandauZener hop: {self.iactive} -> {iselected}\n")
                     self.iactive = self.iselected
                     # rescale velocity
                     self.v = rescale_velocity(self.ekin, self.dE, self.v)
                     # get acceleration
-                    data = self.call_spp()
-                    self.a = get_acceleration(data['gradient'][self.iactive], self.masses)
+                    self.data = self.call_spp()
+                    self.a = get_acceleration(self.data['gradient'][self.iactive], self.masses)
+            
+            self.etot_old = self.etot
             self.ekin = calc_ekin(self.masses, self.v)
             self.epot = self.e_curr[self.iactive]
             self.etot = self.ekin + self.epot
-            
+
+            #write step info
             time = dt * istep
-            if istep == 0:
-                dE = 0.
-            else:
-                dE = self.etot - etot_old
-            self.log_step(istep, time, self.iactive, dE, self.ekin, self.epot, self.etot, infotext) 
-            self.db.add_step(data, self.v, self.iactive, self.ekin, self.epot, self.etot)
-            etot_old = self.etot
+            diff = self.etot - self.etot_old
+            self.output_step(istep, time, self.iactive, self.ekin, self.epot, self.etot, diff) 
+            self.db.add_step(time, self.data, self.v, self.iactive, self.ekin, self.epot, self.etot)
 
     def call_spp(self, crd=None, gradstate=None):
         if crd is None:
@@ -90,44 +93,69 @@ class LandauZener(PropagatorBase):
             self.crd = self.init.crd
             # set starting veloc
             self.v = self.init.veloc
-            # start
-            data = self.call_spp()
-            nstates = len(data['energy'])
-            self.a = get_acceleration(data['gradient'][self.iactive], self.masses)
+            # get gradient and energy
+            self.data = self.call_spp()
+            self.e_curr = self.data['energy']
+            
+            self.a = get_acceleration(self.data['gradient'][self.iactive], self.masses)
             #
-            self.e_curr = data['energy']
-            #
-            for istep in range(2):
+            self.ekin = calc_ekin(self.masses, self.v)
+            self.epot = self.e_curr[self.iactive]
+            self.etot = self.ekin + self.epot
+            self.etot_old = self.etot
+            
+            #Put initial condition as step 0 into database
+            istep = 0
+            diff = 0.
+            time = istep * self.dt
+            diff = self.etot - self.etot_old
+            self.output_step(istep, time, self.iactive, self.ekin, self.epot, self.etot, diff) 
+            self.db.add_step(time, self.data, self.v, self.iactive, self.ekin, self.epot, self.etot)
+
+            self.start = 1
+
+            if self.nsteps > 0:
                 # If not restart, first 2 steps are just to save energy!
                 self.crd = vv_xstep(self.crd, self.v, self.a, self.dt)
-                data = self.call_spp() 
+                
+                self.data = self.call_spp() 
+                self.e_prev_step = self.e_curr
+                self.e_curr = self.data['energy']
+                
                 # update acceleration
                 self.a_old = self.a
-                self.a = get_acceleration(data['gradient'][self.iactive], self.masses)
+                self.a = get_acceleration(self.data['gradient'][self.iactive], self.masses)
                 self.v = vv_vstep(self.v, self.a_old, self.a, self.dt)
-                if self.e_prev_step is None:
-                    self.e_prev_step = self.e_curr
-                    self.e_curr = data['energy']
-                    continue
-                self.e_two_step_prev = self.e_prev_step
-                self.e_prev_step = self.e_curr
-                self.e_curr = data['energy']
-            self.start = 0
+                    
+                self.etot_old = self.etot
+                self.ekin = calc_ekin(self.masses, self.v)
+                self.epot = self.e_curr[self.iactive]
+                self.etot = self.ekin + self.epot
+            
+                istep = 1
+                time = istep * self.dt
+                diff = self.etot - self.etot_old
+                self.output_step(istep, time, self.iactive, self.ekin, self.epot, self.etot, diff) 
+                self.db.add_step(time, self.data, self.v, self.iactive, self.ekin, self.epot, self.etot)
+                
+                self.start = 2
+
 
     def setup_from_db(self):
         #two previous steps are needed
         if self.db.len < 2:
+            self.create_new_db()
             return self.setup_new()
         else:
             self.crd = self.db.get('crd', -1)
             self.iactive = int(self.db.get('currstate', -1))
             self.v = self.db.get('veloc', -1)
-            grad = self.db.get('gradient', -1)
+            grad = self.db.get('gradient', -1)[self.iactive]
             self.a = get_acceleration(grad, self.masses)
             self.e_curr = self.db.get('energy',-1)
             self.e_prev_step = self.db.get('energy', -2)
-            self.e_two_step_prev = self.db.get('energy', -3)
-            self.start = self.db.len            
+            self.start = self.db.len
+            self.etot_old = self.db.get('etot', -1)[0]
 
     def lz_select(self):
         """"takes in the (adiabatic?) energies at
@@ -175,7 +203,13 @@ class LandauZener(PropagatorBase):
 
 def calc_ekin(masses, veloc):
     ekin = 0.0
-    for i, mass in enumerate(masses.flatten()):
+    #Take care that for an ab-initio calculation masses are a 1D array of length natoms
+    #and velocities are a 2D array of shape (natoms, 3)
+    if veloc.shape != masses.shape:
+        masses_new = np.repeat(masses, 3).reshape((len(masses),3))
+    else:
+        masses_new = masses
+    for i, mass in enumerate(masses_new.flatten()):
         ekin += 0.5*mass*veloc.flatten()[i]*veloc.flatten()[i]
     return ekin
 
@@ -191,6 +225,8 @@ def v_update(v, a_old, a, dt):
 def get_acceleration(g, m):
     g = np.array(g)
     m = np.array(m)
+    #Take care that for an ab-initio calculation masses are a 1D array of length natoms
+    #and acceleration g is a 2D array of shape (natoms, 3)
     if g.shape == m.shape:
         return -g/m
     else:

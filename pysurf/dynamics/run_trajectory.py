@@ -55,7 +55,8 @@ class RunTrajectory(Colt):
         propagator = PropagatorFactory._methods[config['method'].value](config['spp'], 
                                                                         sampling,
                                                                         config['n_states'],
-                                                                        logger = self.logger)
+                                                                        restart=config['restart'],
+                                                                        logger=self.logger)
         propagator.run(self.nsteps, config['timestep [fs]']*fs2au)
     
     @classmethod

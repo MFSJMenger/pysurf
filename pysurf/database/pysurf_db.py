@@ -23,16 +23,23 @@ class PySurfDB(Database):
     _nmodes = None
     _len = None
 
-    _dimensions = {
+    _dimensions_molecule = {
             'frame': 'unlimited',
             'natoms': None,
             'nstates': None,
             'nmodes': None,
             'three': 3,
-            'two': 2,
             'one': 1,
     }
-    _variables = DatabaseGenerator("""
+    
+    _dimensions_model = {
+            'frame': 'unlimited',
+            'nstates': None,
+            'nmodes': None,
+            'one': 1,
+    }
+    
+    _variables_molecule = DatabaseGenerator("""
         [variables]
         crd_equi  = double :: (natoms, three)
         atomids   = int    :: (natoms)
@@ -49,27 +56,57 @@ class PySurfDB(Database):
         fosc      = double :: (frame, nstates)
         transmom  = double :: (frame, nstates, three)
         currstate = double :: (frame, one)
+        time      = double :: (frame, one)
         ekin      = double :: (frame, one)
         epot      = double :: (frame, one)
         etot      = double :: (frame, one)
         nacs      = double :: (frame, nstates, nstates, natoms, three)
     """)['variables']
 
+    _variables_model = DatabaseGenerator("""
+        [variables]
+        crd_equi  = double :: (nmodes)
+        freqs_equi= double :: (nmodes)
+        modes_equi= double :: (nmodes, nmodes)
+        masses    = double :: (nmodes)
+        model     = int    :: (one)
+
+        crd       = double :: (frame, nmodes)
+        veloc     = double :: (frame, nmodes)
+        accel     = double :: (frame, nmodes)
+        energy    = double :: (frame, nstates)
+        gradient  = double :: (frame, nstates, nmodes)
+        fosc      = double :: (frame, nstates)
+        currstate = double :: (frame, one)
+        time      = double :: (frame, one)
+        ekin      = double :: (frame, one)
+        epot      = double :: (frame, one)
+        etot      = double :: (frame, one)
+        nacs      = double :: (frame, nstates, nstates, nmodes)
+    """)['variables']
+
 
     @classmethod
-    def _get_settings(cls, variables):
+    def _get_settings(cls, variables, model):
         out = {'variables': {}, 'dimensions': {}}
         varis = out['variables']
         dims = out['dimensions']
-       
+        
+        if model: 
+            refvar = cls._variables_model
+            refdim = cls._dimensions_model
+        else: 
+            refvar = cls._variables_molecule
+            refdim = cls._dimensions_molecule
+
         for var in variables:
             try:
-                varis[var] = cls._variables[var]
+                varis[var] = refvar[var]
             except:
                 raise Exception(f"Variable {var} unknown")
             for dim in varis[var].dimensions:
                 try:
-                    dims[dim] = cls._dimensions[dim]
+                    dims[dim] = refdim[dim]
                 except:
                     raise Exception(f"Dimension {dim} unknown")
         return out
@@ -101,7 +138,7 @@ class PySurfDB(Database):
             dimensions = {}
         if data is None:
             data = []
-        settings = cls._get_settings(data)
+        settings = cls._get_settings(data, model)
         cls._prepare_settings(settings, dimensions, model, sp)
         return cls(filename, settings)
 
@@ -114,15 +151,15 @@ class PySurfDB(Database):
             raise Exception(f"Cannot load database {filename}")
         return cls.generate_database(filename, data, dimensions, units, attributes, descriptition, model, sp)
 
-    def add_reference_entry(self, molecule, modes, model):
+    def add_reference_entry(self, system, modes, model):
         self.set('model', int(model))
         if model is False:
-            self.set('atomids', molecule.atomids)
-        self.set('masses', molecule.masses)
+            self.set('atomids', system.atomids)
+        self.set('masses', system.masses)
         self.set('modes_equi', np.array([mode.displacements for mode in modes]))
         self.set('freqs_equi', np.array([mode.freq for mode in modes]))
         # add equilibrium values
-        self.set('crd_equi', molecule.crd)
+        self.set('crd_equi', system.crd)
 
     @property
     def masses(self):
@@ -138,6 +175,8 @@ class PySurfDB(Database):
 
     @property
     def molecule(self):
+        if self.model:
+            return None
         if self._molecule is None:
             self._molecule = Molecule(np.copy(self['atomids']),
                                       np.copy(self['crd_equi']),

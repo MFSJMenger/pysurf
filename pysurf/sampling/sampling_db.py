@@ -47,20 +47,27 @@ class SamplingDB(PySurfDB):
     @classmethod
     def from_sampler(cls, config, sampler):
         getinit = sampler.get_init()
-        molecule = getinit['molecule']
+
+        system = getinit['system']
         modes = getinit['modes']
         model = config['model']
         if sampler.condition.__name__ == "DynCondition":
             dynsampling = True
         else:
             dynsampling = False
-        natoms = molecule.natoms
         nmodes = len(modes)
-        variables = ['model', 'crd_equi', 'masses', 'atomids', 'modes_equi', 'freqs_equi', 'crd', 'currstate']
+        
+        if model is False:
+            natoms = system.natoms
+            variables = ['model', 'crd_equi', 'masses', 'atomids', 'modes_equi', 'freqs_equi', 'crd', 'currstate']
+            dimensions = {'natoms': natoms, 'nmodes': nmodes}
+        else:
+            variables = ['model', 'crd_equi', 'masses', 'modes_equi', 'freqs_equi', 'crd', 'currstate']
+            dimensions = {'nmodes': nmodes}
         if dynsampling:
             variables += ['veloc']
-        db = cls.generate_database(config['sampling_db'], data=variables, dimensions={'natoms': natoms, 'nmodes': nmodes}, model=False)
-        db.add_reference_entry(molecule, modes, model)
+        db = cls.generate_database(config['sampling_db'], data=variables, dimensions=dimensions, model=model)
+        db.add_reference_entry(system, modes, model)
         return db
 
     @classmethod

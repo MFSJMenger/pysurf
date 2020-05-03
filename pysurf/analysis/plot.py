@@ -58,7 +58,10 @@ class Plot(Colt):
             style = os.path.join(style, 'pysurf.mplstyle')
         else:
             style = config['matplotlib style']
-        plt.style.use(style)
+        try:
+            plt.style.use(style)
+        except:
+            raise Exception(f"Matplotlib style {style} could not be set")
 
         if config['rcparams'] is not None:
             for key, value in config['rcparams'].items():
@@ -130,9 +133,9 @@ class Plot(Colt):
 
 
         #set axis and axis label
-        lbl = config['x_label']
+        lbl = r"{}".format(config['x_label'])
         if config['x_label_unit']:
-            lbl += f" [{config['x_units']}]"
+            lbl += r" [{}]".format(config['x_units'])
         ax.set_xlabel(lbl)
  
         scale = False
@@ -144,9 +147,9 @@ class Plot(Colt):
         if config['x_units'] == 'a.u.':
             ax.set_xticklabels('' for x in ax.get_xticks())
         
-        lbl = config['y_label']
+        lbl = r"{}".format(config['y_label'])
         if config['y_label_unit']:
-            lbl += f" [{config['y_units']}]"
+            lbl += r" [{}]".format(config['y_units'])
         ax.set_ylabel(lbl)
         
         scale = False

@@ -3,6 +3,8 @@ import numpy.random as random
 #
 from pysurf.constants import U_TO_AMU, CM_TO_HARTREE
 from pysurf.molden import MoldenParser
+from pysurf.spp import ModelFactory
+from pysurf.colt import Colt
 #
 from ..molecule.molecule import Molecule
 from ..molecule.atominfo import MASSES
@@ -12,33 +14,33 @@ from .normalmodes import Mode
 from .base_sampler import DynSamplerBase, DynCondition
 
 
+class Molden(Colt):
+    _questions = """
+    moldenfile = :: existing_file
+    """
+
+
 class Wigner(DynSamplerBase):
 
     _questions = """
         # Input source for the normal modes and/or frequencies, which are used to generate the
         # initial conditions.
-        # Possible options are:
-        #    - molden
-        #    - frequencies
-        #
         from = :: str
-
-        # If initial conditions are generated from a molden file, this subquestion asks for the
-        # molden file.
-        [from(molden)]
-        moldenfile = molden.in :: str
-
-        # If initial conditions are generated from frequencies, here a list of frequencies has to
-        # be given for the modes. The list can be in the python list format or just comma separated
-        # values.
-        [from(frequencies)]
-        frequencies = :: flist_np
     """
 
-    def __init__(self, molecule, modes, check=True, is_massweighted=False):
+    _from = {'molden' : Molden,
+             'model' : ModelFactory,
+    }
+
+    @classmethod
+    def _generate_subquestions(cls, questions):
+        questions.generate_cases("from", {name: val.questions for name, val in cls._from.items()})
+        
+    
+    def __init__(self, system, modes, check=True, is_massweighted=False):
         """Initialize a new Wigner Sampling with a molecule class
            and a normal Mode class"""
-        self.molecule = molecule
+        self.system = system
         self.modes = modes
         self.is_massweighted = is_massweighted
         if check is True:
@@ -47,10 +49,12 @@ class Wigner(DynSamplerBase):
     @classmethod
     def from_config(cls, config):
         """ """
-        if config['from'].value == 'molden':
+        if config['from'] == 'molden':
             return cls.from_molden(config['from']['moldenfile'])
-        elif config['from'].value == 'frequencies':
-            return cls.from_freqs(config['from']['frequencies'])
+        elif config['from'].value == 'model':
+            #TODO finish that
+            model = ModelFactory.instance_from_config(config['from'])
+            return cls.from_model(model)
         raise Exception("only (molden, frequencies) implemented")
 
     @classmethod
@@ -60,12 +64,12 @@ class Wigner(DynSamplerBase):
 
     def get_init(self):
         """Return all infos needed for the initial condition parser"""
-        return {'molecule': self.molecule,
+        return {'system': self.system,
                 'modes': self.modes}
 
     def get_condition(self):
         """Return a single created initial condition"""
-        _, conds = get_initial_condition(self.molecule, self.modes)
+        _, conds = get_initial_condition(self.system, self.modes)
         return conds
 
     def _check_modes(self):
@@ -100,35 +104,26 @@ class Wigner(DynSamplerBase):
 
     # method to create initial conditions for model systems like the pyrazine model
     @classmethod
-    def from_freqs(cls, freqs):
-        nfreqs = len(freqs)
-        masses = 1./np.array(freqs)
-        mol = Molecule(np.ones(nfreqs),
-                       np.zeros(nfreqs, dtype=np.double),
-                       np.ones(nfreqs, dtype=np.double))
-        mol.masses = masses
-        displacement = np.ones(nfreqs, dtype=np.double)
-        displacement /= np.linalg.norm(displacement)
-        modes = [Mode(freq, displacement) for freq in freqs]
-        return cls(mol, modes, True)
+    def from_model(cls, model):
+        return cls(model, model.modes, True)
 
     def to_mass_weighted(self):
         if self.is_massweighted is True:
             return
         else:
-            self.modes = nm.create_mass_weighted_normal_modes(self.modes, self.molecule)
+            self.modes = nm.create_mass_weighted_normal_modes(self.modes, self.system)
             self.is_massweighted = True
 
 
-def get_initial_condition(molecule, modes):
+def get_initial_condition(system, modes):
     """Generate an initial condition based on the normal modes of
        the molecule, according to a Wigner distribution
        Method is based on L. Sun, W. L. Hase J. Chem. Phys. 133, 044313 (2010).
     """
     Epot = 0.0
     #
-    crd = np.copy(molecule.crd)
-    veloc = np.zeros((molecule.natoms, 3), dtype=np.double)
+    crd = np.copy(system.crd)
+    veloc = np.zeros_like(system.crd, dtype=np.double)
     #
     for mode in modes:
         if mode.freq < 0.0:
@@ -155,7 +150,7 @@ def get_initial_condition(molecule, modes):
         Epot += 0.5 * mode.freq**2 * Q**2
         # scaling for crd, veloc sampling
         scale = np.copy(mode.displacements)
-        for i, mass in enumerate(molecule.masses):
+        for i, mass in enumerate(system.masses):
             scale[i] *= 1.0/np.sqrt(mass)
         #
         crd += Q * scale

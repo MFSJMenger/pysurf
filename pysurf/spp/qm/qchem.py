@@ -142,7 +142,7 @@ class QChem(AbinitioBase):
 
     _questions = """
     exe = 
-    remsection = :: literal
+#    remsection = :: literal
     chg = 0 :: int
     mult = 1 :: int
     exchange = pbe0
@@ -191,8 +191,9 @@ class QChem(AbinitioBase):
         self.mult = mult
         self.filename = 'qchem.in'
         self.nstates = nstates
-        self.reader._events['ExcitedStateInfo'].nmax = nstates
+        self.reader._events['ExcitedStateInfo'].nmax = nstates-1
         self._update_settings(config)
+        self.excited_state_settings['cis_n_roots'] = nstates-1
 
     def _update_settings(self, config):
         self.settings = {key: config[key] for key in self.settings}

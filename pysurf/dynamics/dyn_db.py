@@ -3,7 +3,7 @@ import numpy as np
 from pysurf.database import PySurfDB
 
 class DynDB(PySurfDB):
-    variables = ['crd_equi', 'modes_equi', 'model', 'atomids', 'freqs_equi', 'masses', 'currstate', 'crd', 'veloc', 'energy', 'ekin', 'epot', 'etot']
+    variables = ['crd_equi', 'modes_equi', 'model', 'atomids', 'freqs_equi', 'masses', 'currstate', 'crd', 'veloc', 'energy', 'ekin', 'epot', 'etot', 'time']
 
     @classmethod
     def from_dynamics(cls, dbfile):
@@ -22,7 +22,8 @@ class DynDB(PySurfDB):
         db.add_reference_entry(sampling.molecule, sampling.modes, sampling.model)
         return db
 
-    def add_step(self, data, veloc, currstate, ekin, epot, etot):
+    def add_step(self, time, data, veloc, currstate, ekin, epot, etot):
+        self.append('time', time)
         for entry in data:
             if entry == 'gradient':
                 grad = np.empty((self.nstates, self.natoms, 3))

@@ -9,9 +9,9 @@ from .utils.context_utils import BaseContextDecorator
 __all__ = ["get_logger", "Logger"]
 
 
-def get_logger(filename, name, sublogger=None):
+def get_logger(filename, name, sublogger=None, mode="w"):
     """initialize a new logger"""
-    fhandle = Logger.get_fhandle(filename)
+    fhandle = Logger.get_fhandle(filename, mode)
     return Logger(name, fhandle, sublogger)
 
 
@@ -42,9 +42,9 @@ class _LoggerBase(object):
         self._error_block = DoOnException(self.error)
 
     @staticmethod
-    def get_fhandle(filename):
+    def get_fhandle(filename, mode="w"):
         """Generate a new file handle"""
-        return _TextHandle(filename)
+        return _TextHandle(filename, mode)
 
     def set_fhandle(self, handle):
         """set fhandle to new handle"""
@@ -155,16 +155,20 @@ class Logger(_LoggerBase):
 
 class _TextHandle(object):
 
-    def __init__(self, filename=None):
-        self._setup(filename)
+    def __init__(self, filename=None, mode="w"):
+        self._setup(filename, mode=mode)
 
-    def _setup(self, filename):
+    def _setup(self, filename, mode="w"):
         if filename is None:
             self._f = None
             self.write = partial(print, end='')
         else:
-            self._f = open(filename, "w")
-            self.write = self._f.write
+            self._f = open(filename, mode=mode)
+            self.write = self._write
+    
+    def _write(self, txt):
+        self._f.write(txt)
+        self._f.flush()
 
     def __del__(self):
         if self._f is not None:

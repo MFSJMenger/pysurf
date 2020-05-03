@@ -1,43 +1,7 @@
 import numpy as np
 from copy import deepcopy
-from abc import abstractmethod, ABC
+from model import Model
 
-
-class Model(ABC):
-
-    @abstractmethod
-    def get(self):
-        pass
-
-
-class HarmonicOscillator(Model):
-
-    def __init__(self):
-        self.a = 5.0
-        self.x0 = np.array([0.0, 5.0, -2.0])
-
-    def energy(self, x):
-        return self.a*(x - self.x0)**2
-
-    def gradient(self, x):
-        print(x)
-        print(x - self.x0)
-        return -2*self.a*(x - self.x0)
-
-    def get(self, crd):
-        """the get function returns the adiabatic energies as well as the
-           gradient at the given position crd. Additionally the masses
-           of the normal modes are returned for the kinetic Hamiltonian.
-        """
-        val = 1
-        N = 3
-        en = self.energy(crd)
-        grad = self.gradient(crd)
-        en = [e + val*i for i, e in enumerate(en)]
-        grad = self.gradient(crd)
-        grad = [grad for _ in range(N)]
-        mass = [1, 1, 1]
-        return {'energy': en, 'gradient': grad, 'mass': mass}
 
 
 class PyrMini(Model):
