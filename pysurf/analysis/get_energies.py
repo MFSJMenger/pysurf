@@ -7,7 +7,7 @@ from pysurf.database.dbtools import DatabaseRepresentation
 from pysurf.database.dbtools import DatabaseTools
 from pysurf.database.dbtools import DBVariable
 from pysurf.database.dbtools import load_database
-from pysurf.molecule.atominfo import get_atom_from_mass
+from pysurf.system.atominfo import get_atom_from_mass
 from pysurf.colt import FromCommandline
 
 from pysurf.utils.constants import au2ev

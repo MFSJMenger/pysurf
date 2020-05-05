@@ -9,8 +9,6 @@ from .base_propagator import PropagatorBase
 
 
 
-
-
 class LandauZener(PropagatorBase):
     
     properties = ['energy', 'gradient'] 
@@ -55,12 +53,12 @@ class LandauZener(PropagatorBase):
             self.iselected = self.lz_select()
             if self.iselected is not None:
                 # change active state
-                self.dE = self.data['energy'][iselected] - self.data['energy'][self.iactive]
+                self.dE = self.data['energy'][self.iselected] - self.data['energy'][self.iactive]
                 self.ekin = calc_ekin(self.masses, self.v)
                 if (self.dE > self.ekin):
                     self.logger.info(f"*   Frustrated hop: Too few energy -> no hop\n")
                 else:
-                    self.logger.info(f"*   LandauZener hop: {self.iactive} -> {iselected}\n")
+                    self.logger.info(f"*   LandauZener hop: {self.iactive} -> {self.iselected}\n")
                     self.iactive = self.iselected
                     # rescale velocity
                     self.v = rescale_velocity(self.ekin, self.dE, self.v)
@@ -72,7 +70,6 @@ class LandauZener(PropagatorBase):
             self.ekin = calc_ekin(self.masses, self.v)
             self.epot = self.e_curr[self.iactive]
             self.etot = self.ekin + self.epot
-
             #write step info
             time = dt * istep
             diff = self.etot - self.etot_old
@@ -155,7 +152,7 @@ class LandauZener(PropagatorBase):
             self.e_curr = self.db.get('energy',-1)
             self.e_prev_step = self.db.get('energy', -2)
             self.start = self.db.len
-            self.etot_old = self.db.get('etot', -1)[0]
+            self.etot = self.db.get('etot', -1)[0]
 
     def lz_select(self):
         """"takes in the (adiabatic?) energies at
@@ -174,7 +171,7 @@ class LandauZener(PropagatorBase):
             d_curr = compute_diff(self.e_curr, self.iactive, istate)
             # compute probability
             if (abs_gt(d_curr, d_prev_step) and abs_gt(d_two_step_prev, d_prev_step)):
-                curr_hop_prob = _lz_probability(self, self.dt, d_curr, d_prev_step, d_two_step_prev)
+                curr_hop_prob = self._lz_probability(self.dt, d_curr, d_prev_step, d_two_step_prev)
                 if curr_hop_prob > prob:
                     prob = curr_hop_prob
                     iselected = istate

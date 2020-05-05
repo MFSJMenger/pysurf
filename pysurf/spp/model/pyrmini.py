@@ -1,10 +1,24 @@
 import numpy as np
 from copy import deepcopy
-from model import Model
+from ..methodbase import ModelBase
+from pysurf.system import Mode
 
 
 
-class PyrMini(Model):
+ev2au = 1./27.2113961
+
+class PyrMini(ModelBase):
+
+    implemented = ["energy", "gradient"]
+    frequencies = np.array([0.126*ev2au, 0.074*ev2au, 0.118*ev2au])
+    masses = np.array(np.ones(3)/frequencies)
+    displacements = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+    modes = [Mode(freq, dis) for freq, dis in zip(frequencies, displacements)]
+    crd = [0.0, 0.0, 0.0]
+
+    @classmethod
+    def from_config(cls, config):
+        return cls()
 
     def __init__(self):
         """Pyrazine model according to Schneider, Domcke, Koeppel; JCP 92, 1045,
@@ -19,10 +33,9 @@ class PyrMini(Model):
         self.kappa21 = -0.254*ev2au
         self.kappa22 = 0.149*ev2au
         self.lam = 0.262*ev2au
-        self.w1 = 0.126*ev2au
-        self.w2 = 0.074*ev2au
-        self.w3 = 0.118*ev2au
-        self.mass = np.array((1.0/self.w1, 1.0/self.w2, 1.0/self.w3))
+        self.w1 = self.frequencies[0]
+        self.w2 = self.frequencies[1]
+        self.w3 = self.frequencies[2]
         pass
 
     def get(self, request):
@@ -35,12 +48,13 @@ class PyrMini(Model):
             if 'energy' in request.keys():
                 request['energy'] = self.adiab_en(crd)
             if 'gradient' in request.keys():
-                request['gradient'] = self.adiab_grad(crd)
-            request['mass'] = self.mass
+                grad = self.adiab_grad(crd)
+                request['gradient'] = {0: grad[0], 1: grad[1], 2: grad[2]}
+            request['masses'] =  self.masses
         else:
             request['energy'] = None
             request['gradient'] = None
-            request['mass'] = None
+            request['masses'] = None
         return request
 
     def adiab_en(self, crd):
@@ -109,26 +123,26 @@ class PyrMini(Model):
         return diab_grad
 
 
-class PyrMiniSala(PyrMini):
-
-    def __init__(self):
-        """ Pyrazine model according to Sala, Lasorne, Gatti and Guerin;
-            PCCP 2014, 16, 15957 with 3 modes and 2 excited states.
-            The model is in dimensionless normal modes.
-        """
-        ev2au = 1./27.2113961
-        self.E1 = 3.93*ev2au
-        self.E2 = 4.79*ev2au
-        self.kappa11 = -0.038*ev2au
-        self.kappa12 = -0.081*ev2au
-        self.kappa21 = -0.183*ev2au
-        self.kappa22 = 0.128*ev2au
-        self.lam = 0.195*ev2au
-        self.w1 = 0.126*ev2au
-        self.w2 = 0.074*ev2au
-        self.w3 = 0.116*ev2au
-        self.mass = np.array((1.0/self.w1, 1.0/self.w2, 1.0/self.w3))
-        pass
+#class PyrMiniSala(PyrMini):
+#
+#    def __init__(self):
+#        """ Pyrazine model according to Sala, Lasorne, Gatti and Guerin;
+#            PCCP 2014, 16, 15957 with 3 modes and 2 excited states.
+#            The model is in dimensionless normal modes.
+#        """
+#        ev2au = 1./27.2113961
+#        self.E1 = 3.93*ev2au
+#        self.E2 = 4.79*ev2au
+#        self.kappa11 = -0.038*ev2au
+#        self.kappa12 = -0.081*ev2au
+#        self.kappa21 = -0.183*ev2au
+#        self.kappa22 = 0.128*ev2au
+#        self.lam = 0.195*ev2au
+#        self.w1 = 0.126*ev2au
+#        self.w2 = 0.074*ev2au
+#        self.w3 = 0.116*ev2au
+#        self.masses = np.array((1.0/self.w1, 1.0/self.w2, 1.0/self.w3))
+#        pass
 
 
 if __name__ == "__main__":

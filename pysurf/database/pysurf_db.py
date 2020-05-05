@@ -5,23 +5,25 @@ from pysurf.utils import exists_and_isfile
 from .dbtools import DatabaseRepresentation, DatabaseGenerator
 from .dbtools import load_database as l_db
 from .database import Database
-from pysurf.molecule import Molecule, Mode
+from pysurf.system import Molecule, Mode, ModelInfo
 
 
 
 class PySurfDB(Database):
 
-    _modes = None
-    _molecule = None
-    _natoms = None
-    _nstates = None
-    _atomids = None
-    _info = None
-    _masses = None
-    _crd_equi = None
-    _model = None
-    _nmodes = None
-    _len = None
+    _modes = False
+    _molecule = False
+    _natoms = False
+    _nmodes = False
+    _nstates = False
+    _atomids = False
+    _info = False
+    _masses = False
+    _crd_equi = False
+    _model = False
+    _nmodes = False
+    _len = False
+    _model_info = False
 
     _dimensions_molecule = {
             'frame': 'unlimited',
@@ -125,7 +127,7 @@ class PySurfDB(Database):
     def info_database(cls, filename):
         db = Database.load_db(filename)
         info = {'variables':[]}
-        for var in cls._variables.keys():
+        for var in set(cls._variables_molecule.keys()).union(set(cls._variables_model.keys())):
             if var in db:
                 info['variables'] += [var]
         info['dimensions'] = db._rep.dimensions
@@ -145,7 +147,7 @@ class PySurfDB(Database):
     @classmethod
     def load_database(cls, filename, data=None, dimensions=None, units=None, attributes=None, descriptition=None, model=False, sp=False, read_only=False):
         if read_only is True:
-            return Database.load_db(filename)
+            return cls.load_db(filename)
         #
         if not exists_and_isfile(filename):
             raise Exception(f"Cannot load database {filename}")
@@ -163,25 +165,55 @@ class PySurfDB(Database):
 
     @property
     def masses(self):
-        if self._masses is None:
-            self._masses = np.array(self['masses'])
+        if self._masses is False:
+            if 'masses' in self:
+                self._masses = np.array(self['masses'])
+            else:
+                self._masses = None
         return self._masses
 
     @property
     def modes(self):
-        if self._modes is None:
-            self._modes = [Mode(freq, mode) for freq, mode in zip(np.copy(self['freqs_equi']), np.copy(self['modes_equi']))]
+        if self._modes is False:
+            if 'freqs_equi' in self and 'modes_equi' in self:
+                self._modes = [Mode(freq, mode) for freq, mode in zip(np.copy(self['freqs_equi']), np.copy(self['modes_equi']))]
+            else:
+                self._modes = None
         return self._modes
 
     @property
     def molecule(self):
         if self.model:
             return None
-        if self._molecule is None:
-            self._molecule = Molecule(np.copy(self['atomids']),
+        if self._molecule is False:
+            if 'atomids' in self and 'crd_equi' in self and 'masses' in self:
+                self._molecule = Molecule(np.copy(self['atomids']),
                                       np.copy(self['crd_equi']),
                                       np.copy(self['masses']))
+            else:
+                self._molecule = None
         return self._molecule 
+
+    @property
+    def model_info(self):
+        if self.model:
+            if self._model_info is False:
+                if 'crd_equi' in self and 'masses' in self:
+                    self._model_info = ModelInfo(np.copy(self['crd_equi']),
+                                             np.copy(self['masses']))
+                else:
+                    self._model_info = None
+            return self._model_info
+        else:
+            return None
+
+    @property
+    def system(self):
+        if self.model:
+            return self.model_info
+        else:
+            return self.molecule
+
 
     @property
     def dimensions(self):
@@ -189,24 +221,48 @@ class PySurfDB(Database):
 
     @property
     def natoms(self):
-        if self._natoms is None:
-            self._natoms = self.dimensions['natoms']
+        if self.model: return None
+        if self._natoms is False:
+            if 'natoms' in self:
+                self._natoms = self.dimensions['natoms']
+            else:
+                self._natoms = None
         return self._natoms
 
     @property
     def nstates(self):
-        if self._nstates is None:
-            self._nstates = self.dimensions['nstates']
+        if self._nstates is False:
+            if 'nstates' in self.dimensions:
+                self._nstates = self.dimensions['nstates']
+            else:
+                self._nstates = None
         return self._nstates
 
     @property
+    def nmodes(self):
+        if self._nmodes is False:
+            if 'nmodes' in self.dimensions:
+                self._nmodes = self.dimensions['nmodes']
+            else:
+                self._nmodes = None
+        return self._nmodes
+
+    @property
     def len(self):
-        if self._len is None:
+        if 'crd' in self:
             self._len = len(self['crd'])
+        else:
+            self._len = None
         return self._len
+
+    def __len__(self):
+        return self.len
 
     @property
     def model(self):
-        if self._model is None:
-            self._model =  bool(self['model'][0])
+        if self._model is False:
+            if 'model' in self:
+                self._model =  bool(self['model'][0])
+            else:
+                self._model = None
         return self._model

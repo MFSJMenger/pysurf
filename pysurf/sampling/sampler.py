@@ -10,7 +10,7 @@ from pysurf.database.dbtools import DBVariable
 from pysurf.colt import Colt
 from pysurf.logger import Logger, get_logger
 #
-from pysurf.molecule.molecule import Molecule
+from pysurf.system import Molecule
 from pysurf.sampling.base_sampler import SamplerFactory
 from .base_sampler import DynCondition, CrdCondition
 from .normalmodes import Mode

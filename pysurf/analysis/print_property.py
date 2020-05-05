@@ -3,7 +3,7 @@ import os
 import numpy as np
 
 from pysurf.database import PySurfDB
-from pysurf.molecule.atominfo import get_atom_from_mass
+from pysurf.system.atominfo import get_atom_from_mass
 from pysurf.colt import Colt
 
 from pysurf.utils.constants import bohr2angstrom

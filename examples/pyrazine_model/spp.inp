@@ -1,14 +1,11 @@
-[MAIN]
+
+logging = debug
 mode = model
+use_db = no
 
+[mode(model)]
+model = PyrMini
 
-[MODEL]
-module = /data/ehrmaier/pysurf/pysurf/model/pyrmini.py
-class = PyrMini
+[mode(model)::model(PyrMini)]
 
-[PLOT]
-number of degrees of freedom = 3
-coord = 2
-range = -10, 10 
-number of points to plot = 100
-number of states to plot = 3
+[use_db(no)]

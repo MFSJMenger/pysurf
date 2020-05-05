@@ -9,7 +9,7 @@ from pysurf.database import PySurfDB
 from pysurf.colt import Colt
 from pysurf.logger import Logger, get_logger
 #
-from pysurf.molecule.molecule import Molecule
+from pysurf.system import Molecule
 from pysurf.sampling.base_sampler import SamplerFactory
 from .base_sampler import DynCondition, CrdCondition
 from .normalmodes import Mode
@@ -71,9 +71,9 @@ class SamplingDB(PySurfDB):
         return db
 
     @classmethod
-    def create_db(cls, dbfilename, variables, dimensions, molecule, modes, model=False, sp=False):
+    def create_db(cls, dbfilename, variables, dimensions, system, modes, model=False, sp=False):
         db = cls.generate_database(dbfilename, data=variables, dimensions=dimensions, model=model, sp=sp)
-        db.add_reference_entry(molecule, modes, model)
+        db.add_reference_entry(system, modes, model)
         return db
     
     def append_condition(self, cond):
@@ -100,7 +100,7 @@ class SamplingDB(PySurfDB):
         crd = self.get('crd', idx)
         if self.dynsampling:
             veloc = self.get('veloc', idx)
-            state = self.get('currstate', idx)
+            state = np.int(self.get('currstate', idx))
             return self.condition(crd, veloc, state)
         return self.condition(crd)
 

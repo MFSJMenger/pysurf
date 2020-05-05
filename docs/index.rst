@@ -9,6 +9,7 @@ Welcome to pysurf's documentation!
    installation
    module/spp
    module/database
+   module/sampling
    usage
    contributing
    authors

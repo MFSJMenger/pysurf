@@ -88,7 +88,7 @@ class SurfacePointProvider(Colt):
         questions.generate_cases("mode", {name: mode.questions for name, mode in cls._modes.items()})
         questions.generate_cases("use_db", {name: mode.questions for name, mode in cls._database.items()})
 
-    def __init__(self, inputfile, properties, natoms, nstates, atomids, logger=None):
+    def __init__(self, inputfile, properties, nstates, natoms=None, atomids=None, logger=None):
         """ The inputfile for the SPP has to provide the necessary
             information, how to produce the data at a specific point
             in the coordinate space.

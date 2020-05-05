@@ -1,4 +1,4 @@
-from .molecule.atominfo import ATOMID_TO_NAME
+from .system.atominfo import ATOMID_TO_NAME
 #
 from .utils.osutils import exists_and_isfile
 from .utils.constants import angstrom2bohr

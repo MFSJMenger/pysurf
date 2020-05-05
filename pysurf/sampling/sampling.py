@@ -6,7 +6,7 @@ from .base_sampler import SamplerFactory
 from pysurf.utils import exists_and_isfile
 from pysurf.logger import Logger, get_logger
 from pysurf.colt import Colt
-from pysurf.molecule import Molecule
+from pysurf.system import Molecule
 
 
 class Sampling(Colt):
@@ -55,8 +55,8 @@ class Sampling(Colt):
         return cls.from_config(config, logger=logger)    
 
     @classmethod 
-    def create_db(cls, dbfilename, variables, dimensions, molecule, modes, model=False, sp=False, logger=None):
-        db = SamplingDB.create_db(dbfilename, variables, dimensions=dimensions, molecule=molecule, modes=modes, model=model, sp=sp)
+    def create_db(cls, dbfilename, variables, dimensions, system, modes, model=False, sp=False, logger=None):
+        db = SamplingDB.create_db(dbfilename, variables, dimensions=dimensions, system=system, modes=modes, model=model, sp=sp)
         config = db.get_config()
         config['sampling_db'] = dbfilename
         return cls(config, db, db.dynsampling, logger=logger)
@@ -144,10 +144,16 @@ class Sampling(Colt):
 
     @property
     def molecule(self):
-        self._molecule = Molecule(np.copy(self._db['atomids']),
-                                      np.copy(self._db['crd_equi']),
-                                      np.copy(self._db['masses']))
-        return self._molecule
+        return self._db.molecule
+
+    @property
+    def model_info(self):
+            return self._db._model_info
+
+    @property
+    def system(self):
+        return self._db.system
+
     @property
     def increase(self):
         return self._db.increase

@@ -1,4 +1,5 @@
 from abc import abstractmethod
+import os
 import numpy as np
 import time
 
@@ -59,7 +60,10 @@ class PropagatorBase(PropagatorFactory):
 
         self.init = sampling.get_condition(0)
         # setup SPP
-        self.spp = SurfacePointProvider(spp_inp, self.properties, sampling.natoms, nstates, sampling.atomids)
+        if sampling.model is False:
+            self.spp = SurfacePointProvider(spp_inp, self.properties, nstates, sampling.natoms, sampling.atomids)
+        else:
+            self.spp = SurfacePointProvider(spp_inp, self.properties, nstates)
         
         if exists_and_isfile('prop.db'):
             self.db = DynDB.from_dynamics('prop.db')
@@ -96,7 +100,7 @@ class PropagatorBase(PropagatorFactory):
         self.output.info(f"#{'Step':^9}|{'Time':^12}|{'State':^7}|{'Energy':^47}|{'Gradient':^11}|{'Runtime':^9}|")
         self.output.info(f"#{' ':9}|{' ':^12}|{' ':^7}|{'kin':^11}|{'pot':^11}|{'tot':^11}|{'diff':^11}|{'RMS':^11}|{' ':^9}|")
         self.output.info(f"#{' ':9}|{'[fs] ':^12}|{' ':^7}|{'[au]':^47}|{'[au]':^11}|{'[sec]':^9}|")
-        self.output.info('#' + ('='*101) + '\n')
+        self.output.info('#' + ('='*101) )
 
     def output_step(self, step, time, state, ekin, epot, etot, dE, grad=None):
         self.output.info(f"{step:>10}{self.t_converter(time):>13.2f}{state:>8} {ekin:>11.6f} {epot:>11.6f} {etot:>11.6f} {dE:>11.6f}{' ':12}{round(self.get_runtime(), 1):>10}")

@@ -6,9 +6,9 @@ from pysurf.molden import MoldenParser
 from pysurf.spp import ModelFactory
 from pysurf.colt import Colt
 #
-from ..molecule.molecule import Molecule
-from ..molecule.atominfo import MASSES
-from ..molecule.atominfo import ATOMNAME_TO_ID
+from ..system import Molecule
+from ..system.atominfo import MASSES
+from ..system.atominfo import ATOMNAME_TO_ID
 from .normalmodes import NormalModes as nm
 from .normalmodes import Mode
 from .base_sampler import DynSamplerBase, DynCondition
@@ -53,6 +53,7 @@ class Wigner(DynSamplerBase):
             return cls.from_molden(config['from']['moldenfile'])
         elif config['from'].value == 'model':
             #TODO finish that
+            print(config['from'])
             model = ModelFactory.instance_from_config(config['from'])
             return cls.from_model(model)
         raise Exception("only (molden, frequencies) implemented")

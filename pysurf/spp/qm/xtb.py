@@ -4,7 +4,7 @@ import subprocess as sp
 from . import AbinitioBase
 from ...fileparser import  read_geom
 from .xtbhelp import XTBReader
-from ...molecule import Molecule
+from ...system import Molecule
 
 
 def run_interface(script, name):

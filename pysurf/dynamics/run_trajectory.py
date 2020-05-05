@@ -26,7 +26,7 @@ class RunTrajectory(Colt):
     initial condition = init.db :: str                                                          
    
     # Number of total states
-    n_states = 2 :: int
+    n_states = :: int
 
     method = LandauZener :: str
 
@@ -47,7 +47,6 @@ class RunTrajectory(Colt):
         sampling = Sampling.from_db(config['initial condition'])
 
         self.nsteps = int(np.ceil(config['time_final [fs]'] / config['timestep [fs]']))
-        natoms = len(sampling.atomids)
 
         self.logger.info('Start propagation of trajectory')
 

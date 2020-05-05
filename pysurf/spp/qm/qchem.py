@@ -8,7 +8,7 @@ from qctools import generate_filereader, Event
 from qctools.events import join_events
 #
 from . import AbinitioBase
-from ...molecule import Molecule
+from ...system import Molecule
 
 
 qchem = """

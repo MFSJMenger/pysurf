@@ -22,6 +22,7 @@ class Plot(Colt):
         y_label_unit = True :: bool
         x_label = :: str
         x_label_unit = True :: bool
+        legend = :: python(dict), optional
         title =  :: str, optional
         save_plot = yes :: str :: [yes, no]
         show_plot = True :: bool
@@ -68,7 +69,7 @@ class Plot(Colt):
                 mpl.rcParams[key] = value
 
 
-    def line_plot(self, data, x_units_in, y_units_in, ax=None, line_props={}):
+    def line_plot(self, data, x_units_in, y_units_in, ax=None, line_props={}, save_plot=True, show_plot=True):
         """ 
         function that plots the data in a line plot
 
@@ -164,12 +165,16 @@ class Plot(Colt):
         #plot data
         ax.plot(convdata[:, 0], convdata[:, 1], **line_props)
 
+        #legend
+        if config['legend'] is not None:
+            ax.legend(**config['legend'])
+
         #save plot
-        if config['save_plot']:
+        if config['save_plot'] and save_plot:
             plt.savefig(config['save_plot']['plot_file'])
 
         #show plot
-        if config['show_plot']:
+        if config['show_plot'] and show_plot:
             plt.show()
 
         return ax
