@@ -82,6 +82,7 @@ class PySurfDB(Database):
         if data is None:
             data = []
         settings = cls._get_settings(data, model)
+        print(settings)
         cls._prepare_settings(settings, dimensions, model, sp)
         return cls(filename, settings)
 
@@ -193,7 +194,7 @@ class PySurfDB(Database):
         varis = out['variables']
         dims = out['dimensions']
         
-        if model: 
+        if model is True: 
             refvar = cls._variables_model
             refdim = cls._dimensions_model
         else: 

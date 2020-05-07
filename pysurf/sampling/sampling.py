@@ -135,7 +135,11 @@ class Sampling(Colt):
     @staticmethod
     def _get_sampler(config, start=0):
         return SamplerFactory._methods[config.value].from_config(config, start)
-   
+
+    @property
+    def nmodes(self):
+        return self._db.nmodes
+
     @property
     def dynsampling(self):
         return self._db.dynsampling

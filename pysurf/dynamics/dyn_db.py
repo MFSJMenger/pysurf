@@ -36,15 +36,15 @@ class DynDB(PySurfDB):
         self.append('time', time)
         for entry in data:
             if entry == 'gradient':
-                if self.model is False:
-                    grad = np.empty((self.nstates, self.natoms, 3))
-                    for state in data[entry]:
-                        grad[state, :, :] = data[entry][state]
-                else:
-                    grad = np.empty((self.nstates, self.nmodes))
-                    for state in data[entry]:
-                        grad[state, :] = data[entry][state]
-                self.append(entry, grad)
+#                if self.model is False:
+#                    grad = np.empty((self.nstates, self.natoms, 3))
+#                    for state in data[entry]:
+#                        grad[state, :, :] = data[entry][state]
+#                else:
+#                    grad = np.empty((self.nstates, self.nmodes))
+#                    for state in data[entry]:
+#                        grad[state, :] = data[entry][state]
+                self.append(entry, data[entry].data)
             if entry in ['crd', 'fosc', 'energy', 'transmom']:
                 self.append(entry, data[entry])
         self.append('currstate', currstate)

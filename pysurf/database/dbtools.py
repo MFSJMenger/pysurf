@@ -109,7 +109,6 @@ class DatabaseGenerator(GeneratorBase):
                 return 'unlimited'
             return int(value)
         else:
-            print(parent)
             raise ValueError("Database can only have Dimensions and Variables")
 
     @staticmethod
@@ -173,7 +172,7 @@ class DatabaseRepresentation(object):
         for dim_name, dim in settings['dimensions'].items():
             if dim == 'unlimited':
                 if self.unlimited is None:
-                    self.unlimited = dim
+                    self.unlimited = dim_name
                 else:
                     raise Exception("Only a single unlimited dimension allowed!")
             self.dimensions[dim_name] = dim
