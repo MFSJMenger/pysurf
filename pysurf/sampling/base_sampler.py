@@ -1,4 +1,5 @@
 from collections import namedtuple
+from abc import abstractmethod
 
 from pysurf.colt import PluginBase
 
@@ -20,17 +21,6 @@ class SamplerFactory(PluginBase):
         questions.generate_cases("method", {name: method.questions
                                  for name, method in cls._methods.items()})
 
-#    @classmethod
-#    def from_inputfile(cls, inputfile):
-#        """ Class to create conditions due to user input. Initial conditions are saved
-#            in a file for further usage.
-#        """
-#        # Generate the config
-#        quests = cls.generate_questions('SAMPLING', config=None)
-#        config = quests.ask(inputfile)
-#        return cls(config)
-
-
 
 class CrdSamplerBase(SamplerFactory):
     """Basic sampler class"""
@@ -40,6 +30,10 @@ class CrdSamplerBase(SamplerFactory):
     _register_plugin = False
     _questions = "inherited"
 
+    @classmethod
+    @abstractmethod
+    def from_config(cls, config, start=0):
+        pass
 
 class DynSamplerFactory(CrdSamplerBase):
     """Factory to store intial condition samplers"""
@@ -71,3 +65,8 @@ class DynSamplerBase(DynSamplerFactory):
 
     _register_plugin = False
     questions = 'inherited'
+
+    @classmethod
+    @abstractmethod
+    def from_config(cls, config, start=0):
+        pass
