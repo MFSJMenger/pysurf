@@ -59,22 +59,22 @@ class DataBaseInterpolation(Colt):
 
     def get(self, request):
         """answer request"""
-        if self._write_only is True:
+        if self.write_only is True:
             return self.get_qm(request)
         # do the interpolation
-        result, is_trustable = self.interpolator.get(request)
+        result, is_trustworthy = self.interpolator.get(request)
         # maybe perform error msg/warning if fitted date is not trustable
         if self.fit_only is True:
             return result
         # do qm calculation
-        if is_trustable is False:
+        if is_trustworthy is False:
             return self.get_qm(request)
         return result
 
     def _create_db(self, data, natoms, nstates, filename='db.dat', is_model=False):
         if is_model is False:
-            return PySurfDB.generate_database("test.nc", data=data, dimensions={'natoms': natoms, 'nstates': nstates})
-        return PySurfDB.generate_database("test.nc", data=data, dimensions={'nmodes': natoms, 'nstates': nstates})
+            return PySurfDB.generate_database(filename, data=data, dimensions={'natoms': natoms, 'nstates': nstates})
+        return PySurfDB.generate_database(filename, data=data, dimensions={'nmodes': natoms, 'nstates': nstates})
 
 
 class Interpolator(Colt):

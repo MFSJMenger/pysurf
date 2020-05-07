@@ -177,7 +177,6 @@ class PySurfDB(Database):
         info['length'] = len(db['crd'])
         return info
 
-
     def add_reference_entry(self, system, modes, model):
         self.set('model', int(model))
         if model is False:
@@ -187,7 +186,6 @@ class PySurfDB(Database):
         self.set('freqs_equi', np.array([mode.freq for mode in modes]))
         # add equilibrium values
         self.set('crd_equi', system.crd)
-
 
     @classmethod
     def _get_settings(cls, variables, model):
