@@ -124,7 +124,7 @@ class AnalyseSpectrum(Colt):
         nstates = sampling.info['dimensions']['nstates']
         npoints = sampling.nconditions
         data = []
-        for  energy, fosc in  zip(sampling._db['energy'], sampling._db['fosc']):
+        for  energy, fosc in  zip(np.copy(sampling._db['energy']), np.copy(sampling._db['fosc'])):
             for idx, en in enumerate(energy[1:]):
                 data += [[en - energy[0], fosc[idx+1]]]
         data = np.array(data)

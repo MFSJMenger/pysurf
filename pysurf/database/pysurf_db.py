@@ -20,7 +20,7 @@ class PySurfDB(Database):
     _info = False
     _masses = False
     _crd_equi = False
-    _model = False
+    _model = None
     _nmodes = False
     _len = False
     _model_info = False
@@ -223,7 +223,7 @@ class PySurfDB(Database):
     def natoms(self):
         if self.model: return None
         if self._natoms is False:
-            if 'natoms' in self:
+            if 'natoms' in self.dimensions:
                 self._natoms = self.dimensions['natoms']
             else:
                 self._natoms = None
@@ -260,7 +260,7 @@ class PySurfDB(Database):
 
     @property
     def model(self):
-        if self._model is False:
+        if self._model is None:
             if 'model' in self:
                 self._model =  bool(self['model'][0])
             else:
