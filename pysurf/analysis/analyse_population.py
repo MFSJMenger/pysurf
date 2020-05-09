@@ -52,12 +52,12 @@ class AnalysePopulation(Colt):
 
         if config['plot_population'].value == 'yes':
             plot_config = {}
-            plot_config['x_label'] = 'time'
+        #    plot_config['x_label'] = 'time'
             plot_config['x_units'] = config['time_units']
             plot_config['x_label_unit'] = True
             plot_config['y_label_unit'] = False
             plot_config['y_label'] = 'population'
-
+            plot_config = {'':plot_config}
 
             presets = ''
             presets += f"y_start = 0.0\n"

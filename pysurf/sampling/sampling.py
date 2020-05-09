@@ -40,7 +40,7 @@ class Sampling(Colt):
             sampler = None
         else:
             logger.info(f"Loading sampler {config['method'].value}")
-            sampler = cls._get_sampler(config['method'])
+            sampler = cls._get_sampler(config['method'], start=0)
             logger.info(f"Creating new database {config['sampling_db']}")
             db = SamplingDB.from_sampler(config, sampler)
         return cls(config, db, db.dynsampling, sampler=sampler, logger=logger)
@@ -49,7 +49,7 @@ class Sampling(Colt):
     def from_inputfile(cls, inputfile):
         logger = get_logger('sampling.log', 'sampling')
         # Generate the config
-        config = cls.generate_input(inputfile)
+        config = cls.generate_input(inputfile, config=inputfile)
         logger.header('SAMPLING', config)
         logger.info(f"Took information from inputfile {inputfile}")
         return cls.from_config(config, logger=logger)    
@@ -86,7 +86,7 @@ class Sampling(Colt):
             # setup sampler
             if sampler is None:
                 logger.info(f"Loading sampler {config['method'].value}")
-                self.sampler = self._get_sampler(config['method'])
+                self.sampler = self._get_sampler(config['method'], start=self.nconditions)
             else:
                 self.sampler = sampler
             self.logger.info(f"Adding {config['n_conditions']-self.nconditions} additional entries to the database")
@@ -99,6 +99,8 @@ class Sampling(Colt):
         # the previous conditions
         for _ in range(nconditions):
             cond = self.sampler.get_condition()
+            if cond is None:
+                self.logger.error('Sampler has no more conditions')
             self._db.append_condition(cond)
     
     def write_condition(self, condition, idx):
@@ -131,9 +133,13 @@ class Sampling(Colt):
         return self._db.get_condition(idx)
 
     @staticmethod
-    def _get_sampler(config):
-        return SamplerFactory._methods[config.value].from_config(config)
-   
+    def _get_sampler(config, start=0):
+        return SamplerFactory._methods[config.value].from_config(config, start)
+
+    @property
+    def nmodes(self):
+        return self._db.nmodes
+
     @property
     def dynsampling(self):
         return self._db.dynsampling

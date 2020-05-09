@@ -88,7 +88,7 @@ class SurfacePointProvider(Colt):
         questions.generate_cases("mode", {name: mode.questions for name, mode in cls._modes.items()})
         questions.generate_cases("use_db", {name: mode.questions for name, mode in cls._database.items()})
 
-    def __init__(self, inputfile, properties, nstates, natoms=None, atomids=None, logger=None):
+    def __init__(self, inputfile, properties, nstates, natoms, atomids=None, logger=None):
         """ The inputfile for the SPP has to provide the necessary
             information, how to produce the data at a specific point
             in the coordinate space.
@@ -110,7 +110,8 @@ class SurfacePointProvider(Colt):
                 logger, optional
                     Logging module used
         """
-
+        
+        print('Johannes:natoms', natoms)
         if not isinstance(logger, Logger):
             self.logger = get_logger('spp.log', 'SPP', [])
         else:
@@ -140,8 +141,10 @@ class SurfacePointProvider(Colt):
         # use databse
         if config['use_db'] == 'yes':
             self.logger.info("Setting up database...")
-            interface = DataBaseInterpolation(interface, config['use_db'], natoms, nstates, properties)
-            request = RequestGenerator(nstates, properties + config['use_db']['properties'], use_db=True)
+            interface = DataBaseInterpolation(interface, config['use_db'], natoms, nstates, properties, model=(config['mode']=='model'))
+            if config['use_db']['properties'] is not None:
+                properties += config['use_db']['properties']
+            request = RequestGenerator(nstates, properties, use_db=True)
             self.logger.info("Database ready to use")
         else:
             request = RequestGenerator(nstates)

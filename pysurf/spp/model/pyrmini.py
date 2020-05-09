@@ -49,7 +49,9 @@ class PyrMini(ModelBase):
                 request['energy'] = self.adiab_en(crd)
             if 'gradient' in request.keys():
                 grad = self.adiab_grad(crd)
-                request['gradient'] = {0: grad[0], 1: grad[1], 2: grad[2]}
+                request['gradient'][0] = grad[0]
+                request['gradient'][1] = grad[1]
+                request['gradient'][2] = grad[2]
             request['masses'] =  self.masses
         else:
             request['energy'] = None

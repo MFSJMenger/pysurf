@@ -47,13 +47,12 @@ class Wigner(DynSamplerBase):
             self._check_modes()
 
     @classmethod
-    def from_config(cls, config):
+    def from_config(cls, config, start=None):
         """ """
+        #start keyword is not needed here, but has to be provided for DynSamplerBase 
         if config['from'] == 'molden':
             return cls.from_molden(config['from']['moldenfile'])
         elif config['from'].value == 'model':
-            #TODO finish that
-            print(config['from'])
             model = ModelFactory.instance_from_config(config['from'])
             return cls.from_model(model)
         raise Exception("only (molden, frequencies) implemented")

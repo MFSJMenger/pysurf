@@ -142,7 +142,7 @@ class LandauZener(PropagatorBase):
 
     def setup_from_db(self):
         #two previous steps are needed
-        if self.db.len < 2:
+        if len(self.db) < 2:
             self.create_new_db()
             return self.setup_new()
         else:
@@ -153,7 +153,7 @@ class LandauZener(PropagatorBase):
             self.a = get_acceleration(grad, self.masses)
             self.e_curr = self.db.get('energy',-1)
             self.e_prev_step = self.db.get('energy', -2)
-            self.start = self.db.len
+            self.start = len(self.db)
             self.etot = self.db.get('etot', -1)[0]
 
     def lz_select(self):

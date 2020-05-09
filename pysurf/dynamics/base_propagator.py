@@ -63,7 +63,8 @@ class PropagatorBase(PropagatorFactory):
         if sampling.model is False:
             self.spp = SurfacePointProvider(spp_inp, self.properties, nstates, sampling.natoms, sampling.atomids)
         else:
-            self.spp = SurfacePointProvider(spp_inp, self.properties, nstates)
+            print('Johannes nmodes in base propagator:', sampling.nmodes)
+            self.spp = SurfacePointProvider(spp_inp, self.properties, nstates, sampling.nmodes)
         
         if exists_and_isfile('prop.db'):
             self.db = DynDB.from_dynamics('prop.db')

@@ -98,6 +98,7 @@ class AnalyseSpectrum(Colt):
             plot_config['y_label'] = 'intensity'
             plot_config['x_units'] = config['energy_units']
             plot_config['x_label_unit'] = True
+            plot_config = {'': plot_config}
 
             presets = ''
             if config['broadening'].value == 'yes':
@@ -112,7 +113,10 @@ class AnalyseSpectrum(Colt):
             presets += f"[save_plot(yes)]\nplot_file = spectrum/spectrum.png\n"
 
             plot_input = config['plot_spectrum']['plot_inputfile']
-            plot_config = Plot.generate_input(plot_input, config=plot_input, presets=presets)
+            if exists_and_isfile(plot_input):
+                plot_config = Plot.generate_input(plot_input, config=plot_input, presets=presets)
+            else:
+                plot_config = Plot.generate_input(plot_input, config=plot_config, presets=presets)
 
         return cls(config, plot_config)
 

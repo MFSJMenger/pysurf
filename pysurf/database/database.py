@@ -106,6 +106,9 @@ class Database(object):
     def info(self):
         return {'variables': list(self.get_keys()), 'dimensions': dict(self._rep.dimensions)}
 
+    def get_dimension(self, key):
+        return self._handle[key].get_dims()
+
     def append(self, key, value):
         """Append only for unlimited variables!"""
         variable = self._handle[key]
@@ -129,5 +132,3 @@ class Database(object):
     def __del__(self):
         if self._closed is False:
             self._db.close()
-
-

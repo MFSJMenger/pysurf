@@ -31,9 +31,9 @@ class RequestGenerator:
 
 class StateData:
 
-    def __init__(self, states, natoms):
+    def __init__(self, states, size):
         self._states = states
-        self.data = np.empty((len(states), natoms*3), dtype=np.double)
+        self.data = np.empty((len(states), size), dtype=np.double)
 
     def __setitem__(self, istate, value):
         self.data[istate] = value
@@ -45,6 +45,7 @@ class StateData:
 class Request(UserDict):
 
     def __init__(self, crd, properties, states):
+        crd = np.array(crd)
         UserDict.__init__(self)
         #
         data = {prop: None for prop in properties}
@@ -53,7 +54,7 @@ class Request(UserDict):
         # add crd
         data['crd'] = crd
         if 'gradient' in data:
-            data['gradient'] = StateData(states, len(crd))
+            data['gradient'] = StateData(states, crd.size)
         self.data.update(data)
         # store properties
         self.properties = properties
