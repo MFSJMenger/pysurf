@@ -111,7 +111,6 @@ class SurfacePointProvider(Colt):
                     Logging module used
         """
         
-        print('Johannes:natoms', natoms)
         if not isinstance(logger, Logger):
             self.logger = get_logger('spp.log', 'SPP', [])
         else:

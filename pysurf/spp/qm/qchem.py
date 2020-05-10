@@ -29,7 +29,7 @@ settings = multi=true
 [transmom]
 grep = Trans. Mom. :: 1 :: 0
 split = 2, 4, 6 :: float
-settings = mulit=true
+settings = multi=true
 """
 
 

@@ -66,6 +66,9 @@ class SinglePointCalculation(Colt):
 
         if not(exists_and_isfile(config['spp'])):
             SurfacePointProvider.generate_input(config['spp'])
+        else:
+            SurfacePointProvider.generate_input(config['spp'], config=config['spp'])
+            
    
         self.logger.debug(f"Setting up SPP with {config['spp']}")
         spp = SurfacePointProvider(config['spp'], 
@@ -84,6 +87,7 @@ class SinglePointCalculation(Colt):
             res = spp.request(crd, config['properties'], states=[st for st in range(config['nstates'])])
         
         self.logger.info(f"Writing results to: {config['init_db']}")
+        print('Johannes sp_calc print res:', res)
         for prop in config['properties']:
             if prop == 'gradient':
                 sampling.set(prop, res[prop].data)
