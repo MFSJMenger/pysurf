@@ -31,7 +31,7 @@ class SinglePointCalculation(Colt):
 
     _questions = """
     # Number of states
-    nstates = 2 :: int
+    nstates =  :: int
 
     # Database containing the geometry
     init_db = init.db :: str
@@ -66,12 +66,15 @@ class SinglePointCalculation(Colt):
 
         if not(exists_and_isfile(config['spp'])):
             SurfacePointProvider.generate_input(config['spp'])
+        else:
+            SurfacePointProvider.generate_input(config['spp'], config=config['spp'])
+            
    
         self.logger.debug(f"Setting up SPP with {config['spp']}")
         spp = SurfacePointProvider(config['spp'], 
                                   config['properties'],
-                                  sampling.natoms,
                                   config['nstates'],
+                                  sampling.natoms,
                                   sampling.atomids)
 
         crd = sampling.get_condition(0).crd
@@ -81,10 +84,13 @@ class SinglePointCalculation(Colt):
         self._check_res_db(config, sampling)
         
         with self.logger.info_block("SPP calculation"):
-            res = spp.request(crd, config['properties'], states=config['nstates'])
+            res = spp.request(crd, config['properties'], states=[st for st in range(config['nstates'])])
         
         self.logger.info(f"Writing results to: {config['init_db']}")
+        print('Johannes sp_calc print res:', res)
         for prop in config['properties']:
+            if prop == 'gradient':
+                sampling.set(prop, res[prop].data)
             sampling.set(prop, res[prop])
             
     @classmethod
@@ -93,8 +99,7 @@ class SinglePointCalculation(Colt):
 
     @classmethod
     def from_inputfile(cls, inputfile):
-        quests = cls.generate_questions(config=inputfile)
-        config = quests.ask(inputfile)
+        config = cls.generate_input(inputfile, config=inputfile)
         config['inputfile'] = inputfile
         logger = get_logger('sp_calc.log', 'sp_calc')
         logger.header('Single Point Calculation', config)

@@ -82,7 +82,6 @@ class PySurfDB(Database):
         if data is None:
             data = []
         settings = cls._get_settings(data, model)
-        print(settings)
         cls._prepare_settings(settings, dimensions, model, sp)
         return cls(filename, settings)
 

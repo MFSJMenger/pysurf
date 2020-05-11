@@ -86,6 +86,8 @@ class LandauZener(PropagatorBase):
 
     def setup_new(self):
             self.iactive = int(self.init.state)
+            if self.iactive > self.nstates - 1:
+                self.logger.error('Initial state is higher than number of states of the calculation')
             # set starting crds
             self.crd = self.init.crd
             # set starting veloc

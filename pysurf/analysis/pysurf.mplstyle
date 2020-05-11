@@ -37,7 +37,7 @@ savefig.bbox : tight
 savefig.pad_inches : 0.1
 
 # Use serif fonts
-font.serif : Times New Roman
+font.serif : Times
 font.family : serif
 mathtext.fontset : dejavuserif
 font.size : 24
