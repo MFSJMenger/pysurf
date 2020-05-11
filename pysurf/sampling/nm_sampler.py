@@ -2,9 +2,14 @@ import numpy as np
 
 from pysurf.colt import Colt
 from pysurf.spp import ModelFactory
+from pysurf.molden import MoldenParser
+from pysurf.constants import U_TO_AMU, CM_TO_HARTREE
 
 from .base_sampler import CrdSamplerBase
 from .normalmodes import NormalModes as nm
+from ..system import Molecule
+from ..system.atominfo import ATOMNAME_TO_ID, MASSES
+from .normalmodes import Mode
 from .base_sampler import CrdCondition
 from .n_grid_iter import NGridIterator
 
@@ -17,7 +22,7 @@ class NMSampler(CrdSamplerBase):
     _questions = """
     # Where do the coorindates come from? If it is a moldenfile, modes are converted into dimensionless 
     # normal modes. If they come from a model, they are used as they are.
-    from = moldenfile :: str :: [moldenfile, model]
+    from = molden :: str :: [molden, model]
 
     stepsize = 0.3 :: float
 
@@ -28,7 +33,7 @@ class NMSampler(CrdSamplerBase):
 
     """
 
-    _from = {'moldenfile': Moldenfile,
+    _from = {'molden': Moldenfile,
              'model': ModelFactory,
              }
 
@@ -47,6 +52,7 @@ class NMSampler(CrdSamplerBase):
                                  for name, method in cls._from.items()})
         questions.generate_cases("select_nmodes", {name: value
                                  for name, value in cls._select_nmodes.items()})
+
 
     def __init__(self, config, system, modes, start=0):
         self.system = system
