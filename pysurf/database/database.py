@@ -75,6 +75,10 @@ class Database(object):
     def __getitem__(self, key):
         return self._handle.get(key, None)
 
+    def __setitem__(self, key, value):
+        variable = self._handle[key]
+        variable[:] = value
+
     def __contains__(self, key):
         return key in self._handle
 

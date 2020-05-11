@@ -4,8 +4,8 @@ import os
 #
 from jinja2 import Template
 #
-from qctools import generate_filereader, Event
-from qctools.events import join_events
+from ...qctools import generate_filereader, Event
+from ...qctools.events import join_events
 #
 from . import AbinitioBase
 from ...system import Molecule
