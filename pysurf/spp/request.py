@@ -1,4 +1,4 @@
-from collections import UserDict
+from collections.abc import Mapping
 import numpy as np
 
 
@@ -29,32 +29,72 @@ class RequestGenerator:
         properties = properties + self._request_always
         return Request(crd, properties, list(range(self.nstates)))
 
+
 class StateData:
 
     def __init__(self, states, size):
         self._states = states
         self.data = np.empty((len(states), size), dtype=np.double)
 
+    def set_data(self, data):
+        """try to set everything"""
+        data = np.asarray(data)
+        data = data.reshape(self.data.shape)
+        self.data[:] = data
+
     def __setitem__(self, istate, value):
-        self.data[istate] = value
+        idx = self._states.index(istate)
+        self.data[idx] = value
 
     def __getitem__(self, istate):
-        return self.data[istate]
+        idx = self._states.index(istate)
+        return self.data[idx]
 
 
-class Request(UserDict):
+class Request(Mapping):
 
     def __init__(self, crd, properties, states):
-        crd = np.array(crd)
-        UserDict.__init__(self)
+        self._properties = {prop: None for prop in properties}
+        self.states = states
+        self.crd = np.array(crd)
         #
-        data = {prop: None for prop in properties}
-        # add state loop
-        data['states'] = states
-        # add crd
-        data['crd'] = crd
-        if 'gradient' in data:
-            data['gradient'] = StateData(states, crd.size)
-        self.data.update(data)
-        # store properties
-        self.properties = properties
+        if 'gradient' in properties:
+            self._properties['gradient'] = StateData(states, crd.size)
+
+    def set(self, name, value):
+        """Ignore properties that are not requested!"""
+        if name not in self._properties:
+            return
+        prop = self._properties[name]
+        if isinstance(prop, StateData):
+            self._set_state_dictionary(prop, value)
+        else:
+            self._properties[name] = value
+
+    def __getitem__(self, key):
+        return self._properties[key]
+
+    def __len__(self):
+        return len(self._properties)
+
+    def __iter__(self):
+        return iter(self._properties)
+
+    def iter_data(self):
+        """Iterate over all data in the request dct"""
+        for key, value in self._properties.items():
+            if isinstance(value, StateData):
+                yield key, value.data
+            else:
+                yield key, value
+
+    def _set_state_dictionary(self, prop, dct):
+        """Set stateData"""
+        if not isinstance(dct, Mapping):
+            prop.set_data(dct)
+        #
+        for state, value in dct.items():
+            try:
+                prop[state] = value
+            except ValueError:
+                pass

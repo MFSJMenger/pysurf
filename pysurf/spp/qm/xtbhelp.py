@@ -1,8 +1,8 @@
 import numpy as np
 #
-from qctools import generate_filereader
-from qctools import Event
-from qctools import register_event_type
+from ...qctools import generate_filereader
+from ...qctools import Event
+from ...qctools import register_event_type
 
 
 def end_of_loop():

@@ -1,61 +1,20 @@
+from abc import abstractmethod
+#
 import numpy as np
 
-from ..colt import Colt
+from ..colt import Colt, PluginBase
 from ..database.pysurf_db import PySurfDB
+from ..database.dbtools import DBVariable
+from ..utils.osutils import exists_and_isfile
 # logger
 from ..logger import get_logger
-
-class ShepardInterpolator:
-
-    def __init__(self, crds, values, size):
-        self.crds = crds
-        self.values = values
-        self.size = size
-
-    def __call__(self, crd):
-        if len(self.values) == 0:
-            return None, False
-        shape = self.values.shape[1:]
-        weights = self._get_weights(crd)
-        res = np.zeros(shape, dtype=np.double)
-        for i, value in enumerate(self.values):
-            res += weights[i]*value
-        res = res/np.sum(weights)
-        return res, True
-
-    def _get_weights(self, crd):
-        """How to handle zero division error"""
-        exact_agreement = False
-        size = len(self.crds)
-        #
-        weights = np.zeros(size, dtype=np.double)
-        #
-        for i in range(size):
-            diff = np.linalg.norm((crd-self.crds[i]))**2
-            if round(diff, 6) == 0:
-                exact_agreement = i
-            else:
-                weights[i] = 1./diff
-        if exact_agreement is False:
-            return weights
-        #
-        weights.fill(0.0)
-        weights[exact_agreement] = 1.0
-        return weights
+#
+from scipy.linalg import lu_factor, lu_solve
 
 
-def get_fitting_size(db):
-    """We only fit unlimeted data"""
-    out = {}
-    for variable in db.get_keys():
-        ndim = 1
-        dims = db.get_dimension(variable)
-        if not dims[0].isunlimited():
-            continue
-        for dim in dims[1:]:
-            ndim *= dim.size
-        out[variable] = ndim
-    return out
+class InterpolatorFactory(PluginBase):
+    _is_plugin_factory = True
+    _plugins_storage = 'interpolator'
 
 
 class DataBaseInterpolation(Colt):
@@ -68,9 +27,14 @@ class DataBaseInterpolation(Colt):
         properties = :: list, optional
         write_only = True :: bool
         fit_only = False :: bool
-        interpolation = shepard :: str :: [shepard]
+        interpolator = shepard :: str :: [shepard]
         energy_only = False :: bool
     """
+
+    def _generate_subquestions(cls, questions):
+        questions.generate_cases("interpolator",
+                                 {name: interpolator.questions
+                                  for name, interpolator in InterpolatorFactory.interpolator.items()})
 
     def __init__(self, interface, config, natoms, nstates, properties, model=False, logger=None):
         """ """
@@ -97,8 +61,8 @@ class DataBaseInterpolation(Colt):
         self._db = self._create_db(properties, natoms, nstates, model=model)
         self._parameters = get_fitting_size(self._db)
         #
-        self.interpolator = Interpolator(self._db, self._parameters, 
-                                         natoms, nstates, 
+        self.interpolator = Interpolator(self._db, self._parameters,
+                                         natoms, nstates,
                                          config, self.logger)
 
     def get_qm(self, request):
@@ -156,7 +120,7 @@ class Interpolator(Colt):
 
     def get(self, request):
         """Answers request using the interpolators
-        
+
            Returns: request, bool
            bool = True: data is within trust radius
                   False: data is outside trust radius
@@ -173,14 +137,76 @@ class Interpolator(Colt):
             if trustworthy is False:
                 is_trustworthy = False
         return request, is_trustworthy
-        
+
+
+
+def get_fitting_size(db):
+    """We only fit unlimeted data"""
+    out = {}
+    for variable in db.get_keys():
+        ndim = 1
+        dims = db.get_dimension(variable)
+        if not dims[0].isunlimited():
+            continue
+        for dim in dims[1:]:
+            ndim *= dim.size
+        out[variable] = ndim
+    return out
+
+
+class Interpolator(InterpolatorFactory):
+
+    _register_plugin = False
+
+    def __init__(self, db, properties, savefile=''):
+        """important for ShepardInterpolator to set db first!"""
+        #
+        self.db = db
+        #
+        if exists_and_isfile(savefile):
+            self.interpolators = self.get_interpolators_from_file(savefile, properties)
+        else:
+            self.interpolators = self.get_interpolators(db, properties)
+
+    @abstractmethod
+    def get(self, request):
+        """fill request
+
+           Return request and if data is trustworthy or not
+        """
+
+    @abstractmethod
+    def get_interpolators(self, db, properties):
+        """ """
+
+    @abstractmethod
+    def save(self, filename):
+        """Save weights"""
+
+    @abstractmethod
+    def get_interpolators_from_file(self, filename, properties):
+        """setup interpolators from file"""
+
+    def within_trust_radius(self, crd, radius=0.2):
+        is_trustworthy = False
+        a = []
+        for _crd in self.db['crd']:
+            diff = np.linalg.norm((crd - _crd))
+            a.append(diff)
+            if diff < radius:
+                is_trustworthy = True
+        return np.asarray(a), is_trustworthy
+
     def finite_difference_gradient(self, crd, dq=0.01):
-        """compute the gradient of the energy  with respect to a crd 
+        """compute the gradient of the energy  with respect to a crd
            displacement using finite difference method
+
+           TODO: make it usable!
         """
         grad = np.zeros((self.nstates, crd.size), dtype=float)
         #
         crd = crd.resize(3*self.natoms)
+        #
         energy = self.interpolators['energy']
         # do loop
         for i in range(crd.size):
@@ -197,8 +223,188 @@ class Interpolator(Colt):
         # return gradient
         return grad.resize((self.nstates, self.natoms, 3))
 
-    def _get_interpolators(self, parameters, scheme, db):
-        return {param: scheme(db['crd'], db[param], size) for param, size in parameters.items() if param != 'crd'}
+
+class RbfInterpolator(InterpolatorBase):
+    """Basic Rbf interpolator"""
+
+    def get_interpolators(self, db, properties):
+        """ """
+        A = self._compute_a(db['crd'])
+        lu_piv = lu_factor(A)
+        return {prop_name: Rbf.from_lu_factors(lu_piv, db[prop_name])
+                for prop_name in properties}
+
+    def get_interpolators_from_file(self, filename, properties):
+        db = Database.load_db(filename)
+        out = {}
+        for prop_name in db.keys():
+            if prop_name.endswith('_shape'):
+                continue
+            if prop_name == 'rbf_epsilon':
+                self.epsilon = np.copy(db['rbf_epsilon'])[0]
+                continue
+            out[prop_name] = Rbf(np.copy(db[prop_name]), tuple(np.copy(db[prop_name+'_shape'])))
+        if not all(prop in out for prop in properties):
+            raise Exception("Cannot fit all properties")
+        return out
+
+    def get(self, request):
+        """fill request
+
+           Return request and if data is trustworthy or not
+        """
+        crd, is_trustworthy = self.within_trust_radius(request.crd)
+        crd = weight(crd, self.epsilon)
+        for prop in request:
+            request.set(prop, self.interpolators[prop](crd))
+        #
+        return request, is_trustworthy
+
+    def save(self, filename):
+        settings = {'dimensions': {}, 'variables': {}}
+        dimensions = settings['dimensions']
+        variables = settings['variables']
+
+        for prop, rbf in self.interpolators.items():
+            lshape = len(rbf.shape)
+            dimensions[str(lshape)] = lshape
+            for num in rbf.nodes.shape:
+                dimensions[str(num)] = num
+            variables[prop] = DBVariable(np.double, tuple(str(num) for num in rbf.nodes.shape))
+            variables[prop+'_shape'] = DBVariable(np.int, tuple(str(lshape)))
+        dimensions['1'] = 1
+        variables['rbf_epsilon'] = DBVariable(np.double, ('1',))
+        #
+        db = Database(filename, settings)
+        for prop, rbf in self.interpolators.items():
+            db[prop] = rbf.nodes
+            db[prop+'_shape'] = rbf.shape
+        #
+        db['rbf_epsilon'] = self.epsilon
+
+    def _compute_a(self, x):
+        size = len(x)
+        A = np.empty((size, size), dtype=np.double)
+        ndist = 0.0
+        # fill the off diagonal
+        for i in range(size-1):
+            for j in range(i, size):
+                res = dist(x[i], x[j])
+                A[i, j] = res
+                A[j, i] = res
+                ndist += res
+        # set epsilon
+        self.epsilon = ndist/((size-1)*size)
+        # fill the diagonal
+        for i in range(size):
+            A[i, i] = 0.0
+        # solve that smarter
+        return weight(A, self.epsilon)
 
 
+class ShepardInterpolator(InterpolatorBase):
 
+    def get(self, request):
+        """fill request and return True
+        """
+        #
+        weights, is_trustworthy = self._get_weights(request.crd)
+        # no entries in db...
+        if weights is None:
+            return request, False
+        #
+        for prop in request:
+            request.set(prop, self._get_property(weights, prop))
+        #
+        return request, is_trustworthy
+
+    def get_interpolators(self, db, properties):
+        return {prop_name: db[prop_name].shape[1:] for prop_name in properties}
+
+    def save(self, filename):
+        """Do nothing"""
+        print("Warning: ShepardInterpolator does not save files")
+
+    def get_interpolators_from_file(self, filename, properties):
+        return {prop_name: self.db[prop_name].shape[1:] for prop_name in properties}
+
+    def _get_property(self, weights, prop):
+        entries = db[prop]
+        shape = self.interpolators[prop]
+        res = np.zeros(shape, dtype=np.double)
+        for i, value in enumerate(entries):
+            res += weights[i]*value
+        res = res/np.sum(weights)
+        if shape == (1,):
+            return res[0]
+        return res
+
+    def _get_weights(self, crd, trust_radius=0.2):
+        """How to handle zero division error"""
+        exact_agreement = False
+        crds = db['crd']
+        size = len(crds)
+        if size == 0:
+            return None, False
+        #
+        weights = np.zeros(size, dtype=np.double)
+        #
+        is_trustworthy = False
+        for i in range(size):
+            diff = np.linalg.norm((crd-crds[i]))**2
+            if diff < trust_radius:
+                is_trustworthy = True
+            if round(diff, 6) == 0:
+                exact_agreement = i
+            else:
+                weights[i] = 1./diff
+        if exact_agreement is False:
+            return weights, is_trustworthy
+        #
+        weights.fill(0.0)
+        weights[exact_agreement] = 1.0
+        return weights, is_trustworthy
+
+
+class Rbf:
+
+    def __init__(self, nodes, shape):
+        self.nodes = nodes
+        self.shape = shape
+
+    @classmethod
+    def from_lu_factors(cls, lu_piv, prop):
+        nodes, shape = cls._setup(lu_piv, prop)
+        return cls(nodes, shape)
+
+    def __call__(self, crd):
+        if self.shape == (1,):
+            return np.dot(crd, self.nodes).reshape(self.shape)[0]
+        return np.dot(crd, self.nodes).reshape(self.shape)
+
+    @staticmethod
+    def _setup(lu_piv, prop):
+        prop = np.array(prop)
+        shape = prop.shape
+        size = shape[0]
+        dim = 1
+        for i in shape[1:]:
+            dim *= i
+        #
+        prop = prop.reshape((size, dim))
+        #
+        if dim == 1:
+            nodes = lu_solve(lu_piv, prop)
+        else:
+            nodes = np.zeros((size, dim), dtype=prop.dtype)
+            for i in range(dim):
+                nodes[:,i] = lu_solve(lu_piv, prop[:,i])
+        return nodes, shape[1:]
+
+
+def weight(r, epsilon):
+    return np.sqrt((1.0/epsilon*r)**2 + 1)
+
+
+def dist(x, y):
+    return np.linalg.norm(x-y)
