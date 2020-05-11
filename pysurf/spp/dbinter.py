@@ -27,10 +27,11 @@ class DataBaseInterpolation(Colt):
         properties = :: list, optional
         write_only = True :: bool
         fit_only = False :: bool
-        interpolator = shepard :: str :: [shepard]
+        interpolator = RbfInterpolator :: str
         energy_only = False :: bool
     """
-
+    
+    @classmethod
     def _generate_subquestions(cls, questions):
         questions.generate_cases("interpolator",
                                  {name: interpolator.questions
@@ -60,27 +61,29 @@ class DataBaseInterpolation(Colt):
         # setupt database
         self._db = self._create_db(properties, natoms, nstates, model=model)
         self._parameters = get_fitting_size(self._db)
-        #
-        self.interpolator = Interpolator(self._db, self._parameters,
-                                         natoms, nstates,
-                                         config, self.logger)
+        properties = [prop for prop in properties if prop != 'crd']
+        if len(self._db) > 0:
+            self.interpolator = InterpolatorFactory.interpolator[config['interpolator'].value](self._db, properties)
+        else:
+            self.write_only = True
+
 
     def get_qm(self, request):
         """Get result of request and append it to the database"""
         #
         result = self._interface.get(request)
         #
-        for prop in self._parameters:
-            if prop == 'gradient':
-                self._db.append(prop, result[prop].data)
-            else:
-                self._db.append(prop, result[prop])
+        for prop, value in result.iter_data():
+            self._db.append(prop, value)
+        self._db.append('crd', result.crd)
         #
         self._db.increase
         return result
 
     def get(self, request):
         """answer request"""
+        if request.same_crd is True:
+            return self.read_last(request)
         if self.write_only is True:
             return self.get_qm(request)
         # do the interpolation
@@ -93,51 +96,16 @@ class DataBaseInterpolation(Colt):
             return self.get_qm(request)
         return result
 
+    def read_last(self, request):
+        for prop in request:
+            request.set(prop, self._db.get(prop, -1))
+        return request
+
     def _create_db(self, data, natoms, nstates, filename='db.dat', model=False):
         print('create db model', model)
         if model is False:
-            return PySurfDB.generate_database(filename, data=data, dimensions={'natoms': natoms, 'nstates': nstates}, model=model)
-        return PySurfDB.generate_database(filename, data=data, dimensions={'nmodes': natoms, 'nstates': nstates}, model=model)
-
-
-class Interpolator(Colt):
-    """Factory class for all Interpolation"""
-
-    interpolator_schemes = {'shepard': ShepardInterpolator}
-
-    def __init__(self, db, parameters, natoms, nstates, config, logger):
-        self.db = db
-        self.logger = logger
-        self.nstates = nstates
-        self.natoms = natoms
-        # The interpolate gradient key has been added in DBInter
-        self.energy_only = config['energy_only']
-
-        self.logger.info(f"set up interpolation for {config['interpolation']}-Interpolationscheme")
-        interpolation_scheme = self.interpolator_schemes[config['interpolation']]
-        self.interpolators = self._get_interpolators(parameters, interpolation_scheme, db)
-        self.logger.info('successfully set up interpolation')
-
-    def get(self, request):
-        """Answers request using the interpolators
-
-           Returns: request, bool
-           bool = True: data is within trust radius
-                  False: data is outside trust radius
-        """
-        is_trustworthy = True
-        crd = request['crd']
-        for prop in request.keys():
-            if prop in ('crd', 'states'):
-                continue
-            if prop == 'gradient' and self.energy_only is True:
-                request[prop] = self.finite_difference_gradient(crd)
-                continue
-            request[prop], trustworthy = self.interpolators[prop](crd)
-            if trustworthy is False:
-                is_trustworthy = False
-        return request, is_trustworthy
-
+            return PySurfDB.generate_database(filename, data=data, dimensions={'natoms': natoms, 'nstates': nstates, 'nactive': nstates}, model=model)
+        return PySurfDB.generate_database(filename, data=data, dimensions={'nmodes': natoms, 'nstates': nstates, 'nactive': nstates}, model=model)
 
 
 def get_fitting_size(db):
@@ -164,9 +132,9 @@ class Interpolator(InterpolatorFactory):
         self.db = db
         #
         if exists_and_isfile(savefile):
-            self.interpolators = self.get_interpolators_from_file(savefile, properties)
+            self.interpolators, self.size = self.get_interpolators_from_file(savefile, properties)
         else:
-            self.interpolators = self.get_interpolators(db, properties)
+            self.interpolators, self.size = self.get_interpolators(db, properties)
 
     @abstractmethod
     def get(self, request):
@@ -224,7 +192,7 @@ class Interpolator(InterpolatorFactory):
         return grad.resize((self.nstates, self.natoms, 3))
 
 
-class RbfInterpolator(InterpolatorBase):
+class RbfInterpolator(Interpolator):
     """Basic Rbf interpolator"""
 
     def get_interpolators(self, db, properties):
@@ -232,12 +200,14 @@ class RbfInterpolator(InterpolatorBase):
         A = self._compute_a(db['crd'])
         lu_piv = lu_factor(A)
         return {prop_name: Rbf.from_lu_factors(lu_piv, db[prop_name])
-                for prop_name in properties}
+                for prop_name in properties}, len(db)
 
     def get_interpolators_from_file(self, filename, properties):
         db = Database.load_db(filename)
         out = {}
         for prop_name in db.keys():
+            if prop_name == 'size':
+                size = db['size']
             if prop_name.endswith('_shape'):
                 continue
             if prop_name == 'rbf_epsilon':
@@ -246,7 +216,7 @@ class RbfInterpolator(InterpolatorBase):
             out[prop_name] = Rbf(np.copy(db[prop_name]), tuple(np.copy(db[prop_name+'_shape'])))
         if not all(prop in out for prop in properties):
             raise Exception("Cannot fit all properties")
-        return out
+        return out, size
 
     def get(self, request):
         """fill request
@@ -254,6 +224,7 @@ class RbfInterpolator(InterpolatorBase):
            Return request and if data is trustworthy or not
         """
         crd, is_trustworthy = self.within_trust_radius(request.crd)
+        crd = crd[:self.size]
         crd = weight(crd, self.epsilon)
         for prop in request:
             request.set(prop, self.interpolators[prop](crd))
@@ -302,7 +273,7 @@ class RbfInterpolator(InterpolatorBase):
         return weight(A, self.epsilon)
 
 
-class ShepardInterpolator(InterpolatorBase):
+class ShepardInterpolator(Interpolator):
 
     def get(self, request):
         """fill request and return True

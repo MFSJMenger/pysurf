@@ -28,6 +28,7 @@ class DynDB(PySurfDB):
                 variables += [prop]
         dims = sampling.info['dimensions']
         dims['nstates'] = nstates
+        dims['nactive'] = 1
         db = cls.generate_database(dbfile, variables, dims, model=sampling.model, sp=False)
         db.add_reference_entry(sampling.system, sampling.modes, sampling.model)
         return db
@@ -44,7 +45,7 @@ class DynDB(PySurfDB):
 #                    grad = np.empty((self.nstates, self.nmodes))
 #                    for state in data[entry]:
 #                        grad[state, :] = data[entry][state]
-                self.append(entry, data[entry].data)
+                self.append(entry, data[entry][currstate])
             if entry in ['crd', 'fosc', 'energy', 'transmom']:
                 self.append(entry, data[entry])
         self.append('currstate', currstate)

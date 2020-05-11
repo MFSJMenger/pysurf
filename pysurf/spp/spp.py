@@ -164,8 +164,8 @@ Implemented: {interface.implemented}
         questions = self.generate_questions(config=None)
         return questions.check_only(inputfile)
 
-    def request(self, crd, properties, states=None):
-        request = self._request.request(crd, properties, states)
+    def request(self, crd, properties, states=None, same_crd=False):
+        request = self._request.request(crd, properties, states, same_crd=same_crd)
         return self.get(request)
 
     def get(self, request):

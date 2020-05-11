@@ -147,6 +147,6 @@ def sign_possibilities(dim):
 
 
 if __name__=="__main__":
-    mygrid = NGridIterator(3)
+    mygrid = NGridIterator(24)
     for i in range(100):
         print(next(mygrid))

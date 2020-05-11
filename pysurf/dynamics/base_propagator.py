@@ -41,7 +41,7 @@ class PropagatorBase(PropagatorFactory):
     def get_runtime(self):
         return (time.perf_counter() - self.start_time)
 
-    def __init__(self, spp_inp, sampling, nstates, restart=True, logger=None):
+    def __init__(self, spp_inp, sampling, nstates, properties=None restart=True, logger=None):
         """Setup surface hopping using config in `configfile`
         and a SurfacePointProvider (SPP) abstract class
 
@@ -51,21 +51,26 @@ class PropagatorBase(PropagatorFactory):
         self.start_time = time.perf_counter()
         self.sampling = sampling
 
+
         if logger is None:
             self.logger = get_logger('prop.log', 'propagator')
             info = {'spp inputfile': spp_inp}
             self.logger.header('PROPAGATION', info)
         else:
             self.logger = logger
+        
+        for prop in properties:
+            if prop not in self.properties:
+                self.properties += [prop]
 
         self.init = sampling.get_condition(0)
         # setup SPP
         if sampling.model is False:
             self.spp = SurfacePointProvider(spp_inp, self.properties, nstates, sampling.natoms, sampling.atomids)
         else:
-            print('Johannes nmodes in base propagator:', sampling.nmodes)
             self.spp = SurfacePointProvider(spp_inp, self.properties, nstates, sampling.nmodes)
         
+
         if exists_and_isfile('prop.db'):
             self.db = DynDB.from_dynamics('prop.db')
             if len(self.db['crd']) > 0:

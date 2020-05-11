@@ -18,16 +18,16 @@ class RequestGenerator:
         else:
             self.request = self._request
 
-    def _request(self, crd, properties, states=None):
+    def _request(self, crd, properties, states=None, same_crd=False):
         """add more sanity checks!"""
         properties = properties + self._request_always
         if states is None:
-            return Request(crd, properties, list(range(self.nstates)))
-        return Request(crd, properties, states)
+            return Request(crd, properties, list(range(self.nstates)), same_crd=same_crd)
+        return Request(crd, properties, states, same_crd=same_crd)
 
-    def _request_all(self, crd, properties, states=None):
+    def _request_all(self, crd, properties, states=None, same_crd=False):
         properties = properties + self._request_always
-        return Request(crd, properties, list(range(self.nstates)))
+        return Request(crd, properties, list(range(self.nstates)), same_crd=same_crd)
 
 
 class StateData:
@@ -53,10 +53,11 @@ class StateData:
 
 class Request(Mapping):
 
-    def __init__(self, crd, properties, states):
-        self._properties = {prop: None for prop in properties}
+    def __init__(self, crd, properties, states, same_crd=False):
+        self._properties = {prop: None for prop in properties if prop != 'crd'}
         self.states = states
         self.crd = np.array(crd)
+        self.same_crd = same_crd
         #
         if 'gradient' in properties:
             self._properties['gradient'] = StateData(states, crd.size)
@@ -92,6 +93,7 @@ class Request(Mapping):
         """Set stateData"""
         if not isinstance(dct, Mapping):
             prop.set_data(dct)
+            return
         #
         for state, value in dct.items():
             try:

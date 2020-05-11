@@ -63,7 +63,7 @@ class LandauZener(PropagatorBase):
                     # rescale velocity
                     self.v = rescale_velocity(self.ekin, self.dE, self.v)
                     # get acceleration
-                    self.data = self.call_spp()
+                    self.data = self.call_spp(same_crd=True)
                     self.a = get_acceleration(self.data['gradient'][self.iactive], self.masses)
             
             self.etot_old = self.etot
@@ -76,12 +76,12 @@ class LandauZener(PropagatorBase):
             self.output_step(istep, time, self.iactive, self.ekin, self.epot, self.etot, diff) 
             self.db.add_step(time, self.data, self.v, self.iactive, self.ekin, self.epot, self.etot)
 
-    def call_spp(self, crd=None, gradstate=None):
+    def call_spp(self, crd=None, gradstate=None, same_crd=False):
         if crd is None:
             crd = self.crd
         if gradstate is None:
             gradstate = self.iactive
-        res = self.spp.request(crd, self.properties, states=[gradstate])
+        res = self.spp.request(crd, self.properties, states=[gradstate], same_crd=same_crd)
         return res
 
     def setup_new(self):
@@ -149,7 +149,7 @@ class LandauZener(PropagatorBase):
             self.crd = self.db.get('crd', -1)
             self.iactive = int(self.db.get('currstate', -1))
             self.v = self.db.get('veloc', -1)
-            grad = self.db.get('gradient', -1)[self.iactive]
+            grad = self.db.get('gradient', -1)
             self.a = get_acceleration(grad, self.masses)
             self.e_curr = self.db.get('energy',-1)
             self.e_prev_step = self.db.get('energy', -2)

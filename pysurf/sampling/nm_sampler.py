@@ -62,7 +62,6 @@ class NMSampler(CrdSamplerBase):
             self.sel_modes = modes
         else:
             self.sel_modes = []
-            print(config['selected_nmodes'])
             for idx in config['select_nmodes']['mode_list']:
                 self.sel_modes += [modes[idx]]
         self.nmodes_sel = len(self.sel_modes)
@@ -99,6 +98,7 @@ class NMSampler(CrdSamplerBase):
         crd = np.copy(self.system.crd)
 
         for fac, mode in zip(vec, self.sel_modes):
+            print('johannes', fac)
             crd += np.array(fac*self.stepsize) * np.array(mode.displacements)
         print(crd)
         return CrdCondition(crd)

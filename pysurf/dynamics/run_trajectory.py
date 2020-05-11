@@ -34,6 +34,8 @@ class RunTrajectory(Colt):
     spp = spp.inp :: str    
     
     restart = True :: bool
+
+    properties = energy, gradient :: list
     """
 
     @classmethod
@@ -54,6 +56,7 @@ class RunTrajectory(Colt):
         propagator = PropagatorFactory._methods[config['method'].value](config['spp'], 
                                                                         sampling,
                                                                         config['n_states'],
+                                                                        properties = config['properties'],
                                                                         restart=config['restart'],
                                                                         logger=self.logger)
         propagator.run(self.nsteps, config['timestep [fs]']*fs2au)

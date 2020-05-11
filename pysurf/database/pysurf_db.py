@@ -18,6 +18,7 @@ class PySurfDB(Database):
             'natoms': None,
             'nstates': None,
             'nmodes': None,
+            'nactive': None,
             'three': 3,
             'one': 1,
     }
@@ -26,6 +27,7 @@ class PySurfDB(Database):
             'frame': 'unlimited',
             'nstates': None,
             'nmodes': None,
+            'nactive': None,
             'one': 1,
     }
     
@@ -42,7 +44,7 @@ class PySurfDB(Database):
         veloc     = double :: (frame, natoms, three)
         accel     = double :: (frame, natoms, three)
         energy    = double :: (frame, nstates)
-        gradient  = double :: (frame, nstates, natoms, three)
+        gradient  = double :: (frame, nactive, natoms, three)
         fosc      = double :: (frame, nstates)
         transmom  = double :: (frame, nstates, three)
         currstate = double :: (frame, one)
@@ -65,7 +67,7 @@ class PySurfDB(Database):
         veloc     = double :: (frame, nmodes)
         accel     = double :: (frame, nmodes)
         energy    = double :: (frame, nstates)
-        gradient  = double :: (frame, nstates, nmodes)
+        gradient  = double :: (frame, nactive, nmodes)
         fosc      = double :: (frame, nstates)
         currstate = double :: (frame, one)
         time      = double :: (frame, one)

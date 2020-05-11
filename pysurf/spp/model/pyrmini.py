@@ -43,20 +43,12 @@ class PyrMini(ModelBase):
            gradient at the given position crd. Additionally the masses
            of the normal modes are returned for the kinetic Hamiltonian.
         """
-        if 'crd' in request.keys():
-            crd = request['crd']
-            if 'energy' in request.keys():
-                request['energy'] = self.adiab_en(crd)
-            if 'gradient' in request.keys():
-                grad = self.adiab_grad(crd)
-                request['gradient'][0] = grad[0]
-                request['gradient'][1] = grad[1]
-                request['gradient'][2] = grad[2]
-            request['masses'] =  self.masses
-        else:
-            request['energy'] = None
-            request['gradient'] = None
-            request['masses'] = None
+        crd = request.crd
+        if 'energy' in request.keys():
+            request.set('energy', self.adiab_en(crd))
+        if 'gradient' in request.keys():
+            grad = self.adiab_grad(crd)
+            request.set('gradient', grad)
         return request
 
     def adiab_en(self, crd):
@@ -100,7 +92,7 @@ class PyrMini(ModelBase):
             crd2[i] = crd2[i] - dq
             en2 = self.adiab_en(crd2)
             adiab_grad[:, i] = (en1 - en2)/2.0/dq
-        return adiab_grad
+        return {i: adiab_grad[i] for i in range(3)}
 
     def diab_grad(self, crd):
         """diab_grad returns the matrix with the analytical diabatic gradients
