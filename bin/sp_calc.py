@@ -88,10 +88,9 @@ class SinglePointCalculation(Colt):
         
         self.logger.info(f"Writing results to: {config['init_db']}")
         print('Johannes sp_calc print res:', res)
-        for prop in config['properties']:
-            if prop == 'gradient':
-                sampling.set(prop, res[prop].data)
-            sampling.set(prop, res[prop])
+        for prop, value in res.iter_data():
+            print('prop', prop, value)
+            sampling.set(prop, value)
             
     @classmethod
     def from_config(cls, config):

@@ -32,9 +32,10 @@ class RequestGenerator:
 
 class StateData:
 
-    def __init__(self, states, size):
+    def __init__(self, states, shape):
         self._states = states
-        self.data = np.empty((len(states), size), dtype=np.double)
+        sh = tuple([len(states)] + list(shape))
+        self.data = np.empty(sh, dtype=np.double)
 
     def set_data(self, data):
         """try to set everything"""
@@ -60,7 +61,7 @@ class Request(Mapping):
         self.same_crd = same_crd
         #
         if 'gradient' in properties:
-            self._properties['gradient'] = StateData(states, crd.size)
+            self._properties['gradient'] = StateData(states, crd.shape)
 
     def set(self, name, value):
         """Ignore properties that are not requested!"""
