@@ -98,7 +98,6 @@ class NMSampler(CrdSamplerBase):
         crd = np.copy(self.system.crd)
 
         for fac, mode in zip(vec, self.sel_modes):
-            print('johannes', fac)
             crd += np.array(fac*self.stepsize) * np.array(mode.displacements)
         print(crd)
         return CrdCondition(crd)
@@ -117,7 +116,6 @@ class NMSampler(CrdSamplerBase):
         # to sample in both directions
         if self._sign == 1:
             self._sign = -1
-            print(crd)
             return CrdCondition(crd)
 
         if self._mode == self.nmodes_sel - 1:
@@ -125,10 +123,9 @@ class NMSampler(CrdSamplerBase):
             self._mode = 0
             self._step += 1
         else:
-            self.sign = 1
+            self._sign = 1
             self._mode += 1
         cond = CrdCondition(crd)
-        print(crd)
         return cond
 
     @classmethod

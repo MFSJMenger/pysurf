@@ -46,8 +46,11 @@ class SetupSpectrum(SetupBase):
         sampling = Sampling.from_db(config['sampling_db'], logger=logger)
 
         if not exists_and_isfile(config['spp']):
+            presets="""
+                use_db = no
+                """
             logger.info(f"Setting up SPP inputfile: {config['spp']}")
-            SurfacePointProvider.generate_input(config['spp'], config=None)
+            SurfacePointProvider.generate_input(config['spp'], config=None, presets=presets)
         else:
             logger.info(f"Using SPP inputfile as it is")
             
