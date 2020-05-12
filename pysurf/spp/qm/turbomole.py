@@ -101,7 +101,7 @@ ADCExGradient = Event('ADCExGradient',
 
 Gradient = Event('Gradient',
                     'xgrep', {'keyword': 'cycle',
-                             'ishift' : 4,
+                             'ishift' : 'shift',
                              'ilen' : 'natoms'},
                     func=get_gradient)
 
@@ -215,7 +215,7 @@ class Turbomole(AbinitioBase):
     def get(self, request):
         # update coordinates
         self.same_crd = False
-        self.molecule.crd = request['crd']
+        self.molecule.crd = request.crd
         if 'energy' in request:
             if self.settings['method'] == 'ADC(2)':
                 self._do_energy_adc(request)
@@ -231,20 +231,22 @@ class Turbomole(AbinitioBase):
 
     def _do_gradient(self, request):
         grad = {}
-        if 0 in request['states']:
+        if 0 in request.states:
             if exists_and_isfile('gradient'): os.remove('gradient')
             if self.settings['method'] == 'ADC(2)':
                 grad.update(self._do_gs_gradient_adc(request))
             elif self.settings['method'] == 'DFT/TDDFT':
                 grad.update(self._do_gs_gradient_dft(request))
-        for state in request['states']:
+        for state in request.states:
             if state == 0:
                 continue
             if self.settings['method'] == 'ADC(2)':
                 grad.update(self._do_ex_gradient_adc(request, state))
             if self.settings['method'] == 'DFT/TDDFT':
                 grad.update(self._do_ex_gradient_dft(request, state))
-        request['gradient'] = grad
+        print('TM interface grad', grad)
+        request.set('gradient', grad)
+        print('request gradient', request['gradient'].data)
 
     def _do_energy_adc(self, request):
         #create coord file
@@ -268,7 +270,7 @@ class Turbomole(AbinitioBase):
                     energies += [mp2energy + ex]
             if isinstance(exenergies, float):
                 energies += [mp2energy + exenergies]
-        request['energy'] = energies
+        request.set('energy', energies)
         #read oscillator strengths if requested
         if 'fosc' in request:
             fosc = [0.]
@@ -277,7 +279,7 @@ class Turbomole(AbinitioBase):
                 fosc += foscres
             elif isinstance(foscres, float):
                 fosc += [foscres]
-            request['fosc'] = fosc
+            request.set('fosc', fosc)
     
     def _do_energy_dft(self, request):
         #create coord file
@@ -296,7 +298,7 @@ class Turbomole(AbinitioBase):
         if self.nstates > 1:
             exenergies = self.reader(escf_output, ['ESCFEnergy'])['ESCFEnergy']
             energies = exenergies
-        request['energy'] = energies
+        request.set('energy', energies)
         #read oscillator strengths if requested
         if 'fosc' in request:
             fosc = [0.]
@@ -306,7 +308,7 @@ class Turbomole(AbinitioBase):
                         fosc += foscread
                 if isinstance(foscread, float):
                     fosc += [foscread]
-            request['fosc'] = fosc
+            request.set('fosc', fosc)
 
     def _do_ex_gradient_dft(self, request, state):
         coord = self._write_coord(self.molecule.crd, filename='coord')
@@ -316,7 +318,7 @@ class Turbomole(AbinitioBase):
         if self.same_crd is False:
             dscf_output = self.submit('dscf')
         grad_output = self.submit('egrad')
-        return {state: np.array(self.reader('gradient', ['Gradient'], {'natoms': self.molecule.natoms})['Gradient'])}
+        return {state: np.array(self.reader('gradient', ['Gradient'], {'natoms': self.molecule.natoms, 'shift': self.molecule.natoms + 1})['Gradient'])}
     
     def _do_gs_gradient_adc(self, request):
         coord = self._write_coord(self.molecule.crd, filename='coord')
@@ -326,7 +328,7 @@ class Turbomole(AbinitioBase):
         if self.same_crd is False:
             dscf_output = self.submit('dscf')
         ricc2_output = self.submit('ricc2')
-        return {0: np.array(self.reader('gradient', ['Gradient'], {'natoms': self.molecule.natoms})['Gradient'])}
+        return {0: np.array(self.reader('gradient', ['Gradient'], {'natoms': self.molecule.natoms, 'shift': self.molecule.natoms + 1})['Gradient'])}
 
     def _do_gs_gradient_dft(self, request):
         coord = self._write_coord(self.molecule.crd, filename='coord')
@@ -336,7 +338,7 @@ class Turbomole(AbinitioBase):
         if self.same_crd is False:
             dscf_output = self.submit('dscf')
         grad_output = self.submit('grad')
-        return {0: np.array(self.reader('gradient', ['Gradient'], {'natoms': self.molecule.natoms})['Gradient'])}
+        return {0: np.array(self.reader('gradient', ['Gradient'], {'natoms': self.molecule.natoms, 'shift': self.molecule.natoms + 1})['Gradient'])}
 
     def _do_ex_gradient_adc(self, request, state):
         coord = self._write_coord(self.molecule.crd, filename='coord')

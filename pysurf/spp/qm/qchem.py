@@ -204,7 +204,7 @@ class QChem(AbinitioBase):
 
     def get(self, request):
         # update coordinates
-        self.molecule.crd = request['crd']
+        self.molecule.crd = request.crd
         if 'gradient' in request:
             self._do_gradient(request)
         if 'energy' in request:
@@ -216,12 +216,12 @@ class QChem(AbinitioBase):
         jobtype = 'FORCE'
         remsection = deepcopy(self.settings)
         gradient = {}
-        for state in request['states']:
+        for state in request.states:
             if state == 0:
                 gradient[state] = self._do_gs_gradient(request)
             else:
                 gradient[state] = self._do_ex_gradient(request, state)
-        request['gradient'] = gradient
+        request.set('gradient', gradient)
 
     def _do_energy(self, request):
         settings = UpdatableDict(self.settings, self.excited_state_settings)
@@ -233,19 +233,19 @@ class QChem(AbinitioBase):
             outst = [out['ExcitedState']]
         else:
             outst = out['ExcitedState']
-        request['energy'] = [out['SCFEnergy']] + outst
+        request.set('energy', [out['SCFEnergy']] + outst)
         if 'fosc' in request:
             if not isinstance(out['fosc'], list):
                 outfosc = [0.] + [out['fosc']]
             else:
                 outfosc = [0.] + out['fosc']
-            request['fosc'] = outfosc
+            request.set('fosc', outfosc)
         if 'transmom' in request:
             if not isinstance(out['transmom'], list):
                 outtransmom = [0.] + [out['transmom']]
             else:
                 outtransmom = [0.] + out['transmom']
-            request['transmom'] = outtransmom
+            request.set('transmom', outtransmom)
 
     def _do_gs_gradient(self, request):
         settings = UpdatableDict(self.settings)

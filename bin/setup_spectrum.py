@@ -46,11 +46,8 @@ class SetupSpectrum(SetupBase):
         sampling = Sampling.from_db(config['sampling_db'], logger=logger)
 
         if not exists_and_isfile(config['spp']):
-            presets="""
-                use_db = :: [no]
-                """
             logger.info(f"Setting up SPP inputfile: {config['spp']}")
-            SurfacePointProvider.generate_input(config['spp'], config=None, presets=presets)
+            SurfacePointProvider.generate_input(config['spp'], config=None)
         else:
             logger.info(f"Using SPP inputfile as it is")
             
@@ -83,6 +80,7 @@ class SetupSpectrum(SetupBase):
         variables += config['properties']
         dimensions = sampling.info['dimensions']
         dimensions['nstates'] = config['nstates']
+        dimensions['nactive'] = config['nstates']
         #setup new database 
         new_sampling = Sampling.create_db(initname, variables, dimensions, sampling.molecule, sampling.modes, model=sampling.model, sp=True)
         #copy condition to new db
