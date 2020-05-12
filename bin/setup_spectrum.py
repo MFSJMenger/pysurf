@@ -85,7 +85,7 @@ class SetupSpectrum(SetupBase):
         dimensions['nstates'] = config['nstates']
         dimensions['nactive'] = config['nstates']
         #setup new database 
-        new_sampling = Sampling.create_db(initname, variables, dimensions, sampling.molecule, sampling.modes, model=sampling.model, sp=True)
+        new_sampling = Sampling.create_db(initname, variables, dimensions, sampling.system, sampling.modes, model=sampling.model, sp=True)
         #copy condition to new db
         condition = sampling.get_condition(number)
         new_sampling.write_condition(condition, 0)

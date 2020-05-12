@@ -10,7 +10,7 @@ from ..utils.osutils import exists_and_isfile
 from ..logger import get_logger
 #
 from scipy.linalg import lu_factor, lu_solve
-
+from scipy.spatial.distance import cdist, pdist, squareform
 
 class InterpolatorFactory(PluginBase):
     _is_plugin_factory = True
@@ -102,7 +102,6 @@ class DataBaseInterpolation(Colt):
         return request
 
     def _create_db(self, data, natoms, nstates, filename='db.dat', model=False):
-        print('create db model', model)
         if model is False:
             return PySurfDB.generate_database(filename, data=data, dimensions={'natoms': natoms, 'nstates': nstates, 'nactive': nstates}, model=model)
         return PySurfDB.generate_database(filename, data=data, dimensions={'nmodes': natoms, 'nstates': nstates, 'nactive': nstates}, model=model)
@@ -197,8 +196,11 @@ class RbfInterpolator(Interpolator):
 
     def get_interpolators(self, db, properties):
         """ """
-        A = self._compute_a(db['crd'])
+        print('Johannes in get_interpolator')
+        crd = np.copy(db['crd'])
+        A = self._compute_a(crd)
         lu_piv = lu_factor(A)
+        print('Johannes end get-interpolator')
         return {prop_name: Rbf.from_lu_factors(lu_piv, db[prop_name])
                 for prop_name in properties}, len(db)
 
@@ -254,21 +256,24 @@ class RbfInterpolator(Interpolator):
         db['rbf_epsilon'] = self.epsilon
 
     def _compute_a(self, x):
-        size = len(x)
-        A = np.empty((size, size), dtype=np.double)
-        ndist = 0.0
+#        size = len(x)
+        dist = pdist(x)
+        self.epsilon = np.sum(dist)/dist.size
+#        A = np.empty((size, size), dtype=np.double)
+#        ndist = 0.0
         # fill the off diagonal
-        for i in range(size-1):
-            for j in range(i, size):
-                res = dist(x[i], x[j])
-                A[i, j] = res
-                A[j, i] = res
-                ndist += res
-        # set epsilon
-        self.epsilon = ndist/((size-1)*size)
-        # fill the diagonal
-        for i in range(size):
-            A[i, i] = 0.0
+        A = squareform(dist)
+#        for i in range(size-1):
+#            for j in range(i, size):
+#                res = dist(x[i], x[j])
+#                A[i, j] = res
+#                A[j, i] = res
+#                ndist += res
+#        # set epsilon
+#        self.epsilon = ndist/((size-1)*size)
+#        # fill the diagonal
+#        for i in range(size):
+#            A[i, i] = 0.0
         # solve that smarter
         return weight(A, self.epsilon)
 

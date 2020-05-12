@@ -35,19 +35,12 @@ class DynDB(PySurfDB):
 
     def add_step(self, time, data, veloc, currstate, ekin, epot, etot):
         self.append('time', time)
-        for entry in data:
-            if entry == 'gradient':
-#                if self.model is False:
-#                    grad = np.empty((self.nstates, self.natoms, 3))
-#                    for state in data[entry]:
-#                        grad[state, :, :] = data[entry][state]
-#                else:
-#                    grad = np.empty((self.nstates, self.nmodes))
-#                    for state in data[entry]:
-#                        grad[state, :] = data[entry][state]
-                self.append(entry, data[entry][currstate])
-            if entry in ['crd', 'fosc', 'energy', 'transmom']:
-                self.append(entry, data[entry])
+        for key, value in data.iter_data():
+            if key == 'gradient':
+                self.append(key, value[currstate])
+                continue
+            self.append(key, value)
+        self.append('crd', data.crd)
         self.append('currstate', currstate)
         self.append('ekin', ekin)
         self.append('epot', epot)

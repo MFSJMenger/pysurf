@@ -39,7 +39,11 @@ class AccumulateDBs(Colt):
                     copy(file, config['mother_db'])
                     copied = True
                 info = PySurfDB.info_database(config['mother_db'])
-                mother_db = PySurfDB.load_database(config['mother_db'], data=info['variables'], dimensions=info['dimensions'])
+                if 'natoms' not in info['dimensions']:
+                    model = True
+                else:
+                    model = False
+                mother_db = PySurfDB.load_database(config['mother_db'], data=info['variables'], dimensions=info['dimensions'], model=model, sp=False)
                 counter += 1
                 if copied is True:
                     continue

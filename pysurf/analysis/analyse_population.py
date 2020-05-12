@@ -88,7 +88,7 @@ class AnalysePopulation(Colt):
             db = DynDB.load_database(propfile, read_only=True)
             dbtime = np.array(db['time']).flatten()
             if idx == 0:
-                nsteps = db.len
+                nsteps = len(db)
                 nstates = db.info['dimensions']['nstates']
                 data = np.zeros(shape=(nsteps, nstates + 1), dtype=float)
                 data[:, 0] = dbtime

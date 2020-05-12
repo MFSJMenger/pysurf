@@ -71,11 +71,17 @@ class SinglePointCalculation(Colt):
             
    
         self.logger.debug(f"Setting up SPP with {config['spp']}")
-        spp = SurfacePointProvider(config['spp'], 
-                                  config['properties'],
-                                  config['nstates'],
-                                  sampling.natoms,
-                                  sampling.atomids)
+        if sampling.molecule is not None:
+            spp = SurfacePointProvider(config['spp'], 
+                                      config['properties'],
+                                      config['nstates'],
+                                      sampling.natoms,
+                                      sampling.atomids)
+        else:#model calculation
+            spp = SurfacePointProvider(config['spp'], 
+                                      config['properties'],
+                                      config['nstates'],
+                                      sampling.nmodes)
 
         crd = sampling.get_condition(0).crd
 
@@ -109,8 +115,17 @@ class SinglePointCalculation(Colt):
             info = sampling.info
             check1 = all(item in info['variables'] for item in config['properties'])
             if 'nstates' in info['dimensions']:
-                if (info['dimensions']['nstates'] >= config['nstates']) and (info['dimensions']['natoms'] == sampling._db.info['dimensions']['natoms']):
-                    check2=True
+                if (info['dimensions']['nstates'] >= config['nstates']): 
+                    if 'natoms' in info['dimensions']:
+                        if(info['dimensions']['natoms'] == sampling._db.info['dimensions']['natoms']):
+                            check2 = True
+                        else:
+                            check2 = False
+                    if 'nmodes' in info['dimensions']:
+                        if(info['dimensions']['nmodes'] == sampling._db.info['dimensions']['nmodes']):
+                            check2 = True
+                        else:
+                            check2 = False
                 else:
                     check2 = False
             else:
