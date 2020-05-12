@@ -41,7 +41,7 @@ class PropagatorBase(PropagatorFactory):
     def get_runtime(self):
         return (time.perf_counter() - self.start_time)
 
-    def __init__(self, spp_inp, sampling, nstates, properties=None restart=True, logger=None):
+    def __init__(self, spp_inp, sampling, nstates, properties=None, restart=True, logger=None):
         """Setup surface hopping using config in `configfile`
         and a SurfacePointProvider (SPP) abstract class
 

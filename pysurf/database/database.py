@@ -94,7 +94,7 @@ class Database(object):
         return self._db.variables.keys()
 
     def get_dimension_size(self, key):
-        dim = self.db.dimensions.get(key, None)
+        dim = self._db.dimensions.get(key, None)
         if dim is not None:
             return dim.size
 
