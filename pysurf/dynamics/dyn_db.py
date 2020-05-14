@@ -37,7 +37,7 @@ class DynDB(PySurfDB):
         self.append('time', time)
         for key, value in data.iter_data():
             if key == 'gradient':
-                self.append(key, value[currstate])
+                self.append(key, data[key][currstate])
                 continue
             self.append(key, value)
         self.append('crd', data.crd)

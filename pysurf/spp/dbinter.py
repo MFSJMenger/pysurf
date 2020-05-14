@@ -11,6 +11,7 @@ from ..logger import get_logger
 #
 from scipy.linalg import lu_factor, lu_solve
 from scipy.spatial.distance import cdist, pdist, squareform
+from scipy.spatial import cKDTree
 
 class InterpolatorFactory(PluginBase):
     _is_plugin_factory = True
@@ -39,6 +40,7 @@ class DataBaseInterpolation(Colt):
 
     def __init__(self, interface, config, natoms, nstates, properties, model=False, logger=None):
         """ """
+        self.config = config
         if logger is None:
             self.logger = get_logger('db.log', 'database', [])
         else:
@@ -62,8 +64,9 @@ class DataBaseInterpolation(Colt):
         self._db = self._create_db(properties, natoms, nstates, model=model)
         self._parameters = get_fitting_size(self._db)
         properties = [prop for prop in properties if prop != 'crd']
+        self.properties = properties
         if len(self._db) > 0:
-            self.interpolator = InterpolatorFactory.interpolator[config['interpolator'].value](self._db, properties)
+            self.interpolator = InterpolatorFactory.interpolator[config['interpolator'].value](self._db, properties, energy_only=config['energy_only'])
         else:
             self.write_only = True
 
@@ -83,7 +86,12 @@ class DataBaseInterpolation(Colt):
     def get(self, request):
         """answer request"""
         if request.same_crd is True:
-            return self.read_last(request)
+            return self.old_request
+        self.old_request = self._get(request)
+        return self.old_request
+    
+    def _get(self, request):
+        """answer request"""
         if self.write_only is True:
             return self.get_qm(request)
         # do the interpolation
@@ -129,16 +137,22 @@ class Interpolator(InterpolatorFactory):
 
     _register_plugin = False
 
-    def __init__(self, db, properties, savefile=''):
+    def __init__(self, db, properties, energy_only=False, savefile=''):
         """important for ShepardInterpolator to set db first!"""
         #
         self.db = db
+        self.crds = np.copy(self.db['crd'])
+        #
+        if energy_only is True:
+            properties = [prop for prop in properties if prop != 'gradient']
         #
         if exists_and_isfile(savefile):
             self.interpolators, self.size = self.get_interpolators_from_file(savefile, properties)
         else:
             self.interpolators, self.size = self.get_interpolators(db, properties)
-
+        if energy_only is True:
+            self.interpolators['gradient'] = self.finite_difference_gradient
+            
     @abstractmethod
     def get(self, request):
         """fill request
@@ -158,15 +172,7 @@ class Interpolator(InterpolatorFactory):
     def get_interpolators_from_file(self, filename, properties):
         """setup interpolators from file"""
 
-    def within_trust_radius(self, crd, radius=0.2):
-        is_trustworthy = False
-        a = []
-        for _crd in self.db['crd']:
-            diff = np.linalg.norm((crd - _crd))
-            a.append(diff)
-            if diff < radius:
-                is_trustworthy = True
-        return np.asarray(a), is_trustworthy
+
 
     def finite_difference_gradient(self, crd, dq=0.01):
         """compute the gradient of the energy  with respect to a crd
@@ -198,14 +204,12 @@ class Interpolator(InterpolatorFactory):
 class RbfInterpolator(Interpolator):
     """Basic Rbf interpolator"""
 
+    trust_radius = 0.25
+
     def get_interpolators(self, db, properties):
         """ """
         print('Johannes in get_interpolator')
-        crd = np.copy(db['crd'])
-        shape = crd.shape
-        if len(shape) == 3:
-            crd = crd.reshape(shape[0], shape[1]*shape[2])
-        A = self._compute_a(crd)
+        A = self._compute_a(self.crds)
         lu_piv = lu_factor(A)
         print('Johannes end get-interpolator')
         return {prop_name: Rbf.from_lu_factors(lu_piv, db[prop_name])
@@ -265,25 +269,20 @@ class RbfInterpolator(Interpolator):
     def _compute_a(self, x):
 #        size = len(x)
         dist = pdist(x)
-        self.epsilon = np.sum(dist)/dist.size
-#        A = np.empty((size, size), dtype=np.double)
-#        ndist = 0.0
-        # fill the off diagonal
+
+        #Trying different stuff for epsilon
+#        self.epsilon = np.sum(dist)/dist.size
+#        print('Max epsilon', self.epsilon)
+        self.epsilon = self.trust_radius
         A = squareform(dist)
-#        for i in range(size-1):
-#            for j in range(i, size):
-#                res = dist(x[i], x[j])
-#                A[i, j] = res
-#                A[j, i] = res
-#                ndist += res
-#        # set epsilon
-#        self.epsilon = ndist/((size-1)*size)
-#        # fill the diagonal
-#        for i in range(size):
-#            A[i, i] = 0.0
-        # solve that smarter
         return weight(A, self.epsilon)
 
+    def within_trust_radius(self, crd):
+        is_trustworthy = False
+        dist = cdist([crd], self.crds)
+        if np.min(dist) < self.trust_radius:
+            is_trustworthy = True
+        return dist[0], is_trustworthy
 
 class ShepardInterpolator(Interpolator):
 
@@ -348,6 +347,12 @@ class ShepardInterpolator(Interpolator):
         weights[exact_agreement] = 1.0
         return weights, is_trustworthy
 
+    def within_trust_radius(self, crd, radius=0.2):
+        is_trustworthy = False
+        dist = cdist([crd], self.crds)
+        if np.min(dist) < radius:
+            is_trustworthy = True
+        return dist[0], is_trustworthy
 
 class Rbf:
 

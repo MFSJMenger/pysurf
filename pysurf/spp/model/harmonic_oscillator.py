@@ -32,7 +32,7 @@ class HarmonicOscillator(ModelBase):
            gradient at the given position crd. Additionally the masses
            of the normal modes are returned for the kinetic Hamiltonian.
         """
-        crd = request['crd']
+        crd = request.crd
         en = self.energy(crd)
         grad = self.gradient(crd)
-        return {'crd': crd, 'energy': en, 'gradient': {0: grad}, 'masses': self.masses}
+        return {'energy': en, 'gradient': {0: grad}, 'masses': self.masses}
