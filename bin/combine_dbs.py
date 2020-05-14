@@ -36,7 +36,11 @@ class CombineDBs(Colt):
     
         if not isinstance(main_db, PySurfDB):
             info = PySurfDB.info_database(main_db)
-            main_db = PySurfDB.load_database(main_db, dimensions=info['dimensions'], data=info['variables'])
+            if 'natoms' in info['dimensions']:
+                model = False
+            else:
+                model = True
+            main_db = PySurfDB.load_database(main_db, dimensions=info['dimensions'], data=info['variables'], model=model)
         if not isinstance(added_db, PySurfDB):
             added_db = PySurfDB.load_database(added_db, read_only=True)
 

@@ -189,8 +189,9 @@ class LandauZener(PropagatorBase):
         """compute landau zener sh probability between two states"""
         # compute the second derivative of the energy difference by time
         finite_difference_grad = ((d_curr + d_two_step_prev - 2 * d_prev_step) / dt**2)
+        print('Johannes lz hopping prob', finite_difference_grad, d_prev_step)
         # compute the hopping probability
-        return np.exp((-np.pi/2.0) * np.sqrt(d_prev_step**3 / finite_difference_grad))
+        return np.exp((-np.pi/2.0) * np.sqrt(abs(d_prev_step)**3 / abs(finite_difference_grad)))
 
 
     def init_random(self, seed=16661):
