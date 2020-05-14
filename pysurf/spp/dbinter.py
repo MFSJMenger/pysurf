@@ -66,7 +66,7 @@ class DataBaseInterpolation(Colt):
         properties = [prop for prop in properties if prop != 'crd']
         self.properties = properties
         if len(self._db) > 0:
-            self.interpolator = InterpolatorFactory.interpolator[config['interpolator'].value](self._db, properties)
+            self.interpolator = InterpolatorFactory.interpolator[config['interpolator'].value](self._db, properties, energy_only=config['energy_only'])
         else:
             self.write_only = True
 
@@ -137,17 +137,22 @@ class Interpolator(InterpolatorFactory):
 
     _register_plugin = False
 
-    def __init__(self, db, properties, savefile=''):
+    def __init__(self, db, properties, energy_only=False, savefile=''):
         """important for ShepardInterpolator to set db first!"""
         #
         self.db = db
         self.crds = np.copy(self.db['crd'])
         #
+        if energy_only is True:
+            properties = [prop for prop in properties if prop != 'gradient']
+        #
         if exists_and_isfile(savefile):
             self.interpolators, self.size = self.get_interpolators_from_file(savefile, properties)
         else:
             self.interpolators, self.size = self.get_interpolators(db, properties)
-
+        if energy_only is True:
+            self.interpolators['gradient'] = self.finite_difference_gradient
+            
     @abstractmethod
     def get(self, request):
         """fill request
