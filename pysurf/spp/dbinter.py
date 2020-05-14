@@ -90,10 +90,14 @@ class DataBaseInterpolation(Colt):
         result, is_trustworthy = self.interpolator.get(request)
         # maybe perform error msg/warning if fitted date is not trustable
         if self.fit_only is True:
+            if is_trustworthy is False:
+                self.logger.warning('Interpolated result not trustworthy, but used as fit_only is True')
             return result
         # do qm calculation
         if is_trustworthy is False:
+            self.logger.info('Interpolated result is not trustworthy and QM calculation is started')
             return self.get_qm(request)
+        self.logger.info('Interpolated result is trustworthy and returned')
         return result
 
     def read_last(self, request):
@@ -198,6 +202,9 @@ class RbfInterpolator(Interpolator):
         """ """
         print('Johannes in get_interpolator')
         crd = np.copy(db['crd'])
+        shape = crd.shape
+        if len(shape) == 3:
+            crd = crd.reshape(shape[0], shape[1]*shape[2])
         A = self._compute_a(crd)
         lu_piv = lu_factor(A)
         print('Johannes end get-interpolator')

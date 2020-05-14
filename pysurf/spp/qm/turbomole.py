@@ -244,9 +244,7 @@ class Turbomole(AbinitioBase):
                 grad.update(self._do_ex_gradient_adc(request, state))
             if self.settings['method'] == 'DFT/TDDFT':
                 grad.update(self._do_ex_gradient_dft(request, state))
-        print('TM interface grad', grad)
         request.set('gradient', grad)
-        print('request gradient', request['gradient'].data)
 
     def _do_energy_adc(self, request):
         #create coord file

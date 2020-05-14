@@ -93,9 +93,7 @@ class SinglePointCalculation(Colt):
             res = spp.request(crd, config['properties'], states=[st for st in range(config['nstates'])])
         
         self.logger.info(f"Writing results to: {config['init_db']}")
-        print('Johannes sp_calc print res:', res)
         for prop, value in res.iter_data():
-            print('prop', prop, value)
             sampling.set(prop, value)
             
     @classmethod
