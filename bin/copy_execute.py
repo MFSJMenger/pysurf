@@ -1,4 +1,3 @@
-import os
 from shutil import copy2 as copy
 from subprocess import run, CalledProcessError
 
@@ -33,17 +32,11 @@ class CopyExecute(Colt):
             for item in config['copy']:
                 copy(item, subfolder)
         
-            os.chdir(subfolder)
             try:
-                run(config['exe'], check=True)
+                run(config['exe'], cwd=subfolder, check=True)
             except KeyboardInterrupt or CalledProcessError:
                 break
-            os.chdir(setup.parent)
+
 
 if __name__=="__main__":
     CopyExecute.from_commandline()
-
-
-
-
-
