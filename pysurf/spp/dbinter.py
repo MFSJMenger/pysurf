@@ -13,6 +13,16 @@ from scipy.linalg import lu_factor, lu_solve
 from scipy.spatial.distance import cdist, pdist, squareform
 from scipy.spatial import cKDTree
 
+
+def inverse(crd)
+    return pdist(crd)
+    return np.array([1.0/ele for ele in pdist(crd)])
+
+
+def inverse_coordinates(crds):
+    return np.array([inverse(crd) for crd in crds])
+
+
 class InterpolatorFactory(PluginBase):
     _is_plugin_factory = True
     _plugins_storage = 'interpolator'
@@ -146,12 +156,17 @@ class Interpolator(InterpolatorFactory):
 
     _register_plugin = False
 
-    def __init__(self, db, properties, logger, energy_only=False, savefile=''):
+    def __init__(self, db, properties, logger, energy_only=False, savefile='', inverse=False):
         """important for ShepardInterpolator to set db first!"""
         #
         self.logger=logger
         self.db = db
-        self.crds = np.copy(self.db['crd'])
+        if inverse is True:
+            self.crds = inverse_coordinates(np.copy(self.db['crd']))
+        else:                
+            self.crds = np.copy(self.db['crd'])
+        #
+        self.inverse = inverse
         #
         if energy_only is True:
             properties = [prop for prop in properties if prop != 'gradient']
@@ -162,7 +177,7 @@ class Interpolator(InterpolatorFactory):
             self.interpolators, self.size = self.get_interpolators(db, properties)
         if energy_only is True:
             self.interpolators['gradient'] = self.finite_difference_gradient
-            
+
     @abstractmethod
     def get(self, request):
         """fill request
@@ -181,8 +196,6 @@ class Interpolator(InterpolatorFactory):
     @abstractmethod
     def get_interpolators_from_file(self, filename, properties):
         """setup interpolators from file"""
-
-
 
     def finite_difference_gradient(self, crd, dq=0.01):
         """compute the gradient of the energy  with respect to a crd
@@ -218,15 +231,14 @@ class RbfInterpolator(Interpolator):
         trust_radius_general = 0.75 :: float
         trust_radius_ci = 0.25 :: float
         energy_threshold = 0.02 :: float
+        inverse_distance = false :: bool
     """
     def __init__(self, config, db, properties, logger, energy_only=False, savefile=''):
         self.trust_radius_general = config['trust_radius_general']
         self.trust_radius_CI = config['trust_radius_ci']
         self.energy_threshold = config['energy_threshold']
         self.trust_radius = (self.trust_radius_general + self.trust_radius_CI)/2.
-        super().__init__(db, properties, logger, energy_only, savefile)
-
-
+        super().__init__(db, properties, logger, energy_only, savefile, inverse=config['inverse_distance'])
 
     def get_interpolators(self, db, properties):
         """ """
@@ -256,7 +268,12 @@ class RbfInterpolator(Interpolator):
 
            Return request and if data is trustworthy or not
         """
-        crd, trustworthy = self.within_trust_radius(request.crd)
+        if self.inverse is True:
+            crd = inverse(request.crd)
+        else:
+            crd = request.crd
+        #
+        crd, trustworthy = self.within_trust_radius(crd)
         crd = crd[:self.size]
         crd = weight(crd, self.epsilon)
         for prop in request:
@@ -323,6 +340,7 @@ class RbfInterpolator(Interpolator):
         if np.min(dist) < self.trust_radius_CI:
             is_trustworthy_CI = True
         return dist[0], (is_trustworthy_general, is_trustworthy_CI)
+
 
 class ShepardInterpolator(Interpolator):
 

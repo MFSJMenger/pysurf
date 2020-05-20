@@ -4,6 +4,17 @@ from scipy.spatial.distance import cdist
 
 from pysurf.colt import Colt
 from pysurf.database import PySurfDB
+from scipy.spatial.distance import cdist, pdist, squareform
+
+
+def inverse(crd)
+    return pdist(crd)
+    return np.array([1.0/ele for ele in pdist(crd)])
+
+
+def inverse_coordinates(crds):
+    return np.array([inverse(crd) for crd in crds])
+
 
 class CleanupDB(Colt):
     _questions = """
@@ -13,6 +24,7 @@ class CleanupDB(Colt):
     trust_radius_ci = 0.25 :: float
     #Energy difference in au, seperating CI trust radius and general trust radius
     energy_threshold = 0.02 :: float
+    inverse = false :: bool
     """
 
     @classmethod
@@ -23,6 +35,7 @@ class CleanupDB(Colt):
         dbin = PySurfDB.load_database(config['db_in'], read_only=True)
         info = PySurfDB.info_database(config['db_in'])
 
+        self.inverse = config['inverse']
         self.thresh = config['energy_threshold']
         self.trust_radius_general = config['trust_radius_general']
         self.trust_radius_ci = config['trust_radius_ci']
@@ -52,7 +65,12 @@ class CleanupDB(Colt):
             dbout.increase
 
     def is_within_radius(self, crd):
-        crds = np.array(self.crds)
+        if self.inverse is True:
+            crd = inverse(crd)
+            crds = inverse_coordinates(np.array(self.crds))
+        else:
+            crds = np.array(self.crds)
+        #
         shape = crds.shape
         if len(crds.shape) == 3:
             dist = cdist([np.array(crd).flatten()], crds.reshape((shape[0], shape[1]*shape[2])))
