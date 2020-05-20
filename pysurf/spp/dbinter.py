@@ -66,7 +66,10 @@ class DataBaseInterpolation(Colt):
         properties = [prop for prop in properties if prop != 'crd']
         self.properties = properties
         if len(self._db) > 0:
-            self.interpolator = InterpolatorFactory.interpolator[config['interpolator'].value](self._db, properties, energy_only=config['energy_only'])
+            self.interpolator = InterpolatorFactory.interpolator[config['interpolator'].value](config['interpolator'], self._db,
+                                                    properties,
+                                                    logger=self.logger,
+                                                    energy_only=config['energy_only'])
         else:
             self.write_only = True
 
@@ -115,6 +118,12 @@ class DataBaseInterpolation(Colt):
 
     def _create_db(self, data, natoms, nstates, filename='db.dat', model=False):
         if model is False:
+            print('Johannes model is False')
+            print(data)
+            print(natoms, nstates)
+            info=PySurfDB.info_database(filename)
+
+            print(info['variables'], info['dimensions'])
             return PySurfDB.generate_database(filename, data=data, dimensions={'natoms': natoms, 'nstates': nstates, 'nactive': nstates}, model=model)
         return PySurfDB.generate_database(filename, data=data, dimensions={'nmodes': natoms, 'nstates': nstates, 'nactive': nstates}, model=model)
 
@@ -137,9 +146,10 @@ class Interpolator(InterpolatorFactory):
 
     _register_plugin = False
 
-    def __init__(self, db, properties, energy_only=False, savefile=''):
+    def __init__(self, db, properties, logger, energy_only=False, savefile=''):
         """important for ShepardInterpolator to set db first!"""
         #
+        self.logger=logger
         self.db = db
         self.crds = np.copy(self.db['crd'])
         #
@@ -204,14 +214,24 @@ class Interpolator(InterpolatorFactory):
 class RbfInterpolator(Interpolator):
     """Basic Rbf interpolator"""
 
-    trust_radius = 0.25
+    _questions = """
+        trust_radius_general = 0.75 :: float
+        trust_radius_ci = 0.25 :: float
+        energy_threshold = 0.02 :: float
+    """
+    def __init__(self, config, db, properties, logger, energy_only=False, savefile=''):
+        self.trust_radius_general = config['trust_radius_general']
+        self.trust_radius_CI = config['trust_radius_ci']
+        self.energy_threshold = config['energy_threshold']
+        self.trust_radius = (self.trust_radius_general + self.trust_radius_CI)/2.
+        super().__init__(db, properties, logger, energy_only, savefile)
+
+
 
     def get_interpolators(self, db, properties):
         """ """
-        print('Johannes in get_interpolator')
         A = self._compute_a(self.crds)
         lu_piv = lu_factor(A)
-        print('Johannes end get-interpolator')
         return {prop_name: Rbf.from_lu_factors(lu_piv, db[prop_name])
                 for prop_name in properties}, len(db)
 
@@ -236,12 +256,21 @@ class RbfInterpolator(Interpolator):
 
            Return request and if data is trustworthy or not
         """
-        crd, is_trustworthy = self.within_trust_radius(request.crd)
+        crd, trustworthy = self.within_trust_radius(request.crd)
         crd = crd[:self.size]
         crd = weight(crd, self.epsilon)
         for prop in request:
             request.set(prop, self.interpolators[prop](crd))
         #
+        print('Johannes dbinter diff:', np.diff(request['energy']), '  energy ', request['energy'])
+        diffmin = np.min(np.diff(request['energy']))
+        #compare energy differences with threshold from user
+        if diffmin < self.energy_threshold:
+            self.logger.info(f"Small energy gap of {diffmin}. Within CI radius: " + str(trustworthy[1]))
+            is_trustworthy = trustworthy[1]
+        else:
+            self.logger.info('Large energy diffs. Within general radius: ' + str(trustworthy[0]))
+            is_trustworthy = trustworthy[0]
         return request, is_trustworthy
 
     def save(self, filename):
@@ -268,7 +297,11 @@ class RbfInterpolator(Interpolator):
 
     def _compute_a(self, x):
 #        size = len(x)
-        dist = pdist(x)
+        shape = x.shape
+        if len(shape) == 3:
+            dist = pdist(x.reshape((shape[0], shape[1]*shape[2])))
+        else:
+            dist = pdist(x)
 
         #Trying different stuff for epsilon
 #        self.epsilon = np.sum(dist)/dist.size
@@ -278,11 +311,18 @@ class RbfInterpolator(Interpolator):
         return weight(A, self.epsilon)
 
     def within_trust_radius(self, crd):
-        is_trustworthy = False
-        dist = cdist([crd], self.crds)
-        if np.min(dist) < self.trust_radius:
-            is_trustworthy = True
-        return dist[0], is_trustworthy
+        is_trustworthy_general = False
+        is_trustworthy_CI = False
+        shape = self.crds.shape
+        if len(shape) == 3:
+            dist = cdist([np.array(crd).flatten()], self.crds.reshape((shape[0], shape[1]*shape[2])))
+        else:
+            dist = cdist([np.array(crd).flatten()], self.crds)
+        if np.min(dist) < self.trust_radius_general:
+            is_trustworthy_general = True
+        if np.min(dist) < self.trust_radius_CI:
+            is_trustworthy_CI = True
+        return dist[0], (is_trustworthy_general, is_trustworthy_CI)
 
 class ShepardInterpolator(Interpolator):
 
