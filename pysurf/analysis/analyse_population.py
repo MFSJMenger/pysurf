@@ -93,9 +93,9 @@ class AnalysePopulation(Colt):
                 data = np.zeros(shape=(nsteps, nstates + 1), dtype=float)
                 data[:, 0] = dbtime
                 counter = np.zeros(nsteps, dtype=int)
-            if np.max(np.abs(data[:,0] - dbtime)) < 0.1:
+            if np.max(np.abs(data[:len(dbtime),0] - dbtime)) < 0.1:
                 currstate = np.array(db['currstate']).flatten()
-                for idx in range(len(data)):
+                for idx in range(len(dbtime)):
                     data[idx, int(currstate[idx]+1)] += 1
                     counter[idx] += 1
             else:

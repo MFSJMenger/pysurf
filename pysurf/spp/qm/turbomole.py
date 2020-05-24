@@ -168,7 +168,9 @@ $scfinstab rpas
 class Turbomole(AbinitioBase):
 
     _questions = """
+    # Methode die angewendet werden soll
     method = ADC(2) :: str :: [ADC(2), DFT/TDDFT]
+
     basis = cc-pVDZ
     max_scf_cycles = 50 :: int
     """
