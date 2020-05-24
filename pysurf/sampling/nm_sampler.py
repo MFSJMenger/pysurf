@@ -148,10 +148,11 @@ class NMSampler(CrdSamplerBase):
         # create molecule
         molecule = Molecule(atomids, crd, masses)
         #
+        print('nmsampler, molecule', molecule)
         modes = [Mode(freq * CM_TO_HARTREE, np.array(molden['FrNormCoords'][imode]))
                  for imode, freq in enumerate(molden['Freqs'])]
         #
-        modes = nm.create_dimensionless_normal_modes(modes, molecule)
+        modes = nm.create_mass_weighted_normal_modes(modes, molecule)
         #
         return cls(config, molecule, modes, start=start)
 

@@ -13,6 +13,16 @@ from scipy.linalg import lu_factor, lu_solve
 from scipy.spatial.distance import cdist, pdist, squareform
 from scipy.spatial import cKDTree
 
+
+def inverse(crd)
+    return pdist(crd)
+    return np.array([1.0/ele for ele in pdist(crd)])
+
+
+def inverse_coordinates(crds):
+    return np.array([inverse(crd) for crd in crds])
+
+
 class InterpolatorFactory(PluginBase):
     _is_plugin_factory = True
     _plugins_storage = 'interpolator'
@@ -66,7 +76,10 @@ class DataBaseInterpolation(Colt):
         properties = [prop for prop in properties if prop != 'crd']
         self.properties = properties
         if len(self._db) > 0:
-            self.interpolator = InterpolatorFactory.interpolator[config['interpolator'].value](self._db, properties, energy_only=config['energy_only'])
+            self.interpolator = InterpolatorFactory.interpolator[config['interpolator'].value](config['interpolator'], self._db,
+                                                    properties,
+                                                    logger=self.logger,
+                                                    energy_only=config['energy_only'])
         else:
             self.write_only = True
 
@@ -98,14 +111,14 @@ class DataBaseInterpolation(Colt):
         result, is_trustworthy = self.interpolator.get(request)
         # maybe perform error msg/warning if fitted date is not trustable
         if self.fit_only is True:
+            if is_trustworthy is False:
+                self.logger.warning('Interpolated result not trustworthy, but used as fit_only is True')
             return result
         # do qm calculation
         if is_trustworthy is False:
-            self.logger.info('Interpolated data not trustworthy, start QM calculation')
-            res = self.get_qm(request)
-#            self.interpolator = InterpolatorFactory.interpolator[self.config['interpolator'].value](self._db, self.properties)
-            return res
-        self.logger.info('Using interpolated data')
+            self.logger.info('Interpolated result is not trustworthy and QM calculation is started')
+            return self.get_qm(request)
+        self.logger.info('Interpolated result is trustworthy and returned')
         return result
 
     def read_last(self, request):
@@ -115,6 +128,12 @@ class DataBaseInterpolation(Colt):
 
     def _create_db(self, data, natoms, nstates, filename='db.dat', model=False):
         if model is False:
+            print('Johannes model is False')
+            print(data)
+            print(natoms, nstates)
+            info=PySurfDB.info_database(filename)
+
+            print(info['variables'], info['dimensions'])
             return PySurfDB.generate_database(filename, data=data, dimensions={'natoms': natoms, 'nstates': nstates, 'nactive': nstates}, model=model)
         return PySurfDB.generate_database(filename, data=data, dimensions={'nmodes': natoms, 'nstates': nstates, 'nactive': nstates}, model=model)
 
@@ -137,11 +156,17 @@ class Interpolator(InterpolatorFactory):
 
     _register_plugin = False
 
-    def __init__(self, db, properties, energy_only=False, savefile=''):
+    def __init__(self, db, properties, logger, energy_only=False, savefile='', inverse=False):
         """important for ShepardInterpolator to set db first!"""
         #
+        self.logger=logger
         self.db = db
-        self.crds = np.copy(self.db['crd'])
+        if inverse is True:
+            self.crds = inverse_coordinates(np.copy(self.db['crd']))
+        else:                
+            self.crds = np.copy(self.db['crd'])
+        #
+        self.inverse = inverse
         #
         if energy_only is True:
             properties = [prop for prop in properties if prop != 'gradient']
@@ -152,7 +177,7 @@ class Interpolator(InterpolatorFactory):
             self.interpolators, self.size = self.get_interpolators(db, properties)
         if energy_only is True:
             self.interpolators['gradient'] = self.finite_difference_gradient
-            
+
     @abstractmethod
     def get(self, request):
         """fill request
@@ -171,8 +196,6 @@ class Interpolator(InterpolatorFactory):
     @abstractmethod
     def get_interpolators_from_file(self, filename, properties):
         """setup interpolators from file"""
-
-
 
     def finite_difference_gradient(self, crd, dq=0.01):
         """compute the gradient of the energy  with respect to a crd
@@ -204,14 +227,23 @@ class Interpolator(InterpolatorFactory):
 class RbfInterpolator(Interpolator):
     """Basic Rbf interpolator"""
 
-    trust_radius = 0.25
+    _questions = """
+        trust_radius_general = 0.75 :: float
+        trust_radius_ci = 0.25 :: float
+        energy_threshold = 0.02 :: float
+        inverse_distance = false :: bool
+    """
+    def __init__(self, config, db, properties, logger, energy_only=False, savefile=''):
+        self.trust_radius_general = config['trust_radius_general']
+        self.trust_radius_CI = config['trust_radius_ci']
+        self.energy_threshold = config['energy_threshold']
+        self.trust_radius = (self.trust_radius_general + self.trust_radius_CI)/2.
+        super().__init__(db, properties, logger, energy_only, savefile, inverse=config['inverse_distance'])
 
     def get_interpolators(self, db, properties):
         """ """
-        print('Johannes in get_interpolator')
         A = self._compute_a(self.crds)
         lu_piv = lu_factor(A)
-        print('Johannes end get-interpolator')
         return {prop_name: Rbf.from_lu_factors(lu_piv, db[prop_name])
                 for prop_name in properties}, len(db)
 
@@ -236,12 +268,26 @@ class RbfInterpolator(Interpolator):
 
            Return request and if data is trustworthy or not
         """
-        crd, is_trustworthy = self.within_trust_radius(request.crd)
+        if self.inverse is True:
+            crd = inverse(request.crd)
+        else:
+            crd = request.crd
+        #
+        crd, trustworthy = self.within_trust_radius(crd)
         crd = crd[:self.size]
         crd = weight(crd, self.epsilon)
         for prop in request:
             request.set(prop, self.interpolators[prop](crd))
         #
+        print('Johannes dbinter diff:', np.diff(request['energy']), '  energy ', request['energy'])
+        diffmin = np.min(np.diff(request['energy']))
+        #compare energy differences with threshold from user
+        if diffmin < self.energy_threshold:
+            self.logger.info(f"Small energy gap of {diffmin}. Within CI radius: " + str(trustworthy[1]))
+            is_trustworthy = trustworthy[1]
+        else:
+            self.logger.info('Large energy diffs. Within general radius: ' + str(trustworthy[0]))
+            is_trustworthy = trustworthy[0]
         return request, is_trustworthy
 
     def save(self, filename):
@@ -268,7 +314,11 @@ class RbfInterpolator(Interpolator):
 
     def _compute_a(self, x):
 #        size = len(x)
-        dist = pdist(x)
+        shape = x.shape
+        if len(shape) == 3:
+            dist = pdist(x.reshape((shape[0], shape[1]*shape[2])))
+        else:
+            dist = pdist(x)
 
         #Trying different stuff for epsilon
 #        self.epsilon = np.sum(dist)/dist.size
@@ -278,11 +328,19 @@ class RbfInterpolator(Interpolator):
         return weight(A, self.epsilon)
 
     def within_trust_radius(self, crd):
-        is_trustworthy = False
-        dist = cdist([crd], self.crds)
-        if np.min(dist) < self.trust_radius:
-            is_trustworthy = True
-        return dist[0], is_trustworthy
+        is_trustworthy_general = False
+        is_trustworthy_CI = False
+        shape = self.crds.shape
+        if len(shape) == 3:
+            dist = cdist([np.array(crd).flatten()], self.crds.reshape((shape[0], shape[1]*shape[2])))
+        else:
+            dist = cdist([np.array(crd).flatten()], self.crds)
+        if np.min(dist) < self.trust_radius_general:
+            is_trustworthy_general = True
+        if np.min(dist) < self.trust_radius_CI:
+            is_trustworthy_CI = True
+        return dist[0], (is_trustworthy_general, is_trustworthy_CI)
+
 
 class ShepardInterpolator(Interpolator):
 

@@ -1,10 +1,12 @@
-import os
 from shutil import copy2 as copy
+from subprocess import run, CalledProcessError
 
 from pysurf.colt import Colt
 from pysurf.utils import SubfolderHandle
 
+    
 class CopyExecute(Colt):
+    
     _questions = """
         #Foldername of the main folder, e.g. spectrum or prop
         folder = spectrum :: file
@@ -19,7 +21,6 @@ class CopyExecute(Colt):
         exe = sbatch submit.sh :: str
         """
 
-
     @classmethod
     def from_config(cls, config):
         return cls(config)
@@ -31,14 +32,11 @@ class CopyExecute(Colt):
             for item in config['copy']:
                 copy(item, subfolder)
         
-            os.chdir(subfolder)
-            os.system(config['exe'])
-            os.chdir(setup.parent)
+            try:
+                run(config['exe'], cwd=subfolder, check=True)
+            except KeyboardInterrupt or CalledProcessError:
+                break
+
 
 if __name__=="__main__":
     CopyExecute.from_commandline()
-
-
-
-
-
