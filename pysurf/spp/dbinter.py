@@ -284,6 +284,7 @@ class RbfInterpolator(Interpolator):
             is_trustworthy = True
         return dist[0], is_trustworthy
 
+
 class ShepardInterpolator(Interpolator):
 
     def get(self, request):
