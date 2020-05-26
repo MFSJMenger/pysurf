@@ -7,7 +7,7 @@ from pysurf.database import PySurfDB
 from scipy.spatial.distance import cdist, pdist, squareform
 
 
-def inverse(crd)
+def inverse(crd):
     return pdist(crd)
     return np.array([1.0/ele for ele in pdist(crd)])
 

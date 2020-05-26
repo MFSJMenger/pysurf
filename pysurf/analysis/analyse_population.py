@@ -16,13 +16,13 @@ class NoFurtherQuestions(Colt):
 
 
 class AnalysePopulation(Colt):
-    folder = 'prop'
-    subfolder = 'traj'
 
     _questions="""
     time_units = fs :: str :: [au, fs]
     save_data = yes :: str :: [yes, no]
     plot_population = yes :: str :: [yes, no]
+    folder = prop :: str
+    subfolder = traj :: str
     """
 
     _save_data = {
@@ -82,6 +82,8 @@ class AnalysePopulation(Colt):
 
     def __init__(self, config, plot_config=None):
         self.config = config
+        self.folder = config['folder']
+        self.subfolder = config['subfolder']
         subfolderhandle = SubfolderHandle(self.folder, self.subfolder)
         propfiles = subfolderhandle.fileiter('prop.db')
         for idx, propfile in enumerate(propfiles):

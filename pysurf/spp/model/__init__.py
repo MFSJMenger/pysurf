@@ -1,5 +1,6 @@
 from ..methodbase import ModelBase
 from .harmonic_oscillator import HarmonicOscillator
-from .pyrmini import PyrMini
+from .pyrazine_schneider import PyrazineSchneider
+from .pyrazine_sala import PyrazineSala
 
-plugins = [HarmonicOscillator, PyrMini]
+plugins = [HarmonicOscillator, PyrazineSchneider, PyrazineSala]
