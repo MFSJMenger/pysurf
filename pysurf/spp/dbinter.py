@@ -14,7 +14,7 @@ from scipy.spatial.distance import cdist, pdist, squareform
 from scipy.spatial import cKDTree
 
 
-def inverse(crd)
+def inverse(crd):
     return pdist(crd)
     return np.array([1.0/ele for ele in pdist(crd)])
 
@@ -323,7 +323,7 @@ class RbfInterpolator(Interpolator):
         #Trying different stuff for epsilon
 #        self.epsilon = np.sum(dist)/dist.size
 #        print('Max epsilon', self.epsilon)
-        self.epsilon = self.trust_radius
+        self.epsilon = self.trust_radius_CI/2.
         A = squareform(dist)
         return weight(A, self.epsilon)
 
