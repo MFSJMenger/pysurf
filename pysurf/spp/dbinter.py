@@ -128,12 +128,7 @@ class DataBaseInterpolation(Colt):
 
     def _create_db(self, data, natoms, nstates, filename='db.dat', model=False):
         if model is False:
-            print('Johannes model is False')
-            print(data)
-            print(natoms, nstates)
             info=PySurfDB.info_database(filename)
-
-            print(info['variables'], info['dimensions'])
             return PySurfDB.generate_database(filename, data=data, dimensions={'natoms': natoms, 'nstates': nstates, 'nactive': nstates}, model=model)
         return PySurfDB.generate_database(filename, data=data, dimensions={'nmodes': natoms, 'nstates': nstates, 'nactive': nstates}, model=model)
 
@@ -279,7 +274,6 @@ class RbfInterpolator(Interpolator):
         for prop in request:
             request.set(prop, self.interpolators[prop](crd))
         #
-        print('Johannes dbinter diff:', np.diff(request['energy']), '  energy ', request['energy'])
         diffmin = np.min(np.diff(request['energy']))
         #compare energy differences with threshold from user
         if diffmin < self.energy_threshold:

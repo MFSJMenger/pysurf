@@ -1,0 +1,20 @@
+
+x_units = au
+y_units = eV
+x_start = -5
+x_end = 5
+y_start = 0
+y_end = 10
+y_label = none
+y_label_unit = True
+x_label = none
+x_label_unit = True
+legend = {}
+title = test
+save_plot = yes
+show_plot = True
+rcparams = {}
+matplotlib style = pysurf.mplstyle
+
+[save_plot(yes)]
+plot_file = plot.png
