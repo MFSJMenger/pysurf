@@ -33,7 +33,7 @@ class CopyExecute(Colt):
                 copy(item, subfolder)
         
             try:
-                run(config['exe'], cwd=subfolder, check=True)
+                run(config['exe'], cwd=subfolder, check=True, shell=True)
             except KeyboardInterrupt or CalledProcessError:
                 break
 

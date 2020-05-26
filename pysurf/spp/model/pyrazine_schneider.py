@@ -7,7 +7,7 @@ from pysurf.system import Mode
 
 ev2au = 1./27.2113961
 
-class PyrMini(ModelBase):
+class PyrazineSchneider(ModelBase):
 
     implemented = ["energy", "gradient"]
     frequencies = np.array([0.126*ev2au, 0.074*ev2au, 0.118*ev2au])
@@ -15,6 +15,7 @@ class PyrMini(ModelBase):
     displacements = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
     modes = [Mode(freq, dis) for freq, dis in zip(frequencies, displacements)]
     crd = [0.0, 0.0, 0.0]
+    nstates = 3
 
     @classmethod
     def from_config(cls, config):

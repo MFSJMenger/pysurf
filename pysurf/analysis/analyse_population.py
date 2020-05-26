@@ -16,13 +16,13 @@ class NoFurtherQuestions(Colt):
 
 
 class AnalysePopulation(Colt):
-    folder = 'prop'
-    subfolder = 'traj'
 
     _questions="""
     time_units = fs :: str :: [au, fs]
     save_data = yes :: str :: [yes, no]
     plot_population = yes :: str :: [yes, no]
+    folder = prop :: str
+    subfolder = traj :: str
     """
 
     _save_data = {
@@ -82,6 +82,8 @@ class AnalysePopulation(Colt):
 
     def __init__(self, config, plot_config=None):
         self.config = config
+        self.folder = config['folder']
+        self.subfolder = config['subfolder']
         subfolderhandle = SubfolderHandle(self.folder, self.subfolder)
         propfiles = subfolderhandle.fileiter('prop.db')
         for idx, propfile in enumerate(propfiles):
@@ -93,9 +95,9 @@ class AnalysePopulation(Colt):
                 data = np.zeros(shape=(nsteps, nstates + 1), dtype=float)
                 data[:, 0] = dbtime
                 counter = np.zeros(nsteps, dtype=int)
-            if np.max(np.abs(data[:,0] - dbtime)) < 0.1:
+            if np.max(np.abs(data[:len(dbtime),0] - dbtime)) < 0.1:
                 currstate = np.array(db['currstate']).flatten()
-                for idx in range(len(data)):
+                for idx in range(len(dbtime)):
                     data[idx, int(currstate[idx]+1)] += 1
                     counter[idx] += 1
             else:

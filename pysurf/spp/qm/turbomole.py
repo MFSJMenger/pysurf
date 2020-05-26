@@ -168,7 +168,9 @@ $scfinstab rpas
 class Turbomole(AbinitioBase):
 
     _questions = """
+    # Methode die angewendet werden soll
     method = ADC(2) :: str :: [ADC(2), DFT/TDDFT]
+
     basis = cc-pVDZ
     max_scf_cycles = 50 :: int
     """
@@ -244,9 +246,7 @@ class Turbomole(AbinitioBase):
                 grad.update(self._do_ex_gradient_adc(request, state))
             if self.settings['method'] == 'DFT/TDDFT':
                 grad.update(self._do_ex_gradient_dft(request, state))
-        print('TM interface grad', grad)
         request.set('gradient', grad)
-        print('request gradient', request['gradient'].data)
 
     def _do_energy_adc(self, request):
         #create coord file
