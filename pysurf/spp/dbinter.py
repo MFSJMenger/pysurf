@@ -357,15 +357,7 @@ class RbfInterpolator(Interpolator):
             dist = pdist(x.reshape((shape[0], shape[1]*shape[2])))
         else:
             dist = pdist(x)
-<<<<<<< HEAD
-        
-        #Epsilon value still under examination
-        self.epsilon = self.trust_radius_CI/2.
-       
-        A =squareform(dist)
-=======
         A = squareform(dist)
->>>>>>> adafaa1e41ffa5776d09a47efa0162011e76ed2f
         return weight(A, self.epsilon)
 
     def within_trust_radius(self, crd):
