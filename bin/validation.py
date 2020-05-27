@@ -71,21 +71,38 @@ class Training(Colt):
         db = PySurfDB.load_database(filename, read_only=True)
         reqgen = RequestGenerator(self.nstates, properties, use_db=True)
 
-        norm = {prop: 0.0 for prop in properties}
+        norm = {prop: [] for prop in properties}
         is_not_trustworth = 0
         ndata = len(db)
 
         for i, crd in enumerate(db['crd']):
             request = reqgen.request(crd, properties)
             result, is_trustworthy = self.interpolator.get(request)
+            #
             for prop in properties:
-                norm[prop] += eucl_norm(result[prop], db[prop][i])
-
+                norm[prop].append(np.copy(result[prop] - db[prop][i]))
+            #
             if not is_trustworthy:
                 is_not_trustworth += 1
-        
-        norm = {prop: val/ndata for prop, val in norm.items()}
-        print(norm)
+
+        for name, value in norm.items(): 
+            self.compute_errors(name, value, nele)
+        #
+        trust = (ndata - is_not_trustworth)/ndata
+        #
+        self.logger.info(f"is_trustworthy = {trust}, number not trustworth={is_not_trustworth}")
+
+    def compute_errors(self, name, prop, nele):
+        prop = np.array(prop)
+        #
+        mse = np.sum(prop)/nele
+        mae = np.sum(np.absolute(prop))/nele
+        rmsd = np.sqrt(np.sum(prop**2)/nele)
+        #
+        maxval = np.amax(prop)
+        minval = np.amin(prop)
+        self.logger.info(f"{name}:\n mse = {mse}\n mae = {mae}\n"
+                         f" rmsd = {rmsd}\n maxval = {maxval}\n minval={minval}\n")
 
 
 def eucl_norm(x, y):
