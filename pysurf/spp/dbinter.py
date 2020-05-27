@@ -76,8 +76,6 @@ class DataBaseInterpolation(Colt):
         if len(self._db) > 0:
             self.interpolator = InterpolatorFactory.plugin_from_config(config['interpolator'], self._db,
                                                     properties,
-                                                    self.nstates,
-                                                    self.natoms,
                                                     logger=self.logger,
                                                     energy_only=config['energy_only'])
         else:
@@ -156,14 +154,13 @@ class Interpolator(InterpolatorFactory):
 
     _register_plugin = False
 
-    def __init__(self, db, properties, nstates, natoms, logger, energy_only=False, savefile='', inverse=False):
+    def __init__(self, db, properties, logger, energy_only=False, savefile='', inverse=False):
         """important for ShepardInterpolator to set db first!"""
         #
         self.crds = None
         self.logger = logger
         self.db = db
-        self.nstates = nstates
-        self.natoms = natoms
+        self.nstates = self.db.get_dimension_size('nstates')
         self.energy_only = energy_only
 
         if inverse is True:
@@ -269,6 +266,7 @@ class RbfInterpolator(Interpolator):
         trust_radius_general = config['trust_radius_general']
         trust_radius_CI = config['trust_radius_ci']
         energy_threshold = config['energy_threshold']
+
         #
         return cls(db, properties, logger, energy_only=energy_only, savefile=savefile,
                    inverse=inverse, trust_radius_general=trust_radius_general,
@@ -281,6 +279,7 @@ class RbfInterpolator(Interpolator):
         self.trust_radius_CI = trust_radius_CI
         self.energy_threshold = energy_threshold
         self.trust_radius = (self.trust_radius_general + self.trust_radius_CI)/2.
+        self.epsilon = trust_radius_CI
 
         super().__init__(db, properties, logger, energy_only, savefile, inverse=inverse)
 
