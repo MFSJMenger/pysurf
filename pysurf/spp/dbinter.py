@@ -23,9 +23,6 @@ def inverse_coordinates(crds):
     return np.array([inverse(crd) for crd in crds])
 
 
-class InterpolatorFactory(PluginBase):
-    _is_plugin_factory = True
-    _plugins_storage = 'interpolator'
 
 
 class DataBaseInterpolation(Colt):
@@ -41,7 +38,7 @@ class DataBaseInterpolation(Colt):
         interpolator = RbfInterpolator :: str
         energy_only = False :: bool
     """
-    
+
     @classmethod
     def _generate_subquestions(cls, questions):
         questions.generate_cases("interpolator",
@@ -76,10 +73,11 @@ class DataBaseInterpolation(Colt):
         properties = [prop for prop in properties if prop != 'crd']
         self.properties = properties
         if len(self._db) > 0:
-            self.interpolator = InterpolatorFactory.interpolator[config['interpolator'].value](config['interpolator'], self._db,
-                                                    properties,
-                                                    logger=self.logger,
-                                                    energy_only=config['energy_only'])
+            self.interpolator = InterpolatorFactory.plugin_from_config(config['interpolator'],
+                                                                       self._db,
+                                                                       properties,
+                                                                       logger=self.logger,
+                                                                       energy_only=config['energy_only'])
         else:
             self.write_only = True
 
@@ -102,7 +100,7 @@ class DataBaseInterpolation(Colt):
             return self.old_request
         self.old_request = self._get(request)
         return self.old_request
-    
+
     def _get(self, request):
         """answer request"""
         if self.write_only is True:
@@ -128,7 +126,6 @@ class DataBaseInterpolation(Colt):
 
     def _create_db(self, data, natoms, nstates, filename='db.dat', model=False):
         if model is False:
-            info=PySurfDB.info_database(filename)
             return PySurfDB.generate_database(filename, data=data, dimensions={'natoms': natoms, 'nstates': nstates, 'nactive': nstates}, model=model)
         return PySurfDB.generate_database(filename, data=data, dimensions={'nmodes': natoms, 'nstates': nstates, 'nactive': nstates}, model=model)
 
@@ -147,9 +144,19 @@ def get_fitting_size(db):
     return out
 
 
+class InterpolatorFactory(PluginBase):
+    _is_plugin_factory = True
+    _plugins_storage = 'interpolator'
+
+
+
 class Interpolator(InterpolatorFactory):
 
     _register_plugin = False
+
+    @classmethod
+    def from_config(cls, config, db, properties, logger, energy_only=False, savefile=''):
+        return cls(db, properties, logger, energy_only=energy_only, savefile=savefile)
 
     def __init__(self, db, properties, logger, energy_only=False, savefile='', inverse=False):
         """important for ShepardInterpolator to set db first!"""
@@ -176,7 +183,7 @@ class Interpolator(InterpolatorFactory):
     def get_crd(self):
         if self.inverse is True:
             crds = inverse_coordinates(np.copy(self.db['crd']))
-        else:                
+        else:
             crds = np.copy(self.db['crd'])
         return crds
 
@@ -200,7 +207,7 @@ class Interpolator(InterpolatorFactory):
         """setup interpolators from file"""
 
     @abstractmethod
-    def train(self): 
+    def train(self):
         """train the interpolators using the existing data"""
 
     def update_weights(self):
@@ -212,7 +219,7 @@ class Interpolator(InterpolatorFactory):
            displacement using finite difference method
         """
         grad = np.zeros((self.nstates, crd.size), dtype=float)
-        # 
+        #
         shape = crd.shape
         #
         crd = crd.resize(crd.size)
@@ -244,12 +251,25 @@ class RbfInterpolator(Interpolator):
         energy_threshold = 0.02 :: float
         inverse_distance = false :: bool
     """
-    def __init__(self, config, db, properties, logger, energy_only=False, savefile=''):
-        self.trust_radius_general = config['trust_radius_general']
-        self.trust_radius_CI = config['trust_radius_ci']
-        self.energy_threshold = config['energy_threshold']
+
+    @classmethod
+    def from_config(cls, config, db, properties, logger, energy_only=False, savefile='', inverse=False):
+        trust_radius_general = config['trust_radius_general']
+        trust_radius_CI = config['trust_radius_ci']
+        energy_threshold = config['energy_threshold']
+        #
+        return cls(db, properties, logger, energy_only=energy_only, savefile=savefile,
+                   inverse=inverse, trust_radius_general=trust_radius_general,
+                   trust_radius_CI=trust_radius_CI, energy_threshold=energy_threshold)
+
+    def __init__(self, db, properties, logger, energy_only=False, savefile='', inverse=inverse,
+                 trust_radius_general=0.75, trust_radius_CI=0.25, energy_threshold=0.02):
+
+        self.trust_radius_general = trust_radius_general
+        self.trust_radius_CI = trust_radius_CI
+        self.energy_threshold = energy_threshold
         self.trust_radius = (self.trust_radius_general + self.trust_radius_CI)/2.
-        super().__init__(db, properties, logger, energy_only, savefile, inverse=config['inverse_distance'])
+        super().__init__(db, properties, logger, energy_only, savefile, inverse=inverse)
 
     def get_interpolators(self, db, properties):
         """setup interpolators"""
@@ -327,7 +347,7 @@ class RbfInterpolator(Interpolator):
         #
         for name, interpolator in self.interpolators.items():
             if isinstance(interpolator, Rbf):
-                interpolator.update(lu_piv, self.db[prop_name])
+                interpolator.update(lu_piv, self.db[name])
 
     def _compute_a(self, x):
         #
@@ -362,8 +382,12 @@ class ShepardInterpolator(Interpolator):
     inverse_distance = false :: bool
     """
 
-    def __init__(self, config, db, properties, logger, energy_only=False, savefile=''):
-        super().__init__(db, properties, logger, energy_only, savefile, inverse=config['inverse_distance'])
+    @classmethod
+    def from_config(cls, config, db, properties, logger, energy_only=False, savefile=''):
+        return cls(db, properties, logger, energy_only=energy_only, savefile=savefile, inverse=config['inverse_distance'])
+
+    def __init__(self, db, properties, logger, energy_only=False, savefile='', inverse=False):
+        super().__init__(db, properties, logger, energy_only, savefile, inverse=inverse)
         self.crds = self.get_crd()
 
     def get(self, request):
@@ -444,7 +468,7 @@ class Rbf:
         self.shape = shape
 
     def update(self, lu_piv, prop):
-        self.nodes, self.shape = cls._setup(lu_piv, prop)
+        self.nodes, self.shape = self._setup(lu_piv, prop)
 
     @classmethod
     def from_lu_factors(cls, lu_piv, prop):
