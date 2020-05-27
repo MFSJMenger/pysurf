@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from functools import reduce
 #
 import numpy as np
 
@@ -73,7 +74,7 @@ class DataBaseInterpolation(Colt):
         properties = [prop for prop in properties if prop != 'crd']
         self.properties = properties
         if len(self._db) > 0:
-            self.interpolator = InterpolatorFactory.interpolator[config['interpolator'].value](config['interpolator'], self._db,
+            self.interpolator = InterpolatorFactory.plugin_from_config(config['interpolator'], self._db,
                                                     properties,
                                                     self.nstates,
                                                     self.natoms,
@@ -192,6 +193,10 @@ class Interpolator(InterpolatorFactory):
             crds = np.copy(self.db['crd'])
         return crds
 
+    @classmethod
+    def from_config(cls, config, db, properties, logger, energy_only=False, savefile=''):
+        return cls(db, properties, logger, energy_only=energy_only, savefile=savefile)
+
     @abstractmethod
     def get(self, request):
         """fill request
@@ -258,14 +263,27 @@ class RbfInterpolator(Interpolator):
         energy_threshold = 0.02 :: float
         inverse_distance = false :: bool
     """
-    def __init__(self, config, db, properties, nstates, natoms, logger, energy_only=False, savefile=''):
-        self.trust_radius_general = config['trust_radius_general']
-        self.trust_radius_CI = config['trust_radius_ci']
-        self.energy_threshold = config['energy_threshold']
-        self.trust_radius = (self.trust_radius_general + self.trust_radius_CI)/2.
-        self.epsilon = self.trust_radius_CI
 
-        super().__init__(db, properties, nstates, natoms, logger, energy_only, savefile, inverse=config['inverse_distance'])
+    @classmethod
+    def from_config(cls, config, db, properties, logger, energy_only=False, savefile='', inverse=False):
+        trust_radius_general = config['trust_radius_general']
+        trust_radius_CI = config['trust_radius_ci']
+        energy_threshold = config['energy_threshold']
+        #
+        return cls(db, properties, logger, energy_only=energy_only, savefile=savefile,
+                   inverse=inverse, trust_radius_general=trust_radius_general,
+                   trust_radius_CI=trust_radius_CI, energy_threshold=energy_threshold)
+
+    def __init__(self, db, properties, logger, energy_only=False, savefile='', inverse=inverse,
+                 trust_radius_general=0.75, trust_radius_CI=0.25, energy_threshold=0.02):
+
+        self.trust_radius_general = trust_radius_general
+        self.trust_radius_CI = trust_radius_CI
+        self.energy_threshold = energy_threshold
+        self.trust_radius = (self.trust_radius_general + self.trust_radius_CI)/2.
+
+        super().__init__(db, properties, logger, energy_only, savefile, inverse=inverse)
+
 
     def get_interpolators(self, db, properties):
         """ """
@@ -363,16 +381,21 @@ class RbfInterpolator(Interpolator):
         is_trustworthy_general = False
         is_trustworthy_CI = False
         shape = self.crds.shape
+        crd_shape = crd.shape
+        crd.resize((1, crd.size))
         if len(shape) == 3:
-            dist = cdist([np.array(crd).flatten()], self.crds.reshape((shape[0], shape[1]*shape[2])))
-        else:
-            dist = cdist([np.array(crd).flatten()], self.crds)
+            self.crds.resize((shape[0], shape[1]*shape[2]))
+        dist = cdist(crd, self.crds, metric=dim_norm)
+        self.crds.resize(shape)
+        crd.resize(crd_shape)
         if np.min(dist) < self.trust_radius_general:
             is_trustworthy_general = True
         if np.min(dist) < self.trust_radius_CI:
             is_trustworthy_CI = True
         return dist[0], (is_trustworthy_general, is_trustworthy_CI)
 
+def dim_norm(crd1, crd2):
+    return np.max(np.abs(crd1-crd2))
 
 class ShepardInterpolator(Interpolator):
 

@@ -25,14 +25,15 @@ class CombineDBs(Colt):
     _questions = """
     main_db = :: existing_file
     added_db = :: existing_file
+    start_value = 0 :: int
     """
 
     @classmethod
     def from_config(cls, config):
-        return cls(config['main_db'], config['added_db'])
+        return cls(config['main_db'], config['added_db'], start=config['start_value'])
 
     
-    def __init__(self, main_db, added_db):
+    def __init__(self, main_db, added_db, start=0):
     
         if not isinstance(main_db, PySurfDB):
             info = PySurfDB.info_database(main_db)
@@ -44,7 +45,6 @@ class CombineDBs(Colt):
         if not isinstance(added_db, PySurfDB):
             added_db = PySurfDB.load_database(added_db, read_only=True)
 
-        thr = 0.25
 
         keys_raw = main_db.get_keys()
         keys = []
@@ -68,7 +68,7 @@ class CombineDBs(Colt):
 
 
 #        nn = NextNeighbor(db1)
-        for i,crd in enumerate(added_db['crd']):
+        for i in range(start, len(added_db)):
 #            min_dist = nn.get(crd)
 #            if min_dist[0] > 0.25:
             for key in keys:

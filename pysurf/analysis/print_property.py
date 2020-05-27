@@ -38,7 +38,11 @@ class PrintProperty(Colt):
 
     def __init__(self, config):
         db = PySurfDB.load_database(config['infile'], read_only=True)
-        
+
+        if config['property'] == 'len':
+            print("Number of entries in database: ", len(db))
+            return
+
         for idx, entry in enumerate(db[config['property']]):
             print('\nEntry: {}'.format(idx))
             print(entry)
