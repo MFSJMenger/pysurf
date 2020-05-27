@@ -86,7 +86,7 @@ class Training(Colt):
                 is_not_trustworth += 1
 
         for name, value in norm.items(): 
-            self.compute_errors(name, value, nele)
+            self.compute_errors(name, value, ndata)
         #
         trust = (ndata - is_not_trustworth)/ndata
         #
