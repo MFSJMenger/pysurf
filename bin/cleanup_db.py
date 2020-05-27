@@ -46,11 +46,18 @@ class CleanupDB(Colt):
             model = True
         dbout = PySurfDB.generate_database(config['db_out'], data=info['variables'], dimensions=info['dimensions'], model=model)
 
-        self.crds = []
+        self.crds = None
         for i, crd in enumerate(dbin['crd']):
-            if len(dbout) != 0:
+            if i%1000 == 0:
+                print(f"Processing point {i}")
+            crd = np.copy(crd)
+            crd_shape = crd.shape
+            crd.resize((1, crd.size))
+            if self.crds is None:
+                self.crds = crd.reshape((1, crd.size))
+            else:
                 diff = np.diff(dbin.get('energy', i))
-
+                
                 trust_general, trust_ci = self.is_within_radius(crd)
                 if np.min(diff) < self.thresh:
                     if trust_ci is True:
@@ -58,8 +65,9 @@ class CleanupDB(Colt):
                 else:
                     if trust_general is True:
                         continue
+                self.crds = np.concatenate((self.crds, crd))
 
-            self.crds += [crd]
+            crd.resize(crd_shape)
             for prop in info['variables']:
                 dbout.append(prop, dbin.get(prop, i))
             dbout.increase
@@ -69,13 +77,16 @@ class CleanupDB(Colt):
             crd = inverse(crd)
             crds = inverse_coordinates(np.array(self.crds))
         else:
-            crds = np.array(self.crds)
+            crds = self.crds
         #
         shape = crds.shape
+        shape_crd = crd.shape
         if len(crds.shape) == 3:
-            dist = cdist([np.array(crd).flatten()], crds.reshape((shape[0], shape[1]*shape[2])))
+            dist = cdist(crd.resize((1, crd.size)), crds.resize((shape[0], shape[1]*shape[2])), metric=dim_norm)
         else:
-            dist = cdist([np.array(crd).flatten()], crds)
+            crd.resize((1, crd.size))
+            dist = cdist(crd, crds, metric=dim_norm)
+        crd.resize(shape_crd)
         trust_general = False
         trust_ci = False
         if np.min(dist) < self.trust_radius_general:
@@ -83,6 +94,10 @@ class CleanupDB(Colt):
         if np.min(dist) < self.trust_radius_ci:
             trust_ci = True
         return trust_general, trust_ci
+
+
+def dim_norm(crd1, crd2):
+    return np.max(np.abs(crd1-crd2))
 
 if __name__ == "__main__":
     CleanupDB.from_commandline()

@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from functools import reduce
 #
 import numpy as np
 
@@ -128,7 +129,7 @@ class DataBaseInterpolation(Colt):
 
     def _create_db(self, data, natoms, nstates, filename='db.dat', model=False):
         if model is False:
-            info=PySurfDB.info_database(filename)
+#            info=PySurfDB.info_database(filename)
             return PySurfDB.generate_database(filename, data=data, dimensions={'natoms': natoms, 'nstates': nstates, 'nactive': nstates}, model=model)
         return PySurfDB.generate_database(filename, data=data, dimensions={'nmodes': natoms, 'nstates': nstates, 'nactive': nstates}, model=model)
 
@@ -327,7 +328,7 @@ class RbfInterpolator(Interpolator):
         #
         for name, interpolator in self.interpolators.items():
             if isinstance(interpolator, Rbf):
-                interpolator.update(lu_piv, self.db[prop_name])
+                interpolator.update(lu_piv, self.db[name])
 
     def _compute_a(self, x):
         #
@@ -339,24 +340,29 @@ class RbfInterpolator(Interpolator):
         
         #Epsilon value still under examination
         self.epsilon = self.trust_radius_CI/2.
-        
-        A = squareform(dist)
+       
+        A =squareform(dist)
         return weight(A, self.epsilon)
 
     def within_trust_radius(self, crd):
         is_trustworthy_general = False
         is_trustworthy_CI = False
         shape = self.crds.shape
+        crd_shape = crd.shape
+        crd.resize((1, crd.size))
         if len(shape) == 3:
-            dist = cdist([np.array(crd).flatten()], self.crds.reshape((shape[0], shape[1]*shape[2])))
-        else:
-            dist = cdist([np.array(crd).flatten()], self.crds)
+            self.crds.resize((shape[0], shape[1]*shape[2]))
+        dist = cdist(crd, self.crds, metric=dim_norm)
+        self.crds.resize(shape)
+        crd.resize(crd_shape)
         if np.min(dist) < self.trust_radius_general:
             is_trustworthy_general = True
         if np.min(dist) < self.trust_radius_CI:
             is_trustworthy_CI = True
         return dist[0], (is_trustworthy_general, is_trustworthy_CI)
 
+def dim_norm(crd1, crd2):
+    return np.max(np.abs(crd1-crd2))
 
 class ShepardInterpolator(Interpolator):
 
@@ -446,7 +452,7 @@ class Rbf:
         self.shape = shape
 
     def update(self, lu_piv, prop):
-        self.nodes, self.shape = cls._setup(lu_piv, prop)
+        self.nodes, self.shape = self._setup(lu_piv, prop)
 
     @classmethod
     def from_lu_factors(cls, lu_piv, prop):

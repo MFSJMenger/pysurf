@@ -21,6 +21,8 @@ class AccumulateDBs(Colt):
 
         #mother db
         mother_db = db.dat :: str
+
+        start_value = 0 :: int
         """
 
 
@@ -48,7 +50,7 @@ class AccumulateDBs(Colt):
                 if copied is True:
                     continue
 
-            CombineDBs(mother_db, file)
+            CombineDBs(mother_db, file, start=config['start_value'])
             print(f"Added file {file} to DB")
                     
                 
