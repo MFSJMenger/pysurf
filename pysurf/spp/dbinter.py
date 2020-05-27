@@ -78,6 +78,8 @@ class DataBaseInterpolation(Colt):
         if len(self._db) > 0:
             self.interpolator = InterpolatorFactory.interpolator[config['interpolator'].value](config['interpolator'], self._db,
                                                     properties,
+                                                    self.nstates,
+                                                    self.natoms,
                                                     logger=self.logger,
                                                     energy_only=config['energy_only'])
         else:
@@ -151,11 +153,15 @@ class Interpolator(InterpolatorFactory):
 
     _register_plugin = False
 
-    def __init__(self, db, properties, logger, energy_only=False, savefile='', inverse=False):
+    def __init__(self, db, properties, nstates, natoms, logger, energy_only=False, savefile='', inverse=False):
         """important for ShepardInterpolator to set db first!"""
         #
         self.logger=logger
         self.db = db
+        self.nstates = nstates
+        self.natoms = natoms
+        self.energy_only = energy_only
+
         if inverse is True:
             self.crds = inverse_coordinates(np.copy(self.db['crd']))
         else:                
@@ -200,23 +206,26 @@ class Interpolator(InterpolatorFactory):
         """
         grad = np.zeros((self.nstates, crd.size), dtype=float)
         #
-        crd = crd.resize(3*self.natoms)
+        crd_shape = crd.shape
+        crd.resize(crd.size)
         #
         energy = self.interpolators['energy']
         # do loop
         for i in range(crd.size):
             # first add dq
             crd[i] += dq
-            en1, _ = energy(crd)
+            en1 = energy(crd)
             # first subtract 2*dq
             crd[i] -= 2*dq
-            en2, _ = energy(crd)
+            en2 = energy(crd)
             # add dq to set crd to origional
             crd[i] += dq
             # compute gradient
             grad[:,i] = (en1 - en2)/(2.0*dq)
         # return gradient
-        return grad.resize((self.nstates, self.natoms, 3))
+        crd.resize(crd_shape)
+        grad.resize((self.nstates, *crd_shape))
+        return grad
 
 
 class RbfInterpolator(Interpolator):
@@ -228,18 +237,20 @@ class RbfInterpolator(Interpolator):
         energy_threshold = 0.02 :: float
         inverse_distance = false :: bool
     """
-    def __init__(self, config, db, properties, logger, energy_only=False, savefile=''):
+    def __init__(self, config, db, properties, nstates, natoms, logger, energy_only=False, savefile=''):
         self.trust_radius_general = config['trust_radius_general']
         self.trust_radius_CI = config['trust_radius_ci']
         self.energy_threshold = config['energy_threshold']
         self.trust_radius = (self.trust_radius_general + self.trust_radius_CI)/2.
-        super().__init__(db, properties, logger, energy_only, savefile, inverse=config['inverse_distance'])
+        self.epsilon = self.trust_radius_CI
+
+        super().__init__(db, properties, nstates, natoms, logger, energy_only, savefile, inverse=config['inverse_distance'])
 
     def get_interpolators(self, db, properties):
         """ """
         A = self._compute_a(self.crds)
         lu_piv = lu_factor(A)
-        return {prop_name: Rbf.from_lu_factors(lu_piv, db[prop_name])
+        return {prop_name: Rbf.from_lu_factors(lu_piv, db[prop_name], self.epsilon, self.crds)
                 for prop_name in properties}, len(db)
 
     def get_interpolators_from_file(self, filename, properties):
@@ -268,9 +279,10 @@ class RbfInterpolator(Interpolator):
         else:
             crd = request.crd
         #
-        crd, trustworthy = self.within_trust_radius(crd)
-        crd = crd[:self.size]
-        crd = weight(crd, self.epsilon)
+        _, trustworthy = self.within_trust_radius(crd)
+#       crd = crd[:self.size]
+
+
         for prop in request:
             request.set(prop, self.interpolators[prop](crd))
         #
@@ -317,7 +329,7 @@ class RbfInterpolator(Interpolator):
         #Trying different stuff for epsilon
 #        self.epsilon = np.sum(dist)/dist.size
 #        print('Max epsilon', self.epsilon)
-        self.epsilon = self.trust_radius
+#        self.epsilon = self.trust_radius
         A = squareform(dist)
         return weight(A, self.epsilon)
 
@@ -408,16 +420,24 @@ class ShepardInterpolator(Interpolator):
 
 class Rbf:
 
-    def __init__(self, nodes, shape):
+    def __init__(self, nodes, shape, epsilon, crds):
         self.nodes = nodes
         self.shape = shape
+        self.epsilon = epsilon
+        self.crds = crds
 
     @classmethod
-    def from_lu_factors(cls, lu_piv, prop):
+    def from_lu_factors(cls, lu_piv, prop, epsilon, crds):
         nodes, shape = cls._setup(lu_piv, prop)
-        return cls(nodes, shape)
+        return cls(nodes, shape, epsilon, crds)
 
     def __call__(self, crd):
+        shape = self.crds.shape
+        if len(shape) == 3:
+            dist = cdist([np.array(crd).flatten()], self.crds.reshape((shape[0], shape[1]*shape[2])))
+        else:
+            dist = cdist([np.array(crd).flatten()], self.crds)
+        crd = weight(dist, self.epsilon)
         if self.shape == (1,):
             return np.dot(crd, self.nodes).reshape(self.shape)[0]
         return np.dot(crd, self.nodes).reshape(self.shape)
