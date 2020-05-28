@@ -18,7 +18,7 @@ class Validation(Colt):
 
     _questions = """
     [validate]
-    db = 
+    db =
     """
 
     @classmethod
@@ -41,6 +41,7 @@ class Training(Colt):
         properties = :: list
         interpolator = RbfInterpolator :: str
         energy_only = False :: bool
+        savefile = :: str
     """
 
     @classmethod
@@ -52,19 +53,20 @@ class Training(Colt):
     @classmethod
     def from_config(cls, config):
         return cls(config['database'], config['properties'],
-                   config['interpolator'], energy_only=config['energy_only'])
+                   config['interpolator'], energy_only=config['energy_only'],
+                   savefile=config['savefile'])
 
-    def __init__(self, filename, properties, interpolator, energy_only=False):
+    def __init__(self, filename, properties, interpolator, energy_only=False, savefile=None):
         self.properties = properties
         self.db = PySurfDB.load_database(filename, read_only=True)
-        self.logger = get_logger('db.log', 'validation', [])
+        self.logger = get_logger('validate.log', 'validation', [])
         self.interpolator = InterpolatorFactory.plugin_from_config(interpolator,
                                                                    self.db,
                                                                    properties,
                                                                    logger=self.logger,
                                                                    energy_only=energy_only)
 
-        self.interpolator.train()
+        self.interpolator.train(savefile)
         self.nstates = self.db.get_dimension_size('nstates')
 
     def validate(self, filename, properties):
@@ -85,7 +87,7 @@ class Training(Colt):
             if not is_trustworthy:
                 is_not_trustworth += 1
 
-        for name, value in norm.items(): 
+        for name, value in norm.items():
             self.compute_errors(name, value, ndata)
         #
         trust = (ndata - is_not_trustworth)/ndata

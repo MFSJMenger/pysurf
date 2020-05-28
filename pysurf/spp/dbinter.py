@@ -5,6 +5,7 @@ import numpy as np
 
 from ..colt import Colt, PluginBase
 from ..database.pysurf_db import PySurfDB
+from ..database.database import Database
 from ..database.dbtools import DBVariable
 from ..utils.osutils import exists_and_isfile
 # logger
@@ -214,8 +215,24 @@ class Interpolator(InterpolatorFactory):
         """setup interpolators from file"""
 
     @abstractmethod
-    def train(self):
+    def _train(self):
         """train the interpolators using the existing data"""
+
+    @abstractmethod
+    def loadweights(self, filename):
+        """load weights from file"""
+
+    def train(self, filename=None, always=False):
+        # train normally
+        if filename is None:
+            return self._train()
+        # 
+        if exists_and_isfile(filename):
+            self.loadweights(filename)
+        else:
+            self._train()
+        # save weights
+        self.save(filename)
 
     def update_weights(self):
         """update weights of the interpolator"""
@@ -280,7 +297,6 @@ class RbfInterpolator(Interpolator):
         self.energy_threshold = energy_threshold
         self.trust_radius = (self.trust_radius_general + self.trust_radius_CI)/2.
         self.epsilon = trust_radius_CI
-
         super().__init__(db, properties, logger, energy_only, savefile, inverse=inverse)
 
 
@@ -334,6 +350,16 @@ class RbfInterpolator(Interpolator):
             is_trustworthy = trustworthy[0]
         return request, is_trustworthy
 
+    def loadweights(self, filename):
+        """Load existing weights"""
+        db = Database.load_db(filename)
+        for prop, rbf in self.interpolators.items():
+            if prop not in db:
+                raise Exception("property needs to be implemented")
+            rbf.nodes = np.copy(db[prop])
+            rbf.shape = np.copy(db[prop+'_shape'])
+        self.epsilon = np.copy(db['rbf_epsilon'])
+
     def save(self, filename):
         settings = {'dimensions': {}, 'variables': {}}
         dimensions = settings['dimensions']
@@ -349,14 +375,16 @@ class RbfInterpolator(Interpolator):
         dimensions['1'] = 1
         variables['rbf_epsilon'] = DBVariable(np.double, ('1',))
         #
+        print("settings = ", settings)
         db = Database(filename, settings)
+        #
         for prop, rbf in self.interpolators.items():
             db[prop] = rbf.nodes
             db[prop+'_shape'] = rbf.shape
         #
         db['rbf_epsilon'] = self.epsilon
 
-    def train(self):
+    def _train(self):
         """set rbf weights, based on the current crds"""
         self.crds = self.get_crd()
         A = self._compute_a(self.crds)
@@ -393,8 +421,10 @@ class RbfInterpolator(Interpolator):
             is_trustworthy_CI = True
         return dist[0], (is_trustworthy_general, is_trustworthy_CI)
 
+
 def dim_norm(crd1, crd2):
     return np.max(np.abs(crd1-crd2))
+
 
 class ShepardInterpolator(Interpolator):
 
@@ -430,7 +460,10 @@ class ShepardInterpolator(Interpolator):
     def save(self, filename):
         """Do nothing"""
 
-    def train(self):
+    def loadweights(self, filename):
+        """Do nothing"""
+
+    def _train(self):
         pass
 
     def get_interpolators_from_file(self, filename, properties):
