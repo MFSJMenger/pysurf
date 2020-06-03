@@ -34,11 +34,18 @@ class DataBaseInterpolation(Colt):
     """
 
     _questions = """
+        # additional properties to be fitted
         properties = :: list, optional
+        # only write
         write_only = True :: bool
+        # only fit to the existing data
         fit_only = False :: bool
+        # select interpolator
         interpolator = RbfInterpolator :: str
+        # if true: compute gradient numerically
         energy_only = False :: bool
+        # name of the database
+        database = db.dat :: file
     """
 
     @classmethod
@@ -70,7 +77,7 @@ class DataBaseInterpolation(Colt):
             properties += config['properties']
         properties += ['crd']
         # setupt database
-        self._db = self._create_db(properties, natoms, nstates, model=model)
+        self._db = self._create_db(properties, natoms, nstates, model=model, filename=config['database'])
         self._parameters = get_fitting_size(self._db)
         properties = [prop for prop in properties if prop != 'crd']
         self.properties = properties
@@ -537,7 +544,7 @@ class Rbf:
         else:
             dist = cdist([np.array(crd).flatten()], self.crds)
         crd = weight(dist, self.epsilon)
-        if self.shape == (1,):
+        if len(self.shape) == 1 and self.shape[0] == 1:
             return np.dot(crd, self.nodes).reshape(self.shape)[0]
         return np.dot(crd, self.nodes).reshape(self.shape)
 

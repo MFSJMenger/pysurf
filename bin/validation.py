@@ -8,10 +8,11 @@ and test them against a validation set
 import numpy as np
 
 from pysurf.database import PySurfDB
-from pysurf.spp.dbinter import InterpolatorFactory
-from pysurf.spp.request import RequestGenerator
+from pysurf.spp import SurfacePointProvider
 from pysurf.logger import get_logger
 from pysurf.colt import Colt
+
+from scipy.optimize import minimize
 
 
 class Validation(Colt):
@@ -19,6 +20,8 @@ class Validation(Colt):
     _questions = """
     [validate]
     db =
+    properties = :: list
+    optimize = False :: bool
     """
 
     @classmethod
@@ -31,68 +34,73 @@ class Validation(Colt):
 
     def __init__(self, config):
         self.inter = Training.from_config(config['training'])
-        self.inter.validate(config['validate']['db'], config['training']['properties'])
+        if config['validate']['optimize'] is False:
+            self.inter.validate(config['validate']['db'], config['validate']['properties'])
+        else:
+            self.inter.optimize(config['validate']['db'], config['validate']['properties'])
 
 
 class Training(Colt):
 
     _questions = """
-        database = :: existing_file
-        properties = :: list
-        interpolator = RbfInterpolator :: str
-        energy_only = False :: bool
+        spp = spp.inp :: existing_file
         savefile = :: str
     """
 
     @classmethod
-    def _generate_subquestions(cls, questions):
-        questions.generate_cases("interpolator",
-                                 {name: interpolator.questions
-                                  for name, interpolator in InterpolatorFactory.interpolator.items()})
-
-    @classmethod
     def from_config(cls, config):
-        return cls(config['database'], config['properties'],
-                   config['interpolator'], energy_only=config['energy_only'],
-                   savefile=config['savefile'])
+        return cls(config['spp'], config['savefile'])
 
-    def __init__(self, filename, properties, interpolator, energy_only=False, savefile=None):
-        self.properties = properties
-        self.db = PySurfDB.load_database(filename, read_only=True)
+    def __init__(self, sppinp, savefile=None):
+        #
         self.logger = get_logger('validate.log', 'validation', [])
-        self.interpolator = InterpolatorFactory.plugin_from_config(interpolator,
-                                                                   self.db,
-                                                                   properties,
-                                                                   logger=self.logger,
-                                                                   energy_only=energy_only)
-
+        #
+        config = self._get_spp_config(sppinp)
+        #
+        natoms, self.nstates, properties = self._get_db_info(config['use_db']['database'])
+        self.spp = SurfacePointProvider(None, properties, self.nstates, natoms, None,
+                                        logger=self.logger, config=config)
+        #
+        self.interpolator = self.spp.interpolator
+        #
+        self.savefile = savefile
         self.interpolator.train(savefile)
-        self.nstates = self.db.get_dimension_size('nstates')
+
+    def _get_spp_config(self, filename):
+        questions = SurfacePointProvider.generate_questions(presets="""
+                use_db=yes :: yes
+                [use_db(yes)]
+                fit_only = yes :: yes
+                write_only = no :: no
+                """)
+        return questions.ask(config=filename, raise_read_error=False)
+
+    def _get_db_info(self, database):
+        db = PySurfDB.load_database(database, read_only=True)
+        rep = db.dbrep
+        natoms = rep.dimensions.get('natoms', None)
+        if natoms is None:
+            natoms = rep.dimensions['nmodes']
+        nstates = rep.dimensions['nstates']
+        return natoms, nstates, db.saved_properties
 
     def validate(self, filename, properties):
         db = PySurfDB.load_database(filename, read_only=True)
-        reqgen = RequestGenerator(self.nstates, properties, use_db=True)
+        self._compute(db, properties)
 
+    def _compute(self, db, properties):
         norm = {prop: [] for prop in properties}
-        is_not_trustworth = 0
         ndata = len(db)
 
         for i, crd in enumerate(db['crd']):
-            request = reqgen.request(crd, properties)
-            result, is_trustworthy = self.interpolator.get(request)
+            result = self.spp.request(crd, properties)
             #
             for prop in properties:
                 norm[prop].append(np.copy(result[prop] - db[prop][i]))
-            #
-            if not is_trustworthy:
-                is_not_trustworth += 1
 
         for name, value in norm.items():
-            self.compute_errors(name, value, ndata)
-        #
-        trust = (ndata - is_not_trustworth)/ndata
-        #
-        self.logger.info(f"is_trustworthy = {trust}, number not trustworth={is_not_trustworth}")
+            errors = self.compute_errors(name, value, ndata)
+        return errors
 
     def compute_errors(self, name, prop, nele):
         prop = np.array(prop)
@@ -105,6 +113,21 @@ class Training(Colt):
         minval = np.amin(prop)
         self.logger.info(f"{name}:\n mse = {mse}\n mae = {mae}\n"
                          f" rmsd = {rmsd}\n maxval = {maxval}\n minval={minval}\n")
+        return {'mse': mse, 'mae': mae, 'rmsd': rmsd, 'max_error': maxval}
+
+    def optimize(self, filename, properties):
+        db = PySurfDB.load_database(filename, read_only=True)
+
+        def _function(epsilon):
+            self.interpolator.epsilon = epsilon
+            self.interpolator.train()
+            error = self._compute(db, properties)
+            return error['rmsd']
+        res = minimize(_function, self.interpolator.epsilon, options={
+                       'xatol': 1e-8, 'disp': True})
+        print(res)
+        self.interpolator.epsilon = res.x[0]
+        self.interpolator.train(self.savefile)
 
 
 def eucl_norm(x, y):

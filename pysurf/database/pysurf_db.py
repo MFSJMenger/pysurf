@@ -77,6 +77,12 @@ class PySurfDB(Database):
         nacs      = double :: (frame, nstates, nstates, nmodes)
     """)['variables']
 
+    propertis = ['energy', 'gradient', 'fosc', 
+                 'ekin', 'epot', 'etot', 'nacs',
+                 'veloc', 'accel', 'currstate'] 
+
+                   
+
     @classmethod
     def generate_database(cls, filename, data=None, dimensions=None, units=None, attributes=None, descriptition=None, model=False, sp=False):
         if dimensions is None:
@@ -95,6 +101,11 @@ class PySurfDB(Database):
         if not exists_and_isfile(filename):
             raise Exception(f"Cannot load database {filename}")
         return cls.generate_database(filename, data, dimensions, units, attributes, descriptition, model, sp)
+
+    @cached_property
+    def saved_properties(self):
+        return [prop for prop in self.propertis
+                if prop in self]
     
     @cached_property
     def masses(self):
