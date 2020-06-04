@@ -99,6 +99,10 @@ class Database(object):
             return dim.size
 
     @property
+    def dbrep(self):
+        return self._rep
+
+    @property
     def closed(self):
         return self._closed
 
@@ -112,6 +116,7 @@ class Database(object):
 
     def get_dimension(self, key):
         return self._handle[key].get_dims()
+
 
     def append(self, key, value):
         """Append only for unlimited variables!"""

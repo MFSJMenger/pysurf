@@ -12,7 +12,7 @@ from .request import RequestGenerator
 
 """
 TODO:
-    - What happens to user properties that are asked 
+    - What happens to user properties that are asked
       if no database is set?
 """
 
@@ -72,7 +72,7 @@ class SurfacePointProvider(Colt):
     _questions = """
         logging = debug :: str ::
         mode = ab-initio
-        use_db = no 
+        use_db = no
         """
     _modes = {'ab-initio': AbinitioFactory,
               'model': ModelFactory,
@@ -88,7 +88,13 @@ class SurfacePointProvider(Colt):
         questions.generate_cases("mode", {name: mode.questions for name, mode in cls._modes.items()})
         questions.generate_cases("use_db", {name: mode.questions for name, mode in cls._database.items()})
 
-    def __init__(self, inputfile, properties, nstates, natoms, atomids=None, logger=None):
+    @classmethod
+    def from_config(cls, config, properties, nstates, natoms, atomids=None, logger=None):
+        return cls(None, properties, nstates, natoms,
+                   atomids=atomids, logger=logger, config=config)
+
+    def __init__(self, inputfile, properties, nstates, natoms,
+                 atomids=None, logger=None, config=None):
         """ The inputfile for the SPP has to provide the necessary
             information, how to produce the data at a specific point
             in the coordinate space.
@@ -110,16 +116,24 @@ class SurfacePointProvider(Colt):
                 logger, optional
                     Logging module used
         """
-        
+
         if not isinstance(logger, Logger):
             self.logger = get_logger('spp.log', 'SPP', [])
         else:
             self.logger = logger
 
         # get config
-        self.config = self._parse_config(inputfile)
+        if config is None:
+            config = self._parse_config(inputfile)
         #
-        self._request, self._interface = self._select_interface(self.config, properties, natoms, nstates, atomids)
+        self._request, self._interface = self._select_interface(config, properties, natoms, nstates, atomids)
+
+    @property
+    def interpolator(self):
+        interpolator = getattr(self._interface, 'interpolator', None)
+        if interpolator is None:
+            raise Exception("Interpolator not available")
+        return interpolator
 
     def _select_interface(self, config, properties, natoms, nstates, atomids):
         """Select the correct interface based on the mode"""
@@ -161,7 +175,7 @@ Implemented: {interface.implemented}
 
     def _parse_config(self, inputfile):
         """Parse the config file"""
-        questions = self.generate_questions(config=None)
+        questions = self.generate_questions()
         return questions.check_only(inputfile)
 
     def request(self, crd, properties, states=None, same_crd=False):
