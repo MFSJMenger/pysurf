@@ -21,17 +21,17 @@ class AnalysePopulation(Colt):
     time_units = fs :: str :: [au, fs]
     save_data = yes :: str :: [yes, no]
     plot_population = yes :: str :: [yes, no]
-    folder = prop :: str
+    folder = ./ :: str
     subfolder = traj :: str
     """
 
     _save_data = {
-            'yes': "data_file = prop/population.dat :: file",
+            'yes': "data_file = population.dat :: file",
             'no' : " "
             }
 
     _plot_population = {
-            'yes': "plot_inputfile = prop/plot_population.inp :: file", 
+            'yes': "plot_inputfile = plot_population.inp :: file", 
             'no' : ""
             }
     
@@ -67,22 +67,20 @@ class AnalysePopulation(Colt):
             presets += f"y_label = population\n"
             presets += f"x_units = {config['time_units']}\n"
             presets += f"x_label_unit = True\n"
-            presets += f"[save_plot(yes)]\nplot_file = prop/population.png\n"
+            presets += f"[save_plot(yes)]\nplot_file = population.png\n"
             presets += "legend = {}\n"
 
-            print(plot_config)
             plot_input = config['plot_population']['plot_inputfile']
             if exists_and_isfile(plot_input):
                 plot_config = Plot.generate_input(plot_input, config=plot_input, presets=presets)
             else:
                 plot_config = Plot.generate_input(plot_input, config=plot_config, presets=presets)
-            print(plot_config)
         return cls(config, plot_config)
 
 
     def __init__(self, config, plot_config=None):
         self.config = config
-        self.folder = config['folder']
+        self.folder = os.path.abspath(config['folder'])
         self.subfolder = config['subfolder']
         subfolderhandle = SubfolderHandle(self.folder, self.subfolder)
         propfiles = subfolderhandle.fileiter('prop.db')
@@ -124,7 +122,7 @@ class AnalysePopulation(Colt):
 
 
 @FromCommandline("""
-inputfile = prop/analyse_population.inp :: file
+inputfile = analyse_population.inp :: file
 """)
 def command_analyse_population(inputfile):
         analyse_population = AnalysePopulation.from_inputfile(inputfile)

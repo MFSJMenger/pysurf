@@ -15,6 +15,9 @@ from scipy.linalg import lu_factor, lu_solve
 from scipy.spatial.distance import cdist, pdist, squareform
 from scipy.spatial import cKDTree
 
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures
+
 
 def inverse(crd):
     return pdist(crd)
@@ -89,6 +92,7 @@ class DataBaseInterpolation(Colt):
         result = self._interface.get(request)
         #
         for prop, value in result.iter_data():
+            print('dbinter.py prop', prop)
             self._db.append(prop, value)
         self._db.append('crd', result.crd)
         #
@@ -238,7 +242,7 @@ class Interpolator(InterpolatorFactory):
         """update weights of the interpolator"""
         self.train()
 
-    def finite_difference_gradient(self, crd, dq=0.01):
+    def finite_difference_gradient(self, crd, dq=0.001):
         """compute the gradient of the energy  with respect to a crd
            displacement using finite difference method
         """
@@ -246,7 +250,6 @@ class Interpolator(InterpolatorFactory):
         #
         shape = crd.shape
         #
-        crd_shape = crd.shape
         crd.resize(crd.size)
         #
         energy = self.interpolators['energy']
@@ -263,9 +266,133 @@ class Interpolator(InterpolatorFactory):
             # compute gradient
             grad[:,i] = (en1 - en2)/(2.0*dq)
         # return gradient
-        crd.resize(crd_shape)
-        grad.resize((self.nstates, *crd_shape))
+        crd.resize(shape)
+        grad.resize((self.nstates, *shape))
         return grad
+
+class RegInterpolator(Interpolator):
+    """Basic Rbf interpolator"""
+
+    _questions = """
+        trust_radius_general = 0.75 :: float
+        trust_radius_ci = 0.25 :: float
+        energy_threshold = 0.02 :: float
+        regression_order = 2 :: int
+    """
+
+    @classmethod
+    def from_config(cls, config, db, properties, logger, energy_only=False, savefile='', inverse=False):
+        trust_radius_general = config['trust_radius_general']
+        trust_radius_CI = config['trust_radius_ci']
+        energy_threshold = config['energy_threshold']
+        order = config['regression_order']
+
+        #
+        return cls(db, properties, logger, energy_only=energy_only, savefile=savefile,
+                   inverse=inverse, trust_radius_general=trust_radius_general,
+                   trust_radius_CI=trust_radius_CI, energy_threshold=energy_threshold, order=order)
+
+    def __init__(self, db, properties, logger, energy_only=False, savefile='', inverse=inverse,
+                 trust_radius_general=0.75, trust_radius_CI=0.25, energy_threshold=0.02, order=2):
+
+        self.trust_radius_general = trust_radius_general
+        self.trust_radius_CI = trust_radius_CI
+        self.energy_threshold = energy_threshold
+        self.order = order
+        super().__init__(db, properties, logger, energy_only, savefile, inverse=inverse)
+
+
+    def get_interpolators(self, db, properties):
+        print('johannes, properties', properties)
+        print('johannes len db', len(db))
+        return {prop_name: Regression(self.crds, db[prop_name], self.order)
+                for prop_name in properties}, len(db['crd'])
+
+    def get_interpolators_from_file(self, filename, properties):
+        pass
+
+    def get(self, request):
+        """fill request
+
+           Return request and if data is trustworthy or not
+        """
+        if self.inverse is True:
+            crd = inverse(request.crd)
+        else:
+            crd = request.crd
+        #
+        _, trustworthy = self.within_trust_radius(crd)
+#       crd = crd[:self.size]
+
+
+        for prop in request:
+            request.set(prop, self.interpolators[prop](crd))
+        #
+        diffmin = np.min(np.diff(request['energy']))
+        #compare energy differences with threshold from user
+        if diffmin < self.energy_threshold:
+            self.logger.info(f"Small energy gap of {diffmin}. Within CI radius: " + str(trustworthy[1]))
+            is_trustworthy = trustworthy[1]
+        else:
+            self.logger.info('Large energy diffs. Within general radius: ' + str(trustworthy[0]))
+            is_trustworthy = trustworthy[0]
+        return request, is_trustworthy
+
+
+    def save(self, filename):
+        pass
+
+    def _train(self):
+        print('self.inverse', self.inverse)
+        self.crds = self.get_crd()
+        #
+        for name, interpolator in self.interpolators.items():
+            print('johannes name', name)
+            if isinstance(interpolator, Regression):
+                interpolator.train()
+    
+    def loadweights(self, filename):
+        pass
+
+    def within_trust_radius(self, crd):
+        is_trustworthy_general = False
+        is_trustworthy_CI = False
+        shape = self.crds.shape
+        crd_shape = crd.shape
+        crd.resize((1, crd.size))
+        if len(shape) == 3:
+            self.crds.resize((shape[0], shape[1]*shape[2]))
+        dist = cdist(crd, self.crds, metric=dim_norm)
+        self.crds.resize(shape)
+        crd.resize(crd_shape)
+        if np.min(dist) < self.trust_radius_general:
+            is_trustworthy_general = True
+        if np.min(dist) < self.trust_radius_CI:
+            is_trustworthy_CI = True
+        return dist[0], (is_trustworthy_general, is_trustworthy_CI)
+
+class Regression:
+    def __init__(self, crds, values, order):
+#       self.crds = np.copy(crds)
+        self.crds = crds
+        self.shape_crds = self.crds.shape
+        self.crds.resize(self.shape_crds[0], int(self.crds.size/self.shape_crds[0]))
+        self.values = np.copy(values)
+        self.shape_values = values.shape
+        self.values.resize(self.shape_values[0], int(self.values.size/self.shape_values[0]))
+        self.poly = PolynomialFeatures(degree=order)
+
+    def train(self):
+        self.crds_poly = self.poly.fit_transform(self.crds)
+        self.regr = LinearRegression()
+        self.regr.fit(self.crds_poly, self.values)
+
+    def __call__(self, crd):
+        crd = np.copy(crd)
+        crd = self.poly.fit_transform(crd.reshape((1,crd.size)))
+        res = self.regr.predict(crd)
+        res.resize(self.shape_values[1:])
+        return res
 
 
 class RbfInterpolator(Interpolator):
@@ -562,6 +689,7 @@ class Rbf:
 
 
 def weight(r, epsilon):
+#    return r
     return np.sqrt((1.0/epsilon*r)**2 + 1)
 
 

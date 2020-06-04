@@ -1,7 +1,7 @@
-from qctools import generate_filereader
-from qctools import Event
-from qctools import register_event_type
-from qctools.events import join_events
+from pysurf.qctools import generate_filereader
+from pysurf.qctools import Event
+from pysurf.qctools import register_event_type
+from pysurf.qctools.events import join_events
 
 
 def event_getter_between():

@@ -7,8 +7,8 @@ import numpy as np
 #
 from jinja2 import Template
 #
-from qctools import generate_filereader, Event
-from qctools.events import join_events
+from pysurf.qctools import generate_filereader, Event
+from pysurf.qctools.events import join_events
 #
 from pysurf.colt import Colt
 from pysurf.utils import exists_and_isfile

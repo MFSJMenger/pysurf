@@ -19,6 +19,7 @@ class Validation(Colt):
     _questions = """
     [validate]
     db =
+    save_data = :: str
     """
 
     @classmethod
@@ -66,7 +67,7 @@ class Training(Colt):
                                                                    logger=self.logger,
                                                                    energy_only=energy_only)
 
-        self.interpolator.train(savefile)
+#        self.interpolator.train(savefile)
         self.nstates = self.db.get_dimension_size('nstates')
 
     def validate(self, filename, properties):
@@ -82,7 +83,15 @@ class Training(Colt):
             result, is_trustworthy = self.interpolator.get(request)
             #
             for prop in properties:
-                norm[prop].append(np.copy(result[prop] - db[prop][i]))
+                with open('validation_'+prop+'.dat', 'a') as outfile:
+                    outfile.write(str(result[prop]) + '\n')
+                with open('reference_'+prop+'.dat', 'a') as outfile:
+                    outfile.write(str(db[prop][i]) + '\n')
+                if prop == 'gradient':
+                    print('diff ', (db[prop][i].data - result[prop].data))
+                    norm[prop].append(np.copy(result[prop].data - db[prop][i].data))
+                else:
+                    norm[prop].append(np.copy(result[prop] - db[prop][i]))
             #
             if not is_trustworthy:
                 is_not_trustworth += 1
@@ -99,7 +108,7 @@ class Training(Colt):
         #
         mse = np.sum(prop)/nele
         mae = np.sum(np.absolute(prop))/nele
-        rmsd = np.sqrt(np.sum(prop**2)/nele)
+        rmsd = np.sqrt(np.sum(prop**2, axis=0)/nele)
         #
         maxval = np.amax(prop)
         minval = np.amin(prop)
