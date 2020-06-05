@@ -18,9 +18,9 @@ from scipy.optimize import minimize
 class Validation(Colt):
 
     _questions = """
-    [validate]
     db =
     properties = :: list
+    save_pes = __NONE__ :: str
     optimize = False :: bool
     """
 
@@ -34,10 +34,14 @@ class Validation(Colt):
 
     def __init__(self, config):
         self.inter = Training.from_config(config['training'])
-        if config['validate']['optimize'] is False:
-            self.inter.validate(config['validate']['db'], config['validate']['properties'])
+        #
+        if config['optimize'] is False:
+            self.inter.validate(config['db'], config['properties'])
         else:
-            self.inter.optimize(config['validate']['db'], config['validate']['properties'])
+            self.inter.optimize(config['db'], config['properties'])
+        #
+        if config['save_pes'] == '__NONE__':
+            self.inter.save_pes(config['save_pes'], config['db'])
 
 
 class Training(Colt):
@@ -88,6 +92,17 @@ class Training(Colt):
         db = PySurfDB.load_database(filename, read_only=True)
         self._compute(db, properties)
 
+    def save_pes(self, filename, database):
+        db = PySurfDB.load_database(database, read_only=True)
+        results, _ = self._compute(db, ['energy'])
+
+        def str_join(values):
+            return ' '.join(str(val) for val in values)
+
+        with open(filename, 'w') as f:
+            f.write("\n".join(f"{i} {str_join(fitted)} {str_join(exact)}" 
+                              for i, (fitted, exact) in enumerate(results['energy'])))
+
     def _compute(self, db, properties):
         norm = {prop: [] for prop in properties}
         ndata = len(db)
@@ -96,14 +111,15 @@ class Training(Colt):
             result = self.spp.request(crd, properties)
             #
             for prop in properties:
-                norm[prop].append(np.copy(result[prop] - db[prop][i]))
+                norm[prop].append([np.copy(result[prop]), np.copy(db[prop][i])])
 
         for name, value in norm.items():
             errors = self.compute_errors(name, value, ndata)
-        return errors
+
+        return norm, errors
 
     def compute_errors(self, name, prop, nele):
-        prop = np.array(prop)
+        prop = np.array([val[0] - val[1] for val in prop])
         #
         mse = np.sum(prop)/nele
         mae = np.sum(np.absolute(prop))/nele
@@ -121,7 +137,7 @@ class Training(Colt):
         def _function(epsilon):
             self.interpolator.epsilon = epsilon
             self.interpolator.train()
-            error = self._compute(db, properties)
+            _, error = self._compute(db, properties)
             return error['rmsd']
         res = minimize(_function, self.interpolator.epsilon, options={
                        'xatol': 1e-8, 'disp': True})
