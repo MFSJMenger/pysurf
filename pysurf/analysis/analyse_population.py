@@ -49,7 +49,7 @@ class AnalysePopulation(Colt):
         quests = cls.generate_questions(config=inputfile)
         config = quests.check_only(inputfile)
         
-
+        plot_config={}
         if config['plot_population'].value == 'yes':
             plot_config = {}
         #    plot_config['x_label'] = 'time'
@@ -87,15 +87,17 @@ class AnalysePopulation(Colt):
         for idx, propfile in enumerate(propfiles):
             db = DynDB.load_database(propfile, read_only=True)
             dbtime = np.array(db['time']).flatten()
+            if len(dbtime) == 0:
+                continue
             if idx == 0:
                 nsteps = len(db)
                 nstates = db.info['dimensions']['nstates']
                 data = np.zeros(shape=(nsteps, nstates + 1), dtype=float)
                 data[:, 0] = dbtime
                 counter = np.zeros(nsteps, dtype=int)
-            if np.max(np.abs(data[:len(dbtime),0] - dbtime)) < 0.1:
+            if np.max(np.abs(data[:len(dbtime),0] - dbtime[:min(nsteps, len(dbtime))])) < 0.1:
                 currstate = np.array(db['currstate']).flatten()
-                for idx in range(len(dbtime)):
+                for idx in range(min(len(dbtime), nsteps)):
                     data[idx, int(currstate[idx]+1)] += 1
                     counter[idx] += 1
             else:

@@ -81,11 +81,13 @@ class CleanupDB(Colt):
         #
         shape = crds.shape
         shape_crd = crd.shape
+#       norm = dim_norm
+        norm = 'euclidean'
         if len(crds.shape) == 3:
-            dist = cdist(crd.resize((1, crd.size)), crds.resize((shape[0], shape[1]*shape[2])), metric=dim_norm)
+            dist = cdist(crd.resize((1, crd.size)), crds.resize((shape[0], shape[1]*shape[2])), metric=norm)
         else:
             crd.resize((1, crd.size))
-            dist = cdist(crd, crds, metric=dim_norm)
+            dist = cdist(crd, crds, metric=norm)
         crd.resize(shape_crd)
         trust_general = False
         trust_ci = False

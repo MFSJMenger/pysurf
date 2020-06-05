@@ -99,7 +99,6 @@ class DataBaseInterpolation(Colt):
         result = self._interface.get(request)
         #
         for prop, value in result.iter_data():
-            print('dbinter.py prop', prop)
             self._db.append(prop, value)
         self._db.append('crd', result.crd)
         #
@@ -243,13 +242,13 @@ class Interpolator(InterpolatorFactory):
         else:
             self._train()
         # save weights
-        self.save(filename)
+#        self.save(filename)
 
     def update_weights(self):
         """update weights of the interpolator"""
         self.train()
 
-    def finite_difference_gradient(self, crd, dq=0.001):
+    def finite_difference_gradient(self, crd, dq=0.1):
         """compute the gradient of the energy  with respect to a crd
            displacement using finite difference method
         """
@@ -272,9 +271,11 @@ class Interpolator(InterpolatorFactory):
             crd[i] += dq
             # compute gradient
             grad[:,i] = (en1 - en2)/(2.0*dq)
+            print('energies', en1, en2, grad[:,i])
         # return gradient
         crd.resize(shape)
         grad.resize((self.nstates, *shape))
+        print(grad)
         return grad
 
 class RegInterpolator(Interpolator):
@@ -310,8 +311,6 @@ class RegInterpolator(Interpolator):
 
 
     def get_interpolators(self, db, properties):
-        print('johannes, properties', properties)
-        print('johannes len db', len(db))
         return {prop_name: Regression(self.crds, db[prop_name], self.order)
                 for prop_name in properties}, len(db['crd'])
 

@@ -77,7 +77,7 @@ class PySurfDB(Database):
         nacs      = double :: (frame, nstates, nstates, nmodes)
     """)['variables']
 
-    propertis = ['energy', 'gradient', 'fosc', 
+    properties = ['energy', 'gradient', 'fosc', 
                  'ekin', 'epot', 'etot', 'nacs',
                  'veloc', 'accel', 'currstate'] 
 
@@ -104,7 +104,7 @@ class PySurfDB(Database):
 
     @cached_property
     def saved_properties(self):
-        return [prop for prop in self.propertis
+        return [prop for prop in self.properties
                 if prop in self]
     
     @cached_property

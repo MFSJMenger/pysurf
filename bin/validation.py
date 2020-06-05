@@ -58,7 +58,8 @@ class Training(Colt):
         config = self._get_spp_config(sppinp)
         #
         natoms, self.nstates, properties = self._get_db_info(config['use_db']['database'])
-        self.spp = SurfacePointProvider(None, properties, self.nstates, natoms, None,
+        atomids = [1 for _ in range(natoms)]
+        self.spp = SurfacePointProvider(None, properties, self.nstates, natoms, atomids,
                                         logger=self.logger, config=config)
         #
         self.interpolator = self.spp.interpolator
@@ -96,7 +97,10 @@ class Training(Colt):
             result = self.spp.request(crd, properties)
             #
             for prop in properties:
-                norm[prop].append(np.copy(result[prop] - db[prop][i]))
+                if prop == 'gradient':
+                    norm[prop].append(np.copy(result[prop].data - db[prop][i]))
+                else:
+                    norm[prop].append(np.copy(result[prop] - db[prop][i]))
 
         for name, value in norm.items():
             errors = self.compute_errors(name, value, ndata)
@@ -105,9 +109,9 @@ class Training(Colt):
     def compute_errors(self, name, prop, nele):
         prop = np.array(prop)
         #
-        mse = np.sum(prop)/nele
-        mae = np.sum(np.absolute(prop))/nele
-        rmsd = np.sqrt(np.sum(prop**2)/nele)
+        mse = np.mean(prop)
+        mae = np.mean(np.absolute(prop))
+        rmsd = np.sqrt(np.mean(np.square(prop)))
         #
         maxval = np.amax(prop)
         minval = np.amin(prop)
@@ -124,7 +128,7 @@ class Training(Colt):
             error = self._compute(db, properties)
             return error['rmsd']
         res = minimize(_function, self.interpolator.epsilon, options={
-                       'xatol': 1e-8, 'disp': True})
+                       'xatol': 1e-5, 'disp': True})
         print(res)
         self.interpolator.epsilon = res.x[0]
         self.interpolator.train(self.savefile)
