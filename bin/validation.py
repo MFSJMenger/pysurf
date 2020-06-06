@@ -40,7 +40,7 @@ class Validation(Colt):
         else:
             self.inter.optimize(config['db'], config['properties'])
         #
-        if config['save_pes'] == '__NONE__':
+        if config['save_pes'] != '__NONE__':
             self.inter.save_pes(config['save_pes'], config['db'])
 
 
@@ -62,7 +62,8 @@ class Training(Colt):
         config = self._get_spp_config(sppinp)
         #
         natoms, self.nstates, properties = self._get_db_info(config['use_db']['database'])
-        self.spp = SurfacePointProvider(None, properties, self.nstates, natoms, None,
+        atomids = [1 for _ in range(natoms)]
+        self.spp = SurfacePointProvider(None, properties, self.nstates, natoms, atomids,
                                         logger=self.logger, config=config)
         #
         self.interpolator = self.spp.interpolator
@@ -74,8 +75,9 @@ class Training(Colt):
         questions = SurfacePointProvider.generate_questions(presets="""
                 use_db=yes :: yes
                 [use_db(yes)]
-                fit_only = yes :: yes
                 write_only = no :: no
+                [use_db(yes)::interpolator]
+                fit_only = yes :: yes
                 """)
         return questions.ask(config=filename, raise_read_error=False)
 
@@ -111,7 +113,10 @@ class Training(Colt):
             result = self.spp.request(crd, properties)
             #
             for prop in properties:
-                norm[prop].append([np.copy(result[prop]), np.copy(db[prop][i])])
+                if prop != 'gradient':
+                    norm[prop].append([np.copy(result[prop]), np.copy(db[prop][i])])
+                else:
+                    norm[prop].append([np.copy(result[prop].data), np.copy(db[prop][i])])
 
         for name, value in norm.items():
             errors = self.compute_errors(name, value, ndata)
@@ -120,10 +125,11 @@ class Training(Colt):
 
     def compute_errors(self, name, prop, nele):
         prop = np.array([val[0] - val[1] for val in prop])
+
         #
-        mse = np.sum(prop)/nele
-        mae = np.sum(np.absolute(prop))/nele
-        rmsd = np.sqrt(np.sum(prop**2)/nele)
+        mse = np.mean(prop)
+        mae = np.mean(np.absolute(prop))
+        rmsd = np.sqrt(np.mean(prop**2))
         #
         maxval = np.amax(prop)
         minval = np.amin(prop)
@@ -135,12 +141,15 @@ class Training(Colt):
         db = PySurfDB.load_database(filename, read_only=True)
 
         def _function(epsilon):
+            print('opt cycle', epsilon)
             self.interpolator.epsilon = epsilon
             self.interpolator.train()
             _, error = self._compute(db, properties)
+            print(error)
             return error['rmsd']
-        res = minimize(_function, self.interpolator.epsilon, options={
-                       'xatol': 1e-8, 'disp': True})
+
+        res = minimize(_function, self.interpolator.epsilon, method='nelder-mead', tol=1e-4, options={
+            'maxiter': 25, 'disp': True, 'xatol': 0.0001})
         print(res)
         self.interpolator.epsilon = res.x[0]
         self.interpolator.train(self.savefile)

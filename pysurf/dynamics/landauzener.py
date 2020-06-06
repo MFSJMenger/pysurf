@@ -75,6 +75,8 @@ class LandauZener(PropagatorBase):
             diff = self.etot - self.etot_old
             self.output_step(istep, time, self.iactive, self.ekin, self.epot, self.etot, diff) 
             self.db.add_step(time, self.data, self.v, self.iactive, self.ekin, self.epot, self.etot)
+            if np.abs(diff) > 0.01:
+                self.logger.error('Energy difference too large! Simulation stopped')
 
     def call_spp(self, crd=None, gradstate=None, same_crd=False):
         if crd is None:
@@ -149,7 +151,7 @@ class LandauZener(PropagatorBase):
             self.crd = self.db.get('crd', -1)
             self.iactive = int(self.db.get('currstate', -1))
             self.v = self.db.get('veloc', -1)
-            grad = self.db.get('gradient', -1)
+            grad = self.db.get('gradient', -1)[0]
             self.a = get_acceleration(grad, self.masses)
             self.e_curr = self.db.get('energy',-1)
             self.e_prev_step = self.db.get('energy', -2)

@@ -84,12 +84,14 @@ class AnalysePopulation(Colt):
         self.subfolder = config['subfolder']
         subfolderhandle = SubfolderHandle(self.folder, self.subfolder)
         propfiles = subfolderhandle.fileiter('prop.db')
+        first = True
         for idx, propfile in enumerate(propfiles):
             db = DynDB.load_database(propfile, read_only=True)
             dbtime = np.array(db['time']).flatten()
             if len(dbtime) == 0:
                 continue
-            if idx == 0:
+            if first is True:
+                first = False
                 nsteps = len(db)
                 nstates = db.info['dimensions']['nstates']
                 data = np.zeros(shape=(nsteps, nstates + 1), dtype=float)

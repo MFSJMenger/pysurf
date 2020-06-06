@@ -53,7 +53,6 @@ class Plot(Colt):
                 Colt information according to the class questions
         """
         self.config = config
-        print('Johannes plot.py matplotilibstyle', config['matplotlib style'])
         if config['matplotlib style'] is None:
             #Hard coded matplotlib stylesheet
             style = os.path.dirname(os.path.abspath(__file__))

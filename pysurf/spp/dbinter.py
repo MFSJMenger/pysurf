@@ -41,21 +41,13 @@ class DataBaseInterpolation(Colt):
         properties = :: list, optional
         # only write
         write_only = True :: bool
-        # only fit to the existing data
-        fit_only = False :: bool
-        # select interpolator
-        interpolator = RbfInterpolator :: str
-        # if true: compute gradient numerically
-        energy_only = False :: bool
         # name of the database
         database = db.dat :: file
     """
 
     @classmethod
     def _generate_subquestions(cls, questions):
-        questions.generate_cases("interpolator",
-                                 {name: interpolator.questions
-                                  for name, interpolator in InterpolatorFactory.interpolator.items()})
+        questions.generate_block("interpolator", Interpolator.questions)
 
     def __init__(self, interface, config, natoms, nstates, properties, model=False, logger=None):
         """ """
@@ -66,10 +58,7 @@ class DataBaseInterpolation(Colt):
             self.logger = logger
         #
         self.write_only = config['write_only']
-        self.fit_only = config['fit_only']
-        #
-        if self.write_only is True and self.fit_only is True:
-            raise Exception("Can only write or fit")
+
         #
         self._interface = interface
         #
@@ -85,12 +74,16 @@ class DataBaseInterpolation(Colt):
         properties = [prop for prop in properties if prop != 'crd']
         self.properties = properties
         if len(self._db) > 0:
-            self.interpolator = InterpolatorFactory.plugin_from_config(config['interpolator'], self._db,
+            self.interpolator = Interpolator.setup_from_config(config['interpolator'], self._db,
                                                     properties,
-                                                    logger=self.logger,
-                                                    energy_only=config['energy_only'])
+                                                    logger=self.logger)
+            self.fit_only = self.interpolator.fit_only
+            #
+            if self.write_only is True and self.fit_only is True:
+                raise Exception("Can only write or fit")
         else:
             self.write_only = True
+            self.fit_only = False
 
 
     def get_qm(self, request):
@@ -160,12 +153,42 @@ class InterpolatorFactory(PluginBase):
     _plugins_storage = 'interpolator'
 
 
-
 class Interpolator(InterpolatorFactory):
+
+    _questions="""
+    weights_file = weights_interpolator.nc
+    # only fit to the existing data
+    fit_only = False :: bool
+    # select interpolator
+    interpolator = RbfInterpolator :: str
+    # if true: compute gradient numerically
+    energy_only = False :: bool
+    crdmode = internal :: str :: [internal, cartesian]
+    """
 
     _register_plugin = False
 
-    def __init__(self, db, properties, logger, energy_only=False, savefile='', inverse=False):
+    @classmethod
+    def _generate_subquestions(cls, questions):
+        questions.generate_cases("interpolator",
+                                 {name: interpolator.questions
+                                  for name, interpolator in cls.plugins.items()})
+    
+    @classmethod
+    def setup_from_config(cls, config, db, properties, logger):
+        return InterpolatorFactory.plugin_from_config(config['interpolator'], db,
+                                                    properties,
+                                                    logger=logger,
+                                                    energy_only=config['energy_only'],
+                                                    weightsfile=config['weights_file'],
+                                                    crdmode=config['crdmode'],
+                                                    fit_only=config['fit_only'])
+    
+    @classmethod
+    def from_config(cls, config, db, properties, logger, energy_only, weightsfile, crdmode, fit_only):
+        return cls(db, properties, logger, energy_only, weightsfile, crdmode, fit_only)
+
+    def __init__(self, db, properties, logger, energy_only=False, weightsfile=None, crdmode=False, fit_only=False):
         """important for ShepardInterpolator to set db first!"""
         #
         self.crds = None
@@ -173,37 +196,36 @@ class Interpolator(InterpolatorFactory):
         self.db = db
         self.nstates = self.db.get_dimension_size('nstates')
         self.energy_only = energy_only
+        self.fit_only = fit_only
 
-        if inverse is True:
+        if crdmode == 'internal':
             self.crds = inverse_coordinates(np.copy(self.db['crd']))
         else:                
             self.crds = np.copy(self.db['crd'])
         #
-        self.inverse = inverse
+        self.crdmode = crdmode
         #
         if energy_only is True:
             properties = [prop for prop in properties if prop != 'gradient']
         #
-        if exists_and_isfile(savefile):
-            self.interpolators, self.size = self.get_interpolators_from_file(savefile, properties)
+        if exists_and_isfile(weightsfile):
+            self.interpolators, self.size = self.get_interpolators_from_file(weightsfile, properties)
         else:
             self.interpolators, self.size = self.get_interpolators(db, properties)
         #
         if energy_only is True:
             self.interpolators['gradient'] = self.finite_difference_gradient
         # train the interpolator!
-        self.train()
+        self.train(weightsfile)
 
     def get_crd(self):
-        if self.inverse is True:
+        if self.crdmode == 'internal':
             crds = inverse_coordinates(np.copy(self.db['crd']))
         else:
             crds = np.copy(self.db['crd'])
         return crds
 
-    @classmethod
-    def from_config(cls, config, db, properties, logger, energy_only=False, savefile=''):
-        return cls(db, properties, logger, energy_only=energy_only, savefile=savefile)
+
 
     @abstractmethod
     def get(self, request):
@@ -233,6 +255,8 @@ class Interpolator(InterpolatorFactory):
         """load weights from file"""
 
     def train(self, filename=None, always=False):
+        if filename == '':
+            filename = None
         # train normally
         if filename is None:
             return self._train()
@@ -242,20 +266,22 @@ class Interpolator(InterpolatorFactory):
         else:
             self._train()
         # save weights
-#        self.save(filename)
+        if filename is not None:
+            self.save(filename)
+
 
     def update_weights(self):
         """update weights of the interpolator"""
         self.train()
 
-    def finite_difference_gradient(self, crd, dq=0.1):
+    def finite_difference_gradient(self, crd, request, dq=0.01):
         """compute the gradient of the energy  with respect to a crd
            displacement using finite difference method
         """
+        crd = request.crd
         grad = np.zeros((self.nstates, crd.size), dtype=float)
         #
         shape = crd.shape
-        #
         crd.resize(crd.size)
         #
         energy = self.interpolators['energy']
@@ -263,20 +289,29 @@ class Interpolator(InterpolatorFactory):
         for i in range(crd.size):
             # first add dq
             crd[i] += dq
-            en1 = energy(crd)
+            if self.crdmode == 'internal':
+                crd_here = inverse(crd.reshape(shape))
+            else:
+                crd_here = crd
+            en1 = energy(crd_here, request)
             # first subtract 2*dq
             crd[i] -= 2*dq
-            en2 = energy(crd)
+            if self.crdmode == 'internal':
+                crd_here = inverse(crd.reshape(shape))
+            else:
+                crd_here = crd
+            en2 = energy(crd_here, request)
             # add dq to set crd to origional
             crd[i] += dq
             # compute gradient
             grad[:,i] = (en1 - en2)/(2.0*dq)
-            print('energies', en1, en2, grad[:,i])
         # return gradient
         crd.resize(shape)
         grad.resize((self.nstates, *shape))
-        print(grad)
         return grad
+
+
+
 
 class RegInterpolator(Interpolator):
     """Basic Rbf interpolator"""
@@ -289,25 +324,24 @@ class RegInterpolator(Interpolator):
     """
 
     @classmethod
-    def from_config(cls, config, db, properties, logger, energy_only=False, savefile='', inverse=False):
+    def from_config(cls, config, db, properties, logger, energy_only, weightsfile, crdmode, fit_only):
         trust_radius_general = config['trust_radius_general']
         trust_radius_CI = config['trust_radius_ci']
         energy_threshold = config['energy_threshold']
         order = config['regression_order']
-
         #
-        return cls(db, properties, logger, energy_only=energy_only, savefile=savefile,
-                   inverse=inverse, trust_radius_general=trust_radius_general,
-                   trust_radius_CI=trust_radius_CI, energy_threshold=energy_threshold, order=order)
+        return cls(db, properties, logger, energy_only=energy_only, weightsfile=weightsfile,
+                   crdmode=crdmode, trust_radius_general=trust_radius_general,
+                   trust_radius_CI=trust_radius_CI, energy_threshold=energy_threshold, order=order, fit_only=fit_only)
 
-    def __init__(self, db, properties, logger, energy_only=False, savefile='', inverse=inverse,
-                 trust_radius_general=0.75, trust_radius_CI=0.25, energy_threshold=0.02, order=2):
+    def __init__(self, db, properties, logger, energy_only=False, weightsfile=None, crdmode='cartesian',
+                 trust_radius_general=0.75, trust_radius_CI=0.25, energy_threshold=0.02, order=2, fit_only=False):
 
         self.trust_radius_general = trust_radius_general
         self.trust_radius_CI = trust_radius_CI
         self.energy_threshold = energy_threshold
         self.order = order
-        super().__init__(db, properties, logger, energy_only, savefile, inverse=inverse)
+        super().__init__(db, properties, logger, energy_only, weightsfile, crdmode=crdmode, fit_only=fit_only)
 
 
     def get_interpolators(self, db, properties):
@@ -322,7 +356,7 @@ class RegInterpolator(Interpolator):
 
            Return request and if data is trustworthy or not
         """
-        if self.inverse is True:
+        if self.crdmode == 'internal':
             crd = inverse(request.crd)
         else:
             crd = request.crd
@@ -332,7 +366,7 @@ class RegInterpolator(Interpolator):
 
 
         for prop in request:
-            request.set(prop, self.interpolators[prop](crd))
+            request.set(prop, self.interpolators[prop](crd, request))
         #
         diffmin = np.min(np.diff(request['energy']))
         #compare energy differences with threshold from user
@@ -349,11 +383,9 @@ class RegInterpolator(Interpolator):
         pass
 
     def _train(self):
-        print('self.inverse', self.inverse)
         self.crds = self.get_crd()
         #
         for name, interpolator in self.interpolators.items():
-            print('johannes name', name)
             if isinstance(interpolator, Regression):
                 interpolator.train()
     
@@ -393,7 +425,7 @@ class Regression:
         self.regr = LinearRegression()
         self.regr.fit(self.crds_poly, self.values)
 
-    def __call__(self, crd):
+    def __call__(self, crd, request):
         crd = np.copy(crd)
         crd = self.poly.fit_transform(crd.reshape((1,crd.size)))
         res = self.regr.predict(crd)
@@ -408,21 +440,20 @@ class RbfInterpolator(Interpolator):
         trust_radius_general = 0.75 :: float
         trust_radius_ci = 0.25 :: float
         energy_threshold = 0.02 :: float
-        inverse_distance = false :: bool
     """
 
     @classmethod
-    def from_config(cls, config, db, properties, logger, energy_only=False, savefile='', inverse=False):
+    def from_config(cls, config, db, properties, logger, energy_only, weightsfile, crdmode, fit_only):
         trust_radius_general = config['trust_radius_general']
         trust_radius_CI = config['trust_radius_ci']
         energy_threshold = config['energy_threshold']
-
+        
         #
-        return cls(db, properties, logger, energy_only=energy_only, savefile=savefile,
-                   inverse=inverse, trust_radius_general=trust_radius_general,
-                   trust_radius_CI=trust_radius_CI, energy_threshold=energy_threshold)
+        return cls(db, properties, logger, energy_only=energy_only, weightsfile=weightsfile,
+                   crdmode=crdmode, trust_radius_general=trust_radius_general,
+                   trust_radius_CI=trust_radius_CI, energy_threshold=energy_threshold, fit_only=fit_only)
 
-    def __init__(self, db, properties, logger, energy_only=False, savefile='', inverse=inverse,
+    def __init__(self, db, properties, logger, energy_only=False, weightsfile=None, crdmode='cartesian', fit_only=False,
                  trust_radius_general=0.75, trust_radius_CI=0.25, energy_threshold=0.02):
 
         self.trust_radius_general = trust_radius_general
@@ -430,14 +461,14 @@ class RbfInterpolator(Interpolator):
         self.energy_threshold = energy_threshold
         self.trust_radius = (self.trust_radius_general + self.trust_radius_CI)/2.
         self.epsilon = trust_radius_CI
-        super().__init__(db, properties, logger, energy_only, savefile, inverse=inverse)
+        super().__init__(db, properties, logger, energy_only, weightsfile, crdmode=crdmode, fit_only=fit_only)
 
 
     def get_interpolators(self, db, properties):
         """ """
         A = self._compute_a(self.crds)
         lu_piv = lu_factor(A)
-        return {prop_name: Rbf.from_lu_factors(lu_piv, db[prop_name], self.epsilon, self.crds)
+        return {prop_name: Rbf.from_lu_factors(lu_piv, db[prop_name], self)
                 for prop_name in properties}, len(db)
 
     def get_interpolators_from_file(self, filename, properties):
@@ -451,7 +482,7 @@ class RbfInterpolator(Interpolator):
             if prop_name == 'rbf_epsilon':
                 self.epsilon = np.copy(db['rbf_epsilon'])[0]
                 continue
-            out[prop_name] = Rbf(np.copy(db[prop_name]), tuple(np.copy(db[prop_name+'_shape'])))
+            out[prop_name] = Rbf(np.copy(db[prop_name]), tuple(np.copy(db[prop_name+'_shape'])), self)
         if not all(prop in out for prop in properties):
             raise Exception("Cannot fit all properties")
         return out, size
@@ -461,7 +492,7 @@ class RbfInterpolator(Interpolator):
 
            Return request and if data is trustworthy or not
         """
-        if self.inverse is True:
+        if self.crdmode == 'internal':
             crd = inverse(request.crd)
         else:
             crd = request.crd
@@ -471,7 +502,7 @@ class RbfInterpolator(Interpolator):
 
 
         for prop in request:
-            request.set(prop, self.interpolators[prop](crd))
+            request.set(prop, self.interpolators[prop](crd, request))
         #
         diffmin = np.min(np.diff(request['energy']))
         #compare energy differences with threshold from user
@@ -487,6 +518,8 @@ class RbfInterpolator(Interpolator):
         """Load existing weights"""
         db = Database.load_db(filename)
         for prop, rbf in self.interpolators.items():
+            if prop == 'gradient' and self.energy_only is True:
+                continue
             if prop not in db:
                 raise Exception("property needs to be implemented")
             rbf.nodes = np.copy(db[prop])
@@ -499,6 +532,8 @@ class RbfInterpolator(Interpolator):
         variables = settings['variables']
 
         for prop, rbf in self.interpolators.items():
+            if not isinstance(rbf, Rbf):
+                continue
             lshape = len(rbf.shape)
             dimensions[str(lshape)] = lshape
             for num in rbf.nodes.shape:
@@ -508,10 +543,11 @@ class RbfInterpolator(Interpolator):
         dimensions['1'] = 1
         variables['rbf_epsilon'] = DBVariable(np.double, ('1',))
         #
-        print("settings = ", settings)
         db = Database(filename, settings)
         #
         for prop, rbf in self.interpolators.items():
+            if not isinstance(rbf, Rbf):
+                continue
             db[prop] = rbf.nodes
             db[prop+'_shape'] = rbf.shape
         #
@@ -561,16 +597,8 @@ def dim_norm(crd1, crd2):
 
 class ShepardInterpolator(Interpolator):
 
-    _questions = """
-    inverse_distance = false :: bool
-    """
-
-    @classmethod
-    def from_config(cls, config, db, properties, logger, energy_only=False, savefile=''):
-        return cls(db, properties, logger, energy_only=energy_only, savefile=savefile, inverse=config['inverse_distance'])
-
-    def __init__(self, db, properties, logger, energy_only=False, savefile='', inverse=False):
-        super().__init__(db, properties, logger, energy_only, savefile, inverse=inverse)
+    def __init__(self, db, properties, logger, energy_only=False, weightsfile=None, crdmode='cartesian', fit_only=False):
+        super().__init__(db, properties, logger, energy_only, weightsfile, crdmode=crdmode, fit_only=fit_only)
         self.crds = self.get_crd()
 
     def get(self, request):
@@ -649,21 +677,21 @@ class ShepardInterpolator(Interpolator):
 
 class Rbf:
 
-    def __init__(self, nodes, shape, epsilon, crds):
+    def __init__(self, nodes, shape, parent):
         self.nodes = nodes
         self.shape = shape
-        self.epsilon = epsilon
-        self.crds = crds
+        self.epsilon = parent.epsilon
+        self.crds = parent.crds
 
     def update(self, lu_piv, prop):
         self.nodes, self.shape = self._setup(lu_piv, prop)
 
     @classmethod
-    def from_lu_factors(cls, lu_piv, prop, epsilon, crds):
+    def from_lu_factors(cls, lu_piv, prop, parent):
         nodes, shape = cls._setup(lu_piv, prop)
-        return cls(nodes, shape, epsilon, crds)
+        return cls(nodes, shape, parent)
 
-    def __call__(self, crd):
+    def __call__(self, crd, request):
         shape = self.crds.shape
         if len(shape) == 3:
             dist = cdist([np.array(crd).flatten()], self.crds.reshape((shape[0], shape[1]*shape[2])))
