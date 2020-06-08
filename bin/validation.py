@@ -48,14 +48,13 @@ class Training(Colt):
 
     _questions = """
         spp = spp.inp :: existing_file
-        savefile = :: str
     """
 
     @classmethod
     def from_config(cls, config):
-        return cls(config['spp'], config['savefile'])
+        return cls(config['spp'])
 
-    def __init__(self, sppinp, savefile=None):
+    def __init__(self, sppinp):
         #
         self.logger = get_logger('validate.log', 'validation', [])
         #
@@ -68,8 +67,8 @@ class Training(Colt):
         #
         self.interpolator = self.spp.interpolator
         #
-        self.savefile = savefile
-        self.interpolator.train(savefile)
+        self.weightsfile = self.spp.interpolator.weightsfile
+        self.interpolator.train(self.weightsfile)
 
     def _get_spp_config(self, filename):
         questions = SurfacePointProvider.generate_questions(presets="""
@@ -130,19 +129,20 @@ class Training(Colt):
         mse = np.mean(prop)
         mae = np.mean(np.absolute(prop))
         rmsd = np.sqrt(np.mean(prop**2))
+        rmsd2 = np.sqrt(np.mean(prop**2, axis=0))
         #
         maxval = np.amax(prop)
         minval = np.amin(prop)
         self.logger.info(f"{name}:\n mse = {mse}\n mae = {mae}\n"
-                         f" rmsd = {rmsd}\n maxval = {maxval}\n minval={minval}\n")
-        return {'mse': mse, 'mae': mae, 'rmsd': rmsd, 'max_error': maxval}
+                         f" rmsd = {rmsd}\n rmsd2 = {rmsd2}\n maxval = {maxval}\n minval={minval}\n")
+        return {'mse': mse, 'mae': mae, 'rmsd': rmsd, 'rmsd2': rmsd2, 'max_error': maxval}
 
     def optimize(self, filename, properties):
         db = PySurfDB.load_database(filename, read_only=True)
 
         def _function(epsilon):
             print('opt cycle', epsilon)
-            self.interpolator.epsilon = epsilon
+            self.interpolator.epsilon = epsilon[0]
             self.interpolator.train()
             _, error = self._compute(db, properties)
             print(error)
@@ -152,7 +152,7 @@ class Training(Colt):
             'maxiter': 25, 'disp': True, 'xatol': 0.0001})
         print(res)
         self.interpolator.epsilon = res.x[0]
-        self.interpolator.train(self.savefile)
+        self.interpolator.train(self.weightsfile)
 
 
 def eucl_norm(x, y):

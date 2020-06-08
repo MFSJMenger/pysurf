@@ -47,7 +47,7 @@ def get_coordinates(infile, outfile):
     
     db = Database.load_db(infile)
     try:
-        mass = db['mass']
+        mass = db['masses']
         if len(mass.shape) == 1:
             model = False
         else:

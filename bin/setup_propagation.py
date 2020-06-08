@@ -16,7 +16,7 @@ class SetupPropagation(SetupBase):
 
     _questions = """
     # Number of trajectories for the propagation
-    n_traj = 100 :: int
+    n_traj = -1 :: int
 
     # Database containing all the initial conditions
     sampling_db = sampling.db :: existing_file
@@ -57,10 +57,14 @@ class SetupPropagation(SetupBase):
         RunTrajectory.generate_input(config['prop'], config=lconfig)
 
         #
-        if sampling.nconditions < config['n_traj']:
+        if config['n_traj'] == -1:
+            ntraj = len(sampling._db)
+        else:
+            ntraj = config['n_traj']
+        if sampling.nconditions < ntraj:
             logger.error(f"Too few initial conditions in {config['sampling_db']}")
 
-        self.setup_folders(range(config['n_traj']), config, sampling)
+        self.setup_folders(range(ntraj), config, sampling)
 
 
     @classmethod

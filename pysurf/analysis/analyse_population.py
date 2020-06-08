@@ -23,6 +23,7 @@ class AnalysePopulation(Colt):
     plot_population = yes :: str :: [yes, no]
     folder = ./ :: str
     subfolder = traj :: str
+    nsteps = :: int, optional
     """
 
     _save_data = {
@@ -92,12 +93,24 @@ class AnalysePopulation(Colt):
                 continue
             if first is True:
                 first = False
-                nsteps = len(db)
+                if config['nsteps'] is not None:
+                    nsteps = config['nsteps']
+                else:
+                    nsteps = len(db)
                 nstates = db.info['dimensions']['nstates']
                 data = np.zeros(shape=(nsteps, nstates + 1), dtype=float)
-                data[:, 0] = dbtime
+                data[:min(len(db), nsteps), 0] = dbtime
                 counter = np.zeros(nsteps, dtype=int)
-            if np.max(np.abs(data[:len(dbtime),0] - dbtime[:min(nsteps, len(dbtime))])) < 0.1:
+                if nsteps > len(db):
+                    times_missing = True
+                    time_steps = len(db)
+                else:
+                    times_missing = False
+                    time_steps = len(db)
+            if np.max(np.abs(data[:min(time_steps, len(dbtime)),0] - dbtime[:min(time_steps, len(dbtime))])) < 0.1:
+                if len(dbtime) > time_steps:
+                    data[time_steps:len(dbtime), 0] = dbtime[time_steps:min(nsteps, len(dbtime))]
+                    time_steps = len(dbtime)
                 currstate = np.array(db['currstate']).flatten()
                 for idx in range(min(len(dbtime), nsteps)):
                     data[idx, int(currstate[idx]+1)] += 1

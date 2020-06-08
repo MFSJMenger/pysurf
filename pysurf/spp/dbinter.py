@@ -19,13 +19,13 @@ from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 
 
-def inverse(crd):
+def internal(crd):
     return pdist(crd)
-    return np.array([1.0/ele for ele in pdist(crd)])
+#    return np.array([1.0/ele for ele in pdist(crd)])
 
 
-def inverse_coordinates(crds):
-    return np.array([inverse(crd) for crd in crds])
+def internal_coordinates(crds):
+    return np.array([internal(crd) for crd in crds])
 
 
 
@@ -68,12 +68,12 @@ class DataBaseInterpolation(Colt):
         if config['properties'] is not None:
             properties += config['properties']
         properties += ['crd']
-        # setupt database
+        # setup database
         self._db = self._create_db(properties, natoms, nstates, model=model, filename=config['database'])
         self._parameters = get_fitting_size(self._db)
         properties = [prop for prop in properties if prop != 'crd']
         self.properties = properties
-        if len(self._db) > 0:
+        if config['write_only'] is False:
             self.interpolator = Interpolator.setup_from_config(config['interpolator'], self._db,
                                                     properties,
                                                     logger=self.logger)
@@ -156,7 +156,7 @@ class InterpolatorFactory(PluginBase):
 class Interpolator(InterpolatorFactory):
 
     _questions="""
-    weights_file = weights_interpolator.nc
+    weights_file = :: file, optional
     # only fit to the existing data
     fit_only = False :: bool
     # select interpolator
@@ -197,19 +197,18 @@ class Interpolator(InterpolatorFactory):
         self.nstates = self.db.get_dimension_size('nstates')
         self.energy_only = energy_only
         self.fit_only = fit_only
+        self.weightsfile = weightsfile
 
-        if crdmode == 'internal':
-            self.crds = inverse_coordinates(np.copy(self.db['crd']))
-        else:                
-            self.crds = np.copy(self.db['crd'])
         #
         self.crdmode = crdmode
+        self.crds = self.get_crd()
         #
         if energy_only is True:
             properties = [prop for prop in properties if prop != 'gradient']
         #
         if exists_and_isfile(weightsfile):
-            self.interpolators, self.size = self.get_interpolators_from_file(weightsfile, properties)
+            print('weightsfile', weightsfile)
+            self.interpolators = self.get_interpolators_from_file(weightsfile, properties)
         else:
             self.interpolators, self.size = self.get_interpolators(db, properties)
         #
@@ -220,7 +219,7 @@ class Interpolator(InterpolatorFactory):
 
     def get_crd(self):
         if self.crdmode == 'internal':
-            crds = inverse_coordinates(np.copy(self.db['crd']))
+            crds = internal_coordinates(np.copy(self.db['crd']))
         else:
             crds = np.copy(self.db['crd'])
         return crds
@@ -258,11 +257,9 @@ class Interpolator(InterpolatorFactory):
         if filename == '':
             filename = None
         # train normally
-        if filename is None:
-            return self._train()
-        # 
         if exists_and_isfile(filename):
             self.loadweights(filename)
+            return
         else:
             self._train()
         # save weights
@@ -290,14 +287,14 @@ class Interpolator(InterpolatorFactory):
             # first add dq
             crd[i] += dq
             if self.crdmode == 'internal':
-                crd_here = inverse(crd.reshape(shape))
+                crd_here = internal(crd.reshape(shape))
             else:
                 crd_here = crd
             en1 = energy(crd_here, request)
             # first subtract 2*dq
             crd[i] -= 2*dq
             if self.crdmode == 'internal':
-                crd_here = inverse(crd.reshape(shape))
+                crd_here = internal(crd.reshape(shape))
             else:
                 crd_here = crd
             en2 = energy(crd_here, request)
@@ -310,6 +307,26 @@ class Interpolator(InterpolatorFactory):
         grad.resize((self.nstates, *shape))
         return grad
 
+
+def within_trust_radius(crd, crds, radius, metric='euclidean', radius_ci=None):
+    is_trustworthy_general = False
+    is_trustworthy_CI = False
+    shape = crds.shape
+    crd_shape = crd.shape
+    crd.resize((1, crd.size))
+    if len(shape) == 3:
+        crds.resize((shape[0], shape[1]*shape[2]))
+    dist = cdist(crd, crds, metric=metric)
+    crds.resize(shape)
+    crd.resize(crd_shape)
+    if np.min(dist) < radius:
+        is_trustworthy_general = True
+    if radius_ci is not None:
+        if np.min(dist) < radius_ci:
+            is_trustworthy_CI = True
+        return dist[0], (is_trustworthy_general, is_trustworthy_CI)
+    else:
+        return dist[0], is_trustworthy_general
 
 
 
@@ -357,11 +374,11 @@ class RegInterpolator(Interpolator):
            Return request and if data is trustworthy or not
         """
         if self.crdmode == 'internal':
-            crd = inverse(request.crd)
+            crd = internal(request.crd)
         else:
             crd = request.crd
         #
-        _, trustworthy = self.within_trust_radius(crd)
+        _, trustworthy = within_trust_radius(crd, self.crds, radius=self.trust_radius_general, radius_ci=self.trust_radius_CI)
 #       crd = crd[:self.size]
 
 
@@ -392,22 +409,6 @@ class RegInterpolator(Interpolator):
     def loadweights(self, filename):
         pass
 
-    def within_trust_radius(self, crd):
-        is_trustworthy_general = False
-        is_trustworthy_CI = False
-        shape = self.crds.shape
-        crd_shape = crd.shape
-        crd.resize((1, crd.size))
-        if len(shape) == 3:
-            self.crds.resize((shape[0], shape[1]*shape[2]))
-        dist = cdist(crd, self.crds, metric=dim_norm)
-        self.crds.resize(shape)
-        crd.resize(crd_shape)
-        if np.min(dist) < self.trust_radius_general:
-            is_trustworthy_general = True
-        if np.min(dist) < self.trust_radius_CI:
-            is_trustworthy_CI = True
-        return dist[0], (is_trustworthy_general, is_trustworthy_CI)
 
 class Regression:
     def __init__(self, crds, values, order):
@@ -440,6 +441,7 @@ class RbfInterpolator(Interpolator):
         trust_radius_general = 0.75 :: float
         trust_radius_ci = 0.25 :: float
         energy_threshold = 0.02 :: float
+        epsilon = :: float, optional
     """
 
     @classmethod
@@ -447,20 +449,23 @@ class RbfInterpolator(Interpolator):
         trust_radius_general = config['trust_radius_general']
         trust_radius_CI = config['trust_radius_ci']
         energy_threshold = config['energy_threshold']
-        
+        epsilon = config['epsilon']
         #
         return cls(db, properties, logger, energy_only=energy_only, weightsfile=weightsfile,
                    crdmode=crdmode, trust_radius_general=trust_radius_general,
-                   trust_radius_CI=trust_radius_CI, energy_threshold=energy_threshold, fit_only=fit_only)
+                   trust_radius_CI=trust_radius_CI, energy_threshold=energy_threshold, fit_only=fit_only, epsilon=epsilon)
 
     def __init__(self, db, properties, logger, energy_only=False, weightsfile=None, crdmode='cartesian', fit_only=False,
-                 trust_radius_general=0.75, trust_radius_CI=0.25, energy_threshold=0.02):
+            trust_radius_general=0.75, trust_radius_CI=0.25, energy_threshold=0.02, epsilon=None):
 
         self.trust_radius_general = trust_radius_general
         self.trust_radius_CI = trust_radius_CI
         self.energy_threshold = energy_threshold
         self.trust_radius = (self.trust_radius_general + self.trust_radius_CI)/2.
-        self.epsilon = trust_radius_CI
+        if epsilon is not None:
+            self.epsilon = epsilon
+        else:
+            self.epsilon = trust_radius_CI
         super().__init__(db, properties, logger, energy_only, weightsfile, crdmode=crdmode, fit_only=fit_only)
 
 
@@ -475,8 +480,6 @@ class RbfInterpolator(Interpolator):
         db = Database.load_db(filename)
         out = {}
         for prop_name in db.keys():
-            if prop_name == 'size':
-                size = db['size']
             if prop_name.endswith('_shape'):
                 continue
             if prop_name == 'rbf_epsilon':
@@ -485,7 +488,7 @@ class RbfInterpolator(Interpolator):
             out[prop_name] = Rbf(np.copy(db[prop_name]), tuple(np.copy(db[prop_name+'_shape'])), self)
         if not all(prop in out for prop in properties):
             raise Exception("Cannot fit all properties")
-        return out, size
+        return out
 
     def get(self, request):
         """fill request
@@ -493,13 +496,11 @@ class RbfInterpolator(Interpolator):
            Return request and if data is trustworthy or not
         """
         if self.crdmode == 'internal':
-            crd = inverse(request.crd)
+            crd = internal(request.crd)
         else:
             crd = request.crd
         #
-        _, trustworthy = self.within_trust_radius(crd)
-#       crd = crd[:self.size]
-
+        _, trustworthy = within_trust_radius(crd, self.crds, radius=self.trust_radius_general, radius_ci=self.trust_radius_CI)
 
         for prop in request:
             request.set(prop, self.interpolators[prop](crd, request))
@@ -555,7 +556,7 @@ class RbfInterpolator(Interpolator):
 
     def _train(self):
         """set rbf weights, based on the current crds"""
-        self.crds = self.get_crd()
+#       self.crds = self.get_crd()
         A = self._compute_a(self.crds)
         lu_piv = lu_factor(A)
         #
@@ -572,23 +573,6 @@ class RbfInterpolator(Interpolator):
             dist = pdist(x)
         A = squareform(dist)
         return weight(A, self.epsilon)
-
-    def within_trust_radius(self, crd):
-        is_trustworthy_general = False
-        is_trustworthy_CI = False
-        shape = self.crds.shape
-        crd_shape = crd.shape
-        crd.resize((1, crd.size))
-        if len(shape) == 3:
-            self.crds.resize((shape[0], shape[1]*shape[2]))
-        dist = cdist(crd, self.crds, metric=dim_norm)
-        self.crds.resize(shape)
-        crd.resize(crd_shape)
-        if np.min(dist) < self.trust_radius_general:
-            is_trustworthy_general = True
-        if np.min(dist) < self.trust_radius_CI:
-            is_trustworthy_CI = True
-        return dist[0], (is_trustworthy_general, is_trustworthy_CI)
 
 
 def dim_norm(crd1, crd2):
@@ -667,21 +651,13 @@ class ShepardInterpolator(Interpolator):
         weights[exact_agreement] = 1.0
         return weights, is_trustworthy
 
-    def within_trust_radius(self, crd, radius=0.2):
-        is_trustworthy = False
-        dist = cdist([crd], self.crds)
-        if np.min(dist) < radius:
-            is_trustworthy = True
-        return dist[0], is_trustworthy
-
 
 class Rbf:
 
     def __init__(self, nodes, shape, parent):
         self.nodes = nodes
         self.shape = shape
-        self.epsilon = parent.epsilon
-        self.crds = parent.crds
+        self.parent = parent
 
     def update(self, lu_piv, prop):
         self.nodes, self.shape = self._setup(lu_piv, prop)
@@ -692,12 +668,12 @@ class Rbf:
         return cls(nodes, shape, parent)
 
     def __call__(self, crd, request):
-        shape = self.crds.shape
+        shape = self.parent.crds.shape
         if len(shape) == 3:
-            dist = cdist([np.array(crd).flatten()], self.crds.reshape((shape[0], shape[1]*shape[2])))
+            dist = cdist([np.array(crd).flatten()], self.parent.crds.reshape((shape[0], shape[1]*shape[2])))
         else:
-            dist = cdist([np.array(crd).flatten()], self.crds)
-        crd = weight(dist, self.epsilon)
+            dist = cdist([np.array(crd).flatten()], self.parent.crds)
+        crd = weight(dist, self.parent.epsilon)
         if len(self.shape) == 1 and self.shape[0] == 1:
             return np.dot(crd, self.nodes).reshape(self.shape)[0]
         return np.dot(crd, self.nodes).reshape(self.shape)
