@@ -193,7 +193,7 @@ class Turbomole(AbinitioBase):
     implemented = ['energy', 'gradient', 'fosc']
 
     @classmethod
-    def _generate_subquestions(cls, questions):
+    def _extend_questions(cls, questions):
         questions.generate_cases("method", {name: method.questions for name, method in cls._method.items()})
         
     def __init__(self, config, atomids, nstates):

@@ -72,7 +72,7 @@ class AnalyseSpectrum(Colt):
             }
     
     @classmethod
-    def _generate_subquestions(cls, questions):
+    def _extend_questions(cls, questions):
         questions.generate_cases('save_data', {name: mode for name, mode in cls._save_data.items() })
         questions.generate_cases('broadening', {name: mode.questions for name, mode in cls._broadening.items()})
         questions.generate_cases('plot_spectrum', {name: mode for name, mode in cls._plot_spectrum.items()})

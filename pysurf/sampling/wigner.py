@@ -33,7 +33,7 @@ class Wigner(DynSamplerBase):
     }
 
     @classmethod
-    def _generate_subquestions(cls, questions):
+    def _extend_questions(cls, questions):
         questions.generate_cases("from", {name: val.questions for name, val in cls._from.items()})
         
     

@@ -17,7 +17,7 @@ class SamplerFactory(PluginBase):
     condition = CrdCondition
     
     @classmethod
-    def _generate_subquestions(cls, questions):
+    def _extend_questions(cls, questions):
         questions.generate_cases("method", {name: method.questions
                                  for name, method in cls._methods.items()})
 
@@ -25,7 +25,7 @@ class SamplerFactory(PluginBase):
 class CrdSamplerBase(SamplerFactory):
     """Basic sampler class"""
 
-    subquestions: "inherited"
+    extend_questions: "inherited"
     #
     _register_plugin = False
     _questions = "inherited"
@@ -39,7 +39,7 @@ class DynSamplerFactory(CrdSamplerBase):
     """Factory to store intial condition samplers"""
     # setup questions
     questions = 'inherited'
-    subquestions: 'inherited'
+    extend_questions: 'inherited'
     # setup plugin
     _plugins_storage = '_methods'
     _is_plugin_specialisation = True
@@ -49,7 +49,7 @@ class DynSamplerFactory(CrdSamplerBase):
     condition = DynCondition
 
     @classmethod
-    def _generate_subquestions(cls, questions):
+    def _extend_questions(cls, questions):
         """ This class will not be inherited """
         # Update _questions from Sampling by adding an additional question
         questions.add_questions_to_block("""

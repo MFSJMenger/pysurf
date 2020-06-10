@@ -25,7 +25,7 @@ class Validation(Colt):
     """
 
     @classmethod
-    def _generate_subquestions(cls, questions):
+    def _extend_questions(cls, questions):
         questions.generate_block("training", Training.questions)
 
     @classmethod

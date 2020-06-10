@@ -46,7 +46,7 @@ class DataBaseInterpolation(Colt):
     """
 
     @classmethod
-    def _generate_subquestions(cls, questions):
+    def _extend_questions(cls, questions):
         questions.generate_block("interpolator", Interpolator.questions)
 
     def __init__(self, interface, config, natoms, nstates, properties, model=False, logger=None):
@@ -169,7 +169,7 @@ class Interpolator(InterpolatorFactory):
     _register_plugin = False
 
     @classmethod
-    def _generate_subquestions(cls, questions):
+    def _extend_questions(cls, questions):
         questions.generate_cases("interpolator",
                                  {name: interpolator.questions
                                   for name, interpolator in cls.plugins.items()})

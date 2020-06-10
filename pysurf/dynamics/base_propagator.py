@@ -16,13 +16,13 @@ class PropagatorFactory(PluginBase):
     _is_plugin_factory = True
 
     @classmethod
-    def _generate_subquestions(cls, questions):
+    def _extend_questions(cls, questions):
         questions.generate_cases("method", {name: method.questions
                                             for name, method in cls._methods.items()})
 
 class PropagatorBase(PropagatorFactory):
     _questions = 'inherited'
-    subquestions: 'inherited'
+    extend_questions: 'inherited'
 
     _register_plugin = False
     #Properties have to be defined for each Propagator

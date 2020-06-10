@@ -34,7 +34,7 @@ class AbinitioFactory(PluginBase):
     reader = None
 
     @classmethod
-    def _generate_subquestions(cls, questions):
+    def _extend_questions(cls, questions):
         questions.add_branching("software", {name: software.questions for name, software in cls.software.items()})
 
     @classmethod
@@ -53,7 +53,7 @@ class ModelFactory(PluginBase):
     """
 
     @classmethod
-    def _generate_subquestions(cls, questions):
+    def _extend_questions(cls, questions):
         questions.generate_cases("model", {name: model.questions for name, model in cls._models.items()})
 
     @classmethod
@@ -84,7 +84,7 @@ class SurfacePointProvider(Colt):
             }
 
     @classmethod
-    def _generate_subquestions(cls, questions):
+    def _extend_questions(cls, questions):
         questions.generate_cases("mode", {name: mode.questions for name, mode in cls._modes.items()})
         questions.generate_cases("use_db", {name: mode.questions for name, mode in cls._database.items()})
 

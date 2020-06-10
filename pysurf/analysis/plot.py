@@ -36,7 +36,7 @@ class Plot(Colt):
             }
 
     @classmethod
-    def _generate_subquestions(cls, questions):
+    def _extend_questions(cls, questions):
         questions.generate_cases('save_plot', {name: mode for name, mode in cls._save_plot.items()})
 
     @classmethod

@@ -37,7 +37,7 @@ class AnalysePopulation(Colt):
             }
     
     @classmethod
-    def _generate_subquestions(cls, questions):
+    def _extend_questions(cls, questions):
         questions.generate_cases('save_data', {name: mode for name, mode in cls._save_data.items() })
         questions.generate_cases('plot_population', {name: mode for name, mode in cls._plot_population.items()})
 
@@ -88,6 +88,7 @@ class AnalysePopulation(Colt):
         first = True
         for idx, propfile in enumerate(propfiles):
             db = DynDB.load_database(propfile, read_only=True)
+            print(propfile)
             dbtime = np.array(db['time']).flatten()
             if len(dbtime) == 0:
                 continue
@@ -108,7 +109,7 @@ class AnalysePopulation(Colt):
                     times_missing = False
                     time_steps = len(db)
             if np.max(np.abs(data[:min(time_steps, len(dbtime)),0] - dbtime[:min(time_steps, len(dbtime))])) < 0.1:
-                if len(dbtime) > time_steps:
+                if len(dbtime) > time_steps and times_missing is True:
                     data[time_steps:len(dbtime), 0] = dbtime[time_steps:min(nsteps, len(dbtime))]
                     time_steps = len(dbtime)
                 currstate = np.array(db['currstate']).flatten()
@@ -122,16 +123,20 @@ class AnalysePopulation(Colt):
 
         converter = time_converter.get_converter('au', self.config['time_units'])
         data[:, 0] = converter(data[:, 0])
+        
+        if config['save_data'].value == 'yes':
+            np.savetxt(config['save_data']['data_file'], data)
 
-        myplt = Plot(plot_config)
-        myax = myplt.line_plot(data[:,[0,1]], ('time', self.config['time_units']), y_units_in=None, ax=None, show_plot=False, save_plot=False, line_props={'label': 'state 0'})
-        for state in range(1, nstates):
-            save = False
-            plot = False
-            if state == nstates-1:
-                save = True
-                plot = True
-            myax = myplt.line_plot(data[:,[0, state+1]], ('time', self.config['time_units']), y_units_in=None, ax=myax, show_plot=plot, save_plot=save, line_props={'label': f"state {state}"})
+        if config['plot_population'].value == 'yes':
+            myplt = Plot(plot_config)
+            myax = myplt.line_plot(data[:,[0,1]], ('time', self.config['time_units']), y_units_in=None, ax=None, show_plot=False, save_plot=False, line_props={'label': 'state 0'})
+            for state in range(1, nstates):
+                save = False
+                plot = False
+                if state == nstates-1:
+                    save = True
+                    plot = True
+                myax = myplt.line_plot(data[:,[0, state+1]], ('time', self.config['time_units']), y_units_in=None, ax=myax, show_plot=plot, save_plot=save, line_props={'label': f"state {state}"})
 
         
 

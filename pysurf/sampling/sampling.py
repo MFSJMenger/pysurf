@@ -27,7 +27,7 @@ class Sampling(Colt):
     """
 
     @classmethod
-    def _generate_subquestions(cls, questions):
+    def _extend_questions(cls, questions):
         questions.generate_cases("method", {name: method.questions
                                  for name, method in SamplerFactory._methods.items()})
 

@@ -17,7 +17,7 @@ class PESModel(Colt):
     _plot_input = "plot_pes_model.inp"
     
     @classmethod
-    def _generate_subquestions(cls, questions):
+    def _extend_questions(cls, questions):
         questions.generate_cases("model", {name: model.questions for name, model in ModelBase._models.items()})
 
     @classmethod

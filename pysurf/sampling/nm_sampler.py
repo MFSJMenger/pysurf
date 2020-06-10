@@ -47,7 +47,7 @@ class NMSampler(CrdSamplerBase):
     _sign = 1
 
     @classmethod
-    def _generate_subquestions(cls, questions):
+    def _extend_questions(cls, questions):
         questions.generate_cases("from", {name: method.questions
                                  for name, method in cls._from.items()})
         questions.generate_cases("select_nmodes", {name: value
