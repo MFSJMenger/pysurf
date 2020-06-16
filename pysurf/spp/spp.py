@@ -200,7 +200,7 @@ class SurfacePointProvider(Colt):
         # use databse
         if use_db == 'yes':
             self.logger.info("Setting up database...")
-            interface = DataBaseInterpolation(interface, use_db, natoms, nstates, 
+            interface = DataBaseInterpolation.from_config(use_db, interface, natoms, nstates, 
                                               properties, model=(mode_config=='model'))
             if use_db['properties'] is not None:
                 properties += use_db['properties']

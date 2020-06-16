@@ -49,6 +49,10 @@ class DataBaseInterpolation(Colt):
     def _extend_questions(cls, questions):
         questions.generate_block("interpolator", Interpolator.questions)
 
+    @classmethod
+    def from_config(cls, config, interface, natoms, nstates, properties, model=False, logger=None):
+        return cls(interface, config, natoms, nstates, properties, model=model, logger=logger)
+
     def __init__(self, interface, config, natoms, nstates, properties, model=False, logger=None):
         """ """
         self.config = config
