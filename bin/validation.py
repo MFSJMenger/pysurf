@@ -62,8 +62,8 @@ class Training(Colt):
         #
         natoms, self.nstates, properties = self._get_db_info(config['use_db']['database'])
         atomids = [1 for _ in range(natoms)]
-        self.spp = SurfacePointProvider(None, properties, self.nstates, natoms, atomids,
-                                        logger=self.logger, config=config)
+        self.spp = SurfacePointProvider.from_config(config, properties, self.nstates, natoms, 
+                                                    atomids=atomids, logger=self.logger)
         #
         self.interpolator = self.spp.interpolator
         #
@@ -78,7 +78,7 @@ class Training(Colt):
                 [use_db(yes)::interpolator]
                 fit_only = yes :: yes
                 """)
-        return questions.ask(config=filename, raise_read_error=False)
+        return questions.generate_input(config=filename, raise_read_error=False)
 
     def _get_db_info(self, database):
         db = PySurfDB.load_database(database, read_only=True)

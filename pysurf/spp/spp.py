@@ -3,6 +3,7 @@ import os
 import numpy as np
 # Database related
 from ..colt import Colt, PluginBase
+from ..colt.obj import NoFurtherQuestions
 # logger
 from ..logger import get_logger, Logger
 # Interpolation
@@ -14,11 +15,8 @@ from .request import RequestGenerator
 TODO:
     - What happens to user properties that are asked
       if no database is set?
+    - Models should check that enough states are computed!
 """
-
-
-class NoFurtherQuestions(Colt):
-    _questions = ""
 
 
 class AbinitioFactory(PluginBase):
@@ -35,11 +33,8 @@ class AbinitioFactory(PluginBase):
 
     @classmethod
     def _extend_questions(cls, questions):
-        questions.add_branching("software", {name: software.questions for name, software in cls.software.items()})
-
-    @classmethod
-    def instance_from_config(cls, config, atomids, nstates):
-        return cls.software[config['software'].value].from_config(config['software'].subquestion_answers, atomids, nstates)
+        questions.add_branching("software", {name: software.questions 
+                                             for name, software in cls.software.items()})
 
 
 class ModelFactory(PluginBase):
@@ -54,30 +49,25 @@ class ModelFactory(PluginBase):
 
     @classmethod
     def _extend_questions(cls, questions):
-        questions.generate_cases("model", {name: model.questions for name, model in cls._models.items()})
-
-    @classmethod
-    def instance_from_config(cls, config):
-        model = config['model'].value
-        return cls._models[model].from_config(config['model'])
+        questions.generate_cases("model", {name: model.questions 
+                                           for name, model in cls._models.items()})
 
 
 class SurfacePointProvider(Colt):
-    """ The Surface Point Provider is the main interface providing the
-        providing the information of a system at a specific point. It
-        takes care where to take the information from according to the
-        specified input file
+    """ The Surface Point Provider is the main interface providing
+        to perform calculations of a given system at a specific coordinate.
     """
-
+    # Main Questions for SPP
     _questions = """
         logging = debug :: str ::
         mode = ab-initio
         use_db = no
         """
+    # different modes
     _modes = {'ab-initio': AbinitioFactory,
               'model': ModelFactory,
     }
-
+    # use_db
     _database = {
             'yes': DataBaseInterpolation,
             'no': NoFurtherQuestions
@@ -85,48 +75,102 @@ class SurfacePointProvider(Colt):
 
     @classmethod
     def _extend_questions(cls, questions):
+        """ Extend the questions of the surface point provider using
+            the questions of the `Abinitio` and `Model` """
         questions.generate_cases("mode", {name: mode.questions for name, mode in cls._modes.items()})
         questions.generate_cases("use_db", {name: mode.questions for name, mode in cls._database.items()})
 
     @classmethod
-    def from_config(cls, config, properties, nstates, natoms, atomids=None, logger=None):
-        return cls(None, properties, nstates, natoms,
-                   atomids=atomids, logger=logger, config=config)
+    def from_config(cls, config, properties, nstates, natoms,
+                    nghost_states=0, atomids=None, logger=None):
+        """ Initialize the SurfacePointProvider from the information
+            read from configfile using `Colt`
 
-    def __init__(self, inputfile, properties, nstates, natoms,
-                 atomids=None, logger=None, config=None):
+            Parameters
+            ----------
+
+            config: ColtConfig
+                config object created through colt by reading a configfile/asking
+                commandline questions, etc.
+
+            properties: list/tuple of strings
+                all possible requested properties, used for sanity checks
+
+            natoms: int
+                Number of atoms in the system
+
+            nstates: int
+                Number of states requested
+
+            nghost_states: int
+                Number of ghost states requested
+
+            atomids: list/tuple, optional
+                Atomids of the molecule, needed in case an abinitio method is selected
+                ignored in case of the model
+
+            logger: Logger, optional
+                objected used for loggin, if None, a new one will be created
+
+            Returns
+            -------
+
+            SurfacePointProvider
+                SurfacePointProvider instance
+
+        """
+
+        return cls(config['mode'], config['use_db'],
+                   properties, nstates, natoms,
+                   nghost_states=nghost_states, atomids=atomids, logger=logger,
+                   logging_level=config['logging_level'])
+
+    def __init__(self, mode_config, use_db, properties, nstates, natoms,
+                 nghost_states=0, atomids=None, logger=None, logging_level='debug'):
         """ The inputfile for the SPP has to provide the necessary
             information, how to produce the data at a specific point
             in the coordinate space.
 
-            Args:
+            Parameters
+            ----------
 
-                inputfile, str:
-                    Name of the input file for the SPP
+                mode_config:
+                    `config` stating the interface etc. and corresponding info
 
-                properties, list/tuple
+                use_db:
+                    `config` stating if database should be setup or not
+
+                properties: list/tuple of strings
                     all possible requested properties, used for sanity checks
 
-                natoms, int:
+                natoms: int
                      Number of atoms in the system
 
-                nstates, int:
+                nstates: int
                     Number of states requested
 
-                logger, optional
-                    Logging module used
-        """
+                nghost_states: int
+                    Number of ghost states requested
 
-        if not isinstance(logger, Logger):
+                atomids: list/tuple, optional
+                    Atomids of the molecule, needed in case an abinitio method is selected
+                    ignored in case of the model
+
+                logging_level: str, optional
+                    Specifies the logging level of the `SurfacePointProvider`
+
+                logger: Logger, optional
+                    objected used for loggin, if None, a new one will be created
+        """
+        if logger is None:
             self.logger = get_logger('spp.log', 'SPP', [])
         else:
             self.logger = logger
-
-        # get config
-        if config is None:
-            config = self._parse_config(inputfile)
         #
-        self._request, self._interface = self._select_interface(config, properties, natoms, nstates, atomids)
+        self._request, self._interface = self._select_interface(mode_config, use_db, 
+                                                                properties, natoms, 
+                                                                nstates, nghost_states, 
+                                                                atomids)
 
     @property
     def interpolator(self):
@@ -135,28 +179,31 @@ class SurfacePointProvider(Colt):
             raise Exception("Interpolator not available")
         return interpolator
 
-    def _select_interface(self, config, properties, natoms, nstates, atomids):
+    def _select_interface(self, mode_config, use_db, properties, natoms, 
+                          nstates, nghost_states, atomids):
         """Select the correct interface based on the mode"""
-        if config['mode'] == 'model':
+        #
+        if mode_config == 'model':
             self.logger.info('Using model to generate the PES')
-            interface = ModelFactory.instance_from_config(config['mode'])
+            interface = ModelFactory.plugin_from_config(mode_config)
         # If an ab initio calculation is used and if a database is used
-        elif config['mode'] == 'ab-initio':
+        elif mode_config == 'ab-initio':
             self.logger.info('Ab initio calculations are used to generate the PES')
             # make sure that AB INITIO section is in the inputfile
             # add path to AB INITIO section
-            interface = AbinitioFactory.instance_from_config(config['mode'], atomids, nstates)
+            interface = AbinitioFactory.plugin_from_config(mode_config, atomids, nstates+nghost_states)
         else:
             # is atomatically caught through colt!
             self.logger.error("Mode has to be 'model' or 'ab-initio'")
         # check default
         self._check_properties(properties, interface)
         # use databse
-        if config['use_db'] == 'yes':
+        if use_db == 'yes':
             self.logger.info("Setting up database...")
-            interface = DataBaseInterpolation(interface, config['use_db'], natoms, nstates, properties, model=(config['mode']=='model'))
-            if config['use_db']['properties'] is not None:
-                properties += config['use_db']['properties']
+            interface = DataBaseInterpolation(interface, use_db, natoms, nstates, 
+                                              properties, model=(mode_config=='model'))
+            if use_db['properties'] is not None:
+                properties += use_db['properties']
             request = RequestGenerator(nstates, properties, use_db=True)
             self.logger.info("Database ready to use")
         else:
@@ -172,11 +219,6 @@ Needed: {properties}
 Implemented: {interface.implemented}
             """)
         self.logger.info(f"Interface {interface} provides all necessary properties")
-
-    def _parse_config(self, inputfile):
-        """Parse the config file"""
-        questions = self.generate_questions()
-        return questions.check_only(inputfile)
 
     def request(self, crd, properties, states=None, same_crd=False):
         request = self._request.request(crd, properties, states, same_crd=same_crd)

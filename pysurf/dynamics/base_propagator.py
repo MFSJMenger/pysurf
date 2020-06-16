@@ -51,14 +51,13 @@ class PropagatorBase(PropagatorFactory):
         self.start_time = time.perf_counter()
         self.sampling = sampling
 
-
         if logger is None:
             self.logger = get_logger('prop.log', 'propagator')
             info = {'spp inputfile': spp_inp}
             self.logger.header('PROPAGATION', info)
         else:
             self.logger = logger
-        
+
         for prop in properties:
             if prop not in self.properties:
                 self.properties += [prop]
@@ -66,10 +65,13 @@ class PropagatorBase(PropagatorFactory):
         self.init = sampling.get_condition(0)
         # setup SPP
         if sampling.model is False:
-            self.spp = SurfacePointProvider(spp_inp, self.properties, nstates, sampling.natoms, sampling.atomids)
+            self.spp = SurfacePointProvider.from_questions(self.properties, nstates,
+                                                           sampling.natoms,
+                                                           atomids=sampling.atomids,
+                                                           config=spp_inp)
         else:
-            self.spp = SurfacePointProvider(spp_inp, self.properties, nstates, sampling.nmodes)
-        
+            self.spp = SurfacePointProvider.from_questions(self.properties, nstates,
+                                                           sampling.nmodes, config=spp_inp)
 
         if exists_and_isfile('prop.db'):
             self.db = DynDB.from_dynamics('prop.db')

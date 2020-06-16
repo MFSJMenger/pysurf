@@ -53,7 +53,7 @@ class Wigner(DynSamplerBase):
         if config['from'] == 'molden':
             return cls.from_molden(config['from']['moldenfile'])
         elif config['from'].value == 'model':
-            model = ModelFactory.instance_from_config(config['from'])
+            model = ModelFactory.plugin_from_config(config['from']['model'])
             return cls.from_model(model)
         raise Exception("only (molden, frequencies) implemented")
 
