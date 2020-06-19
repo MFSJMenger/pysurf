@@ -1,6 +1,6 @@
 from .spp import SurfacePointProvider
 from .spp import ModelFactory
-from .dbinter import RbfInterpolator
+from .dbinter import Interpolator
 from .request import Request
 from .dbinter import within_trust_radius
 from .dbinter import internal
