@@ -21,6 +21,7 @@ class Validation(Colt):
     db =
     properties = :: list
     save_pes = __NONE__ :: str
+    save_graddiff = __NONE__ :: str
     optimize = False :: bool
     """
 
@@ -43,6 +44,8 @@ class Validation(Colt):
         if config['save_pes'] != '__NONE__':
             self.inter.save_pes(config['save_pes'], config['db'])
 
+        if config['save_graddiff'] != '__NONE__':
+            self.inter.save_graddiff(config['save_graddiff'], config['db'])
 
 class Training(Colt):
 
@@ -78,7 +81,7 @@ class Training(Colt):
                 [use_db(yes)::interpolator]
                 fit_only = yes :: yes
                 """)
-        return questions.generate_input(config=filename, raise_read_error=False)
+        return questions.ask(config=filename, raise_read_error=False)
 
     def _get_db_info(self, database):
         db = PySurfDB.load_database(database, read_only=True)
@@ -92,6 +95,18 @@ class Training(Colt):
     def validate(self, filename, properties):
         db = PySurfDB.load_database(filename, read_only=True)
         self._compute(db, properties)
+
+    def save_graddiff(self, filename, database):
+        db = PySurfDB.load_database(database, read_only=True)
+        results, _ = self._compute(db, ['gradient'])
+
+        def str_join(values):
+            return ' '.join(str(val) for val in values)
+
+        with open(filename, 'w') as f:
+            graddiff = [np.sqrt(np.mean((fitted-exact)**2)) for (fitted, exact) in results['gradient']]
+            f.write("\n".join(f"{i} {diff}" 
+                              for i, diff in enumerate(graddiff)))
 
     def save_pes(self, filename, database):
         db = PySurfDB.load_database(database, read_only=True)
@@ -129,13 +144,13 @@ class Training(Colt):
         mse = np.mean(prop)
         mae = np.mean(np.absolute(prop))
         rmsd = np.sqrt(np.mean(prop**2))
-        rmsd2 = np.sqrt(np.mean(prop**2, axis=0))
+        rmsd_state = np.sqrt(np.mean(prop**2, axis=0))
         #
         maxval = np.amax(prop)
         minval = np.amin(prop)
         self.logger.info(f"{name}:\n mse = {mse}\n mae = {mae}\n"
-                         f" rmsd = {rmsd}\n rmsd2 = {rmsd2}\n maxval = {maxval}\n minval={minval}\n")
-        return {'mse': mse, 'mae': mae, 'rmsd': rmsd, 'rmsd2': rmsd2, 'max_error': maxval}
+                         f" rmsd = {rmsd}\n rmsd_state = {rmsd_state}\n maxval = {maxval}\n minval={minval}\n")
+        return {'mse': mse, 'mae': mae, 'rmsd': rmsd, 'rmsd_state': rmsd_state, 'max_error': maxval}
 
     def optimize(self, filename, properties):
         db = PySurfDB.load_database(filename, read_only=True)

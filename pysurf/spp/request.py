@@ -61,7 +61,7 @@ class Request(Mapping):
         self.same_crd = same_crd
         #
         if 'gradient' in properties:
-            self._properties['gradient'] = StateData(states, crd.shape)
+            self._properties['gradient'] = StateData(states, self.crd.shape)
 
     def set(self, name, value):
         """Ignore properties that are not requested!"""

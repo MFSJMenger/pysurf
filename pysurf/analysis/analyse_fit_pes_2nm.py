@@ -33,7 +33,6 @@ from pysurf.analysis import Plot3D
 class AnalyseFitPes2Nm(Colt):
     _questions = """
         spp = spp.inp :: existing_file
-        savefile = :: str
         mode =  :: int
         mode2 = :: int
         energy_units = eV :: str :: [eV, au, cm-1, nm]
@@ -109,12 +108,11 @@ class AnalyseFitPes2Nm(Colt):
         config_spp = self._get_spp_config(config['spp'])
         natoms, self.nstates, properties = self._get_db_info(config_spp['use_db']['database'])
         atomids = [1 for _ in range(natoms)]
-        self.spp = SurfacePointProvider(None, properties, self.nstates, natoms, atomids,
-                                        logger=self.logger, config=config_spp)
+        self.spp = SurfacePointProvider.from_config(config_spp, properties, self.nstates, natoms, atomids=atomids,
+                                        logger=self.logger)
         #
         self.interpolator = self.spp.interpolator
-        self.savefile = config['savefile']
-        self.interpolator.train(self.savefile)
+        self.interpolator.train()
         #
         qx, qy, crds = self.generate_crds(config['moldenfile'], mode=(config['mode'], config['mode2']), start=(config['start'], config['start2']), end=(config['end'], config['end2']), npoints=(config['npoints'], config['npoints2']))
         energy = self._compute(crds)

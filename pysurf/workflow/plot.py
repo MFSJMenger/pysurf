@@ -10,31 +10,35 @@ from pysurf.analysis import Plot
 from . import engine
 
 
-@engine.register_action(["str"], "plot")
-def setup_lineplot(plot_input):
+@engine.register_action
+def setup_lineplot(plot_input: "file") -> "plot":
     if exists_and_isfile(plot_input):
        plot_config = Plot.generate_input(plot_input, config=plot_input)
     else:
        plot_config = Plot.generate_input(plot_input)
     return [Plot(plot_config), None]
 
-@engine.register_action(["plot","np.array", "style"], "plot")
-def add_plot(plot, data, style):
+@engine.register_action
+def add_plot(plot: "plot", data: "array2D", style: "style"=None):
     ax = plot[1]
     save_plot = False
-    for i, style in zip(range(1, len(data[0])), itertools.cycle(style)):
-        if i == (len(data[0])-1): save_plot = True
-        ax = plot[0].line_plot(data[:,[0,i]], x_units_in=None, y_units_in=None, ax=ax, show_plot=False, save_plot=save_plot, line_props=style)
+    if style is not None:
+        for i, style in zip(range(1, len(data[0])), itertools.cycle(style)):
+            if i == (len(data[0])-1): save_plot = True
+            ax = plot[0].line_plot(data[:,[0,i]], x_units_in=None, y_units_in=None, ax=ax, show_plot=False, save_plot=save_plot, line_props=style)
+    else:
+        for i in range(1, len(data[0])):
+            if i == (len(data[0])-1): save_plot = True
+            ax = plot[0].line_plot(data[:,[0,i]], x_units_in=None, y_units_in=None, ax=ax, show_plot=False, save_plot=save_plot)
     plot[1] = ax
-    return [plot[0], ax]
 
 """
 Type style:
     style is a a list of dictionaries that can be given to the plot functions.
     The form of the dictionary is not further specified.
 """
-@engine.register_action(["style", "style"], "style")
-def combine_plotstyles(style1, style2):
+@engine.register_action
+def combine_plotstyles(style1: "style", style2: "style") -> "style":
     """ This function combines two styles
     """
     nentries = max(len(style1), len(style2))
@@ -48,8 +52,8 @@ def combine_plotstyles(style1, style2):
         style += [dict1]
     return style
 
-@engine.register_action(output_typ="style")
-def colors_standard():
+@engine.register_action
+def standard_colors() -> "style":
     return [{'color': 'black'},
             {'color': [253/255, 86/255, 33/255]},
             {'color': [63/255, 81/255, 181/255]},
@@ -57,29 +61,29 @@ def colors_standard():
             {'color': [255/255, 233/255, 75/255]}, 
             {'color': [157/255, 157/255,157/255]}]
 
-@engine.register_action(output_typ="style")
-def linestyles_standard():
+@engine.register_action
+def linestyles_standard() -> "style":
     return [{'linestyle': 'solid'},
             {'linestyle': 'dashed'},
             {'linestyle': 'dotted'}]
 
-@engine.register_action(output_typ="style")
-def linestyle_dotted():
+@engine.register_action
+def linestyle_dotted() -> "style":
     return [{'linestyle': 'dotted'}]
 
-@engine.register_action(output_typ="style")
-def linestyle_dashed():
+@engine.register_action
+def linestyle_dashed() -> "style":
     return [{'linestyle': 'dashed'}]
 
-@engine.register_action(output_typ="style")
-def linestyle_solid():
+@engine.register_action
+def linestyle_solid() -> "style":
     return [{'linestyle': 'solid'}]
 
-@engine.register_action(["plot"], None)
-def show_plot(plot):
+@engine.register_action
+def show_plot(plot: "plot"):
     plot[0] = plt.gcf()
     plt.show()
 
-@engine.register_action(["plot", "file"], None)
-def save_plot(plot, filename):
+@engine.register_action
+def save_plot(plot: "plot", filename: "file"):
     plot[0].savefig(filename)

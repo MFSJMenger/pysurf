@@ -158,7 +158,7 @@ class NMSampler(CrdSamplerBase):
 
     @classmethod
     def from_model(cls, config, start=0):
-        model = ModelFactory.instance_from_config(config['from'])
+        model = ModelFactory.plugin_from_config(config['from']['model'])
         return cls(config, system=model, modes=model.modes, start=start)
 
     def _check_modes(self):

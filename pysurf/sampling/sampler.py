@@ -19,9 +19,6 @@ from .normalmodes import Mode
 
 
 class Sampler(Colt):
-    """ Sampling is the header class for the sampling routines. It asks the main questions, selects
-        the sampler and reads and writes the conditions to the sampling database.
-    """
     _questions = """
     method = :: str
 
@@ -42,8 +39,7 @@ class Sampler(Colt):
     @classmethod
     def from_inputfile(cls, inputfile):
         # Generate the config
-        quests = cls.generate_questions('SAMPLING', config=None)
-        config = quests.check_only(inputfile)
+        config = cls.generate_input(inputfile, config=inputfile)
         return cls.from_config(config)    
 
 
@@ -54,6 +50,7 @@ class Sampler(Colt):
 
         self.config = config
         self.sampler = sampler
+        self._start = 0
 
         if logger is None:
             self.logger = get_logger('sampler.log', 'sampler')

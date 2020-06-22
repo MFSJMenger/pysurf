@@ -34,7 +34,7 @@ def write_crd(crd, step):
 
 
 @FromCommandline("""
-infile = prop.db :: existing_file
+infile = :: existing_file
 outfile = crd.xyz :: file
 """)
 def get_coordinates_command(infile, outfile):

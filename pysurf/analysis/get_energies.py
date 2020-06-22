@@ -16,7 +16,7 @@ from pysurf.utils.constants import au2ev
 
 def write_energy(energy, step):
     string = ''
-    string += 'step {0} :'.format(step)
+    string += '{0} '.format(step)
     string += np.array2string(energy, separator=',   ', precision=5).strip(']').strip('[')
     string += '\n'
     return string
