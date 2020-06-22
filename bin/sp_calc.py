@@ -45,14 +45,15 @@ class SinglePointCalculation(Colt):
 
     def __init__(self, config, logger=None):
         """ 
-            Args:
+        Parameters
+        ----------
 
-                config, ColtObj:
-                    The config contains the information from the colt 
-                    questions of the class
+        config, ColtObj:
+            The config contains the information from the colt 
+            questions of the class
 
-                logger, Logger:
-                    Logger for the class. If not provided a new logger is created.
+        logger, Logger:
+            Logger for the class. If not provided a new logger is created.
         """
 
         if logger is None:
@@ -71,17 +72,18 @@ class SinglePointCalculation(Colt):
             
    
         self.logger.debug(f"Setting up SPP with {config['spp']}")
+        spp = SurfacePointProvider.generate_input(config['spp'], config=config['spp'])
         if sampling.molecule is not None:
-            spp = SurfacePointProvider(config['spp'], 
-                                      config['properties'],
-                                      config['nstates'],
-                                      sampling.natoms,
-                                      sampling.atomids)
+            spp = SurfacePointProvider.from_config(spp, 
+                                                   config['properties'],
+                                                   config['nstates'],
+                                                   sampling.natoms,
+                                                   sampling.atomids)
         else:#model calculation
-            spp = SurfacePointProvider(config['spp'], 
-                                      config['properties'],
-                                      config['nstates'],
-                                      sampling.nmodes)
+            spp = SurfacePointProvider.from_config(spp, 
+                                                   config['properties'],
+                                                   config['nstates'],
+                                                   sampling.nmodes)
 
         crd = sampling.get_condition(0).crd
 
@@ -103,7 +105,6 @@ class SinglePointCalculation(Colt):
     @classmethod
     def from_inputfile(cls, inputfile):
         config = cls.generate_input(inputfile, config=inputfile)
-        config['inputfile'] = inputfile
         logger = get_logger('sp_calc.log', 'sp_calc')
         logger.header('Single Point Calculation', config)
         return cls(config, logger)
