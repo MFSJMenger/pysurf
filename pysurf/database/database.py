@@ -117,7 +117,6 @@ class Database(object):
     def get_dimension(self, key):
         return self._handle[key].get_dims()
 
-
     def append(self, key, value):
         """Append only for unlimited variables!"""
         variable = self._handle[key]
