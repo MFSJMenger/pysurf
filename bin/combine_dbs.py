@@ -3,7 +3,7 @@ import numpy as np
 from scipy.spatial import cKDTree
 
 from pysurf.database import PySurfDB
-from pysurf.colt import FromCommandline, Colt
+from pysurf.colt import Colt
 
 """ This class has to be moved to spp.dbinter.dbinter.
     at the moment I cannot change dbinter, but it has to be done in futere

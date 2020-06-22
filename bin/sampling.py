@@ -2,13 +2,13 @@ import os
 import numpy as np
 #
 from pysurf.colt import Colt
-from pysurf.colt import FromCommandline
+from pysurf.colt import from_commandline
 #
 from pysurf.utils.constants import fs2au
 from pysurf.sampling.sampling import Sampling
 
 
-@FromCommandline("""
+@from_commandline("""
 inputfile = sampling.inp :: file 
 """)
 def command_setup_sampling(inputfile):

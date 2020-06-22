@@ -1,11 +1,11 @@
 from pysurf.colt import Colt
-from pysurf.colt import FromCommandline
+from pysurf.colt import from_commandline
 from pysurf.dynamics.run_trajectory import RunTrajectory
 
 
 
 
-@FromCommandline("""
+@from_commandline("""
 inputfile = prop.inp :: file
 """)
 def command_run_trajectory(inputfile):

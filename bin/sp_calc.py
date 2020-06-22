@@ -3,7 +3,7 @@ from pysurf.sampling import Sampling
 
 from pysurf.utils import exists_and_isfile
 from pysurf.spp import SurfacePointProvider
-from pysurf.colt import Colt, FromCommandline
+from pysurf.colt import Colt, from_commandline
 
 
 class SinglePointCalculation(Colt):
@@ -133,7 +133,7 @@ class SinglePointCalculation(Colt):
             else:
                 self.logger.error(f"Given database is not appropriate for the results: {config['init_db']}")
                     
-@FromCommandline("""
+@from_commandline("""
 inputfile = sp_calc.inp :: file 
 """)
 def command_sp_calc(inputfile):
