@@ -2,7 +2,7 @@ import os
 # Numpy
 import numpy as np
 # Database related
-from ..colt import Colt, PluginBase
+from ..colt import Colt, Plugin
 from ..colt.obj import NoFurtherQuestions
 # logger
 from ..logger import get_logger, Logger
@@ -19,7 +19,7 @@ TODO:
 """
 
 
-class AbinitioFactory(PluginBase):
+class AbinitioFactory(Plugin):
     """Factory for any QM code"""
 
     _is_plugin_factory = True
@@ -37,7 +37,7 @@ class AbinitioFactory(PluginBase):
                                              for name, software in cls.software.items()})
 
 
-class ModelFactory(PluginBase):
+class ModelFactory(Plugin):
     """Model Factory"""
 
     _is_plugin_factory = True

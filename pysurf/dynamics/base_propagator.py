@@ -3,7 +3,7 @@ import os
 import numpy as np
 import time
 
-from pysurf.colt import PluginBase
+from pysurf.colt import Plugin
 from pysurf.spp import SurfacePointProvider
 from pysurf.utils import exists_and_isfile
 from pysurf.logger import get_logger
@@ -11,7 +11,7 @@ from pysurf.qctools.converter import Converter, time_converter
 
 from .dyn_db import DynDB
 
-class PropagatorFactory(PluginBase):
+class PropagatorFactory(Plugin):
     _plugins_storage = '_methods'
     _is_plugin_factory = True
 

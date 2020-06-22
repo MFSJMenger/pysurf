@@ -1,13 +1,13 @@
 from collections import namedtuple
 from abc import abstractmethod
 
-from pysurf.colt import PluginBase
+from pysurf.colt import Plugin
 
 CrdCondition = namedtuple("CrdCondition",['crd'])
 DynCondition = namedtuple("DynCondition", ['crd', 'veloc', 'state'])
 
 
-class SamplerFactory(PluginBase):
+class SamplerFactory(Plugin):
     """ Factory for samplers, which provide only coordinates. It is also the underlying class for 
         DynSamplingFactory, which is an extension for samplers with velocities and initial states.
     """

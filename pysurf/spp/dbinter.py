@@ -3,7 +3,7 @@ from abc import abstractmethod
 from scipy.spatial.distance import cdist, pdist
 import numpy as np
 
-from ..colt import Colt, PluginBase
+from ..colt import Colt, Plugin
 from ..database.pysurf_db import PySurfDB
 from ..utils.osutils import exists_and_isfile
 # logger
@@ -141,7 +141,7 @@ def get_fitting_size(db):
     return out
 
 
-class InterpolatorFactory(PluginBase):
+class InterpolatorFactory(Plugin):
     _is_plugin_factory = True
     _plugins_storage = 'interpolator'
 
