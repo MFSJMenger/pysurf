@@ -1,7 +1,7 @@
 """Tools to store information on the Variables and Dimensions in the Database"""
 import netCDF4
 import numpy as np
-from ..colt.generator import GeneratorBase
+from ..colt.generator import Generator
 
 from ..utils.osutils import exists_and_isfile
 
@@ -57,7 +57,7 @@ class DatabaseTools(object):
 
 
 
-class DatabaseGenerator(GeneratorBase):
+class DatabaseGenerator(Generator):
 
     default = "DIM"
 
