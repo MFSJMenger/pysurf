@@ -78,7 +78,7 @@ class SinglePointCalculation(Colt):
                                                    config['properties'],
                                                    config['nstates'],
                                                    sampling.natoms,
-                                                   sampling.atomids)
+                                                   atomids=sampling.atomids)
         else:#model calculation
             spp = SurfacePointProvider.from_config(spp, 
                                                    config['properties'],

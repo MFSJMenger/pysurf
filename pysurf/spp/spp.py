@@ -81,7 +81,7 @@ class SurfacePointProvider(Colt):
         questions.generate_cases("use_db", {name: mode.questions for name, mode in cls._database.items()})
 
     @classmethod
-    def from_config(cls, config, properties, nstates, natoms,
+    def from_config(cls, config, properties, nstates, natoms, *,
                     nghost_states=0, atomids=None, logger=None):
         """ Initialize the SurfacePointProvider from the information
             read from configfile using `Colt`
