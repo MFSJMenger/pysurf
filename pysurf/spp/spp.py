@@ -81,7 +81,7 @@ class SurfacePointProvider(Colt):
         questions.generate_cases("use_db", {name: mode.questions for name, mode in cls._database.items()})
 
     @classmethod
-    def from_config(cls, config, properties, nstates, natoms,
+    def from_config(cls, config, properties, nstates, natoms, *,
                     nghost_states=0, atomids=None, logger=None):
         """ Initialize the SurfacePointProvider from the information
             read from configfile using `Colt`
@@ -125,7 +125,7 @@ class SurfacePointProvider(Colt):
                    nghost_states=nghost_states, atomids=atomids, logger=logger,
                    logging_level=config['logging'])
 
-    def __init__(self, mode_config, use_db, properties, nstates, natoms,
+    def __init__(self, mode_config, use_db, properties, nstates, natoms, *,
                  nghost_states=0, atomids=None, logger=None, logging_level='debug'):
         """ The inputfile for the SPP has to provide the necessary
             information, how to produce the data at a specific point
