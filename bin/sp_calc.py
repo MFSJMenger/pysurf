@@ -45,14 +45,15 @@ class SinglePointCalculation(Colt):
 
     def __init__(self, config, logger=None):
         """ 
-            Args:
+        Parameters
+        ----------
 
-                config, ColtObj:
-                    The config contains the information from the colt 
-                    questions of the class
+        config, ColtObj:
+            The config contains the information from the colt 
+            questions of the class
 
-                logger, Logger:
-                    Logger for the class. If not provided a new logger is created.
+        logger, Logger:
+            Logger for the class. If not provided a new logger is created.
         """
 
         if logger is None:
@@ -65,23 +66,24 @@ class SinglePointCalculation(Colt):
         sampling = Sampling.from_db(config['init_db'], logger=self.logger)
 
         if not(exists_and_isfile(config['spp'])):
-            config_spp = SurfacePointProvider.generate_input(config['spp'])
+            SurfacePointProvider.generate_input(config['spp'])
         else:
-            config_spp = SurfacePointProvider.generate_input(config['spp'], config=config['spp'])
+            SurfacePointProvider.generate_input(config['spp'], config=config['spp'])
             
    
         self.logger.debug(f"Setting up SPP with {config['spp']}")
+        spp = SurfacePointProvider.generate_input(config['spp'], config=config['spp'])
         if sampling.molecule is not None:
-            spp = SurfacePointProvider.from_config(config_spp, 
-                                      config['properties'],
-                                      config['nstates'],
-                                      sampling.natoms,
-                                      atomids=sampling.atomids)
+            spp = SurfacePointProvider.from_config(spp, 
+                                                   config['properties'],
+                                                   config['nstates'],
+                                                   sampling.natoms,
+                                                   atomids=sampling.atomids)
         else:#model calculation
-            spp = SurfacePointProvider.from_config(config_spp, 
-                                      config['properties'],
-                                      config['nstates'],
-                                      sampling.nmodes)
+            spp = SurfacePointProvider.from_config(spp, 
+                                                   config['properties'],
+                                                   config['nstates'],
+                                                   sampling.nmodes)
 
         crd = sampling.get_condition(0).crd
 

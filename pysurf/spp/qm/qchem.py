@@ -236,7 +236,7 @@ class QChem(AbinitioBase):
         request.set('energy', [out['SCFEnergy']] + outst)
         if 'fosc' in request:
             if not isinstance(out['fosc'], list):
-                outfosc = [0.] + [out['fosc']]
+                outfosc = [0.] + [value for value in out['fosc']]
             else:
                 outfosc = [0.] + out['fosc']
             request.set('fosc', outfosc)
