@@ -65,20 +65,20 @@ class SinglePointCalculation(Colt):
         sampling = Sampling.from_db(config['init_db'], logger=self.logger)
 
         if not(exists_and_isfile(config['spp'])):
-            SurfacePointProvider.generate_input(config['spp'])
+            config_spp = SurfacePointProvider.generate_input(config['spp'])
         else:
-            SurfacePointProvider.generate_input(config['spp'], config=config['spp'])
+            config_spp = SurfacePointProvider.generate_input(config['spp'], config=config['spp'])
             
    
         self.logger.debug(f"Setting up SPP with {config['spp']}")
         if sampling.molecule is not None:
-            spp = SurfacePointProvider(config['spp'], 
+            spp = SurfacePointProvider.from_config(config_spp, 
                                       config['properties'],
                                       config['nstates'],
                                       sampling.natoms,
-                                      sampling.atomids)
+                                      atomids=sampling.atomids)
         else:#model calculation
-            spp = SurfacePointProvider(config['spp'], 
+            spp = SurfacePointProvider.from_config(config_spp, 
                                       config['properties'],
                                       config['nstates'],
                                       sampling.nmodes)
@@ -103,7 +103,6 @@ class SinglePointCalculation(Colt):
     @classmethod
     def from_inputfile(cls, inputfile):
         config = cls.generate_input(inputfile, config=inputfile)
-        config['inputfile'] = inputfile
         logger = get_logger('sp_calc.log', 'sp_calc')
         logger.header('Single Point Calculation', config)
         return cls(config, logger)

@@ -5,8 +5,10 @@ from scipy.spatial.distance import cdist, pdist, squareform
 #
 from pysurf import Interpolator
 from pysurf.spp import within_trust_radius, internal
-
-
+from pysurf.database.dbtools import DBVariable
+from pysurf.database.database import Database
+#
+from codetiming import Timer
 
 class RbfInterpolator(Interpolator):
     """Basic Rbf interpolator"""
@@ -63,6 +65,7 @@ class RbfInterpolator(Interpolator):
             raise Exception("Cannot fit all properties")
         return out
 
+#    @Timer(name="get")
     def get(self, request):
         """fill request
 
@@ -127,6 +130,7 @@ class RbfInterpolator(Interpolator):
         #
         db['rbf_epsilon'] = self.epsilon
 
+#    @Timer(name="train")
     def _train(self):
         """set rbf weights, based on the current crds"""
 #       self.crds = self.get_crd()

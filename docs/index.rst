@@ -8,6 +8,7 @@ Welcome to pysurf's documentation!
    readme
    installation
    tutorials/sampler
+   tutorials/interpolator
    module/spp
    module/database
    module/sampling

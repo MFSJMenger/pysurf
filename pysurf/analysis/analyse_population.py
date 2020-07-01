@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from pysurf.sampling import Sampling
-from pysurf.colt import Colt, FromCommandline
+from pysurf.colt import Colt, from_commandline
 from pysurf.qctools.converter import Converter, time_converter
 from pysurf.utils import exists_and_isfile
 from pysurf.analysis import Plot
@@ -143,7 +143,7 @@ class AnalysePopulation(Colt):
 
 
 
-@FromCommandline("""
+@from_commandline("""
 inputfile = analyse_population.inp :: file
 """)
 def command_analyse_population(inputfile):
