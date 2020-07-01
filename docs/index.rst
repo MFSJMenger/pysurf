@@ -9,6 +9,7 @@ Welcome to pysurf's documentation!
    installation
    tutorials/sampler
    tutorials/interpolator
+   tutorials/qm
    module/spp
    module/database
    module/sampling

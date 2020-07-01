@@ -1,5 +1,5 @@
 Tutorial: Write a Sampler
--------------------------
+=========================
 
 In case you want to extend the sampling facilities its rather
 simple to write an own **Sampler**.
