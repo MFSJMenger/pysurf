@@ -88,22 +88,25 @@ class NormalModes(object):
                 'mass-weighted': lambda imode, iatom, ixyz, disp: disp,
         }
         #
-        possible_formats = []
+        possible_formats = {}
         #
         for typ, expression in options.items():
             current_modes = [cls.scale_mode(imode, modes, expression)
                              for imode in range(len(modes))]
             if cls.is_normal_mode_format(current_modes, molecule.natoms):
-                selected_format = typ
-                final_modes = current_modes
-                possible_formats.append(selected_format)
+                possible_formats[typ] = current_modes
         #
-        if len(possible_formats) != 1:
+        if len(possible_formats) < 1:
             print("possible_formats = ", possible_formats)
             raise Exception('Could not specify format possible formats = "%s"'
-                            % ", ".join(possible_formats))
+                            % ", ".join(possible_formats.keys()))
         #
-        return final_modes
+        if len(possible_formats) > 1:
+            print("possible_formats = ", ", ".join(possible_formats.keys()))
+            print("select first one...")
+        #
+        for _, mode in possible_formats.items():
+            return mode
 
     @classmethod
     def create_dimensionless_normal_modes(cls, modes, molecules, mass_weighted=False):

@@ -191,6 +191,7 @@ class Interpolator(InterpolatorFactory):
         self.energy_only = energy_only
         self.fit_only = fit_only
         self.weightsfile = weightsfile
+        self.properties = properties
         #
         self.crdmode = crdmode
         self.crds = self.get_crd()
