@@ -1,13 +1,13 @@
 import numpy as np
 from copy import deepcopy
-from ..methodbase import ModelBase
+from ..methodbase import Model
 from pysurf.system import Mode
 
 
 
 ev2au = 1./27.2113961
 
-class PyrazineSchneider(ModelBase):
+class PyrazineSchneider(Model):
 
     implemented = ["energy", "gradient"]
     frequencies = np.array([0.126*ev2au, 0.074*ev2au, 0.118*ev2au])

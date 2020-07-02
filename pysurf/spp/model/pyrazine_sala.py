@@ -1,13 +1,13 @@
 import numpy as np
 from copy import deepcopy
-from ..methodbase import ModelBase
+from ..methodbase import Model
 from pysurf.system import Mode
 from pysurf.qctools.converter import energy_converter 
 
 
 ev2au = 1./27.2113961
 
-class PyrazineSala(ModelBase):
+class PyrazineSala(Model):
     """ Pyrazine Models from Phys. Chem. Chem. Phys. 2014, 16, 15957 from Sala, Lasorne, Gatti and
         Guerin. The user can choose how many states are involved. Additionally the ground-state is         
         added to the models, but is not coupled. The number of modes varies with the number of states.

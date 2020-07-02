@@ -11,7 +11,7 @@ import os
 #
 from .colt import PluginLoader
 from .spp.spp import SurfacePointProvider
-from .spp import  AbinitioBase, ModelBase, Interpolator
+from .spp import  AbinitioBase, Model, Interpolator
 # load plugins
 plugins = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../plugins")
 PluginLoader(plugins)

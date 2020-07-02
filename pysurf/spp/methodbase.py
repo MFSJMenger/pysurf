@@ -36,7 +36,7 @@ class AbinitioBase(AbinitioFactory):
                 ])
 
 
-class ModelBase(ModelFactory):
+class Model(ModelFactory):
     """Base Class for all Abinitio Implementations"""
 
     _register_plugin = False
