@@ -1,5 +1,5 @@
 Tutorial: Write an Interpolator
--------------------------------
+===============================
 
 In case you want to extend the interpolation facilities its
 straightforward to write an additional **Interpolator**.
