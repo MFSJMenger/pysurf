@@ -4,13 +4,11 @@ Welcome to pysurf's documentation!
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
+   :glob:
 
    readme
    installation
-   tutorials/sampler
-   tutorials/interpolator
-   tutorials/model
-   tutorials/qm
+   tutorials/*
    module/spp
    module/database
    module/sampling

@@ -1,5 +1,5 @@
 Tutorial: Write your own Workflow
----------------------------------
+=================================
 
 Every scientist is after their own ideas and visions to move the boarders of knowledge.
 Therefor, it is natural that predefined tools can never be sufficient for all tasks that scientists
@@ -47,25 +47,25 @@ Step 1: Include Workflow Nodes
 .. code-block:: python
    :linenos:
     
-    workflow = engine.create_workflow("sp_calc", """
-    crd = read_xyzfile_crd(crd_file)
-    atomids = read_xyzfile_atomids(crd_file)
-    spp = spp_calc("spp.inp", atomids, nstates, properties=properties)
-    res = sp_calc(spp, crd, properties=properties)
-    """)
+   workflow = engine.create_workflow("sp_calc", """
+   crd = read_xyzfile_crd(crd_file)
+   atomids = read_xyzfile_atomids(crd_file)
+   spp = spp_calc("spp.inp", atomids, nstates, properties=properties)
+   res = sp_calc(spp, crd, properties=properties)
+   """)
 
 
-  - read_xyzfile_crd:
-     node that returns the xyz coordinates from a xyz file
-  - read_xyzfile_atomids
-    node that returns the atomids from a xyz file
-  - spp_calc
-    node that initializes a SPP using an inputfile (filename, *file*), atomids (integer list, *ilist*), number of states (integer, *int*) and the desired
-    properties (*list*)
-  - sp_calc
-    node that sends the request to an initialized SPP. To start a calculation it is important that the SPP has been initialized with *spp_calc* and not
-    *spp_analyse*. The second uses interpolation to produce the results. As arguments it takes the SPP (*spp*), the coordinates (*crd*) and the properties
-    (*list*)
+- read_xyzfile_crd:
+   node that returns the xyz coordinates from a xyz file
+- read_xyzfile_atomids
+  node that returns the atomids from a xyz file
+- spp_calc
+  node that initializes a SPP using an inputfile (filename, *file*), atomids (integer list, *ilist*), number of states (integer, *int*) and the desired
+  properties (*list*)
+- sp_calc
+  node that sends the request to an initialized SPP. To start a calculation it is important that the SPP has been initialized with *spp_calc* and not
+  *spp_analyse*. The second uses interpolation to produce the results. As arguments it takes the SPP (*spp*), the coordinates (*crd*) and the properties
+  (*list*)
 
 Variables which are not defined within the workflow are asked via the command line. In this case the user has to specify the xyz file (*crd_file*), the
 number of states (*nstates*) and the properties that should be calculated as list, e.g. ['energy', 'gradient', 'fosc']

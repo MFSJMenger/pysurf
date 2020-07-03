@@ -1,5 +1,5 @@
 Tutorial: Add a Model System
-----------------------------
+============================
 
 It is very easy and straightforward to add your own model system
 to the PySurf Framework via the Plugin engine. In the models,
