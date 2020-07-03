@@ -299,7 +299,6 @@ class Turbomole(AbinitioBase):
             exenergies = self.reader(escf_output, ['ESCFEnergy'])['ESCFEnergy']
             energies = exenergies
         energies = np.array(energies).flatten()
-        print('Johannes energies', energies)
         request.set('energy', energies)
         #read oscillator strengths if requested
         if 'fosc' in request:

@@ -18,11 +18,11 @@ def spp_analysis(sppinp: "file") -> "spp":
     return spp
 
 @engine.register_action
-def spp_calc(sppinp: "file", natoms: "int", nstates: "int", properties: "list") -> "spp":
+def spp_calc(sppinp: "file", atomids: "ilist", nstates: "int", properties: "list"=['energy']) -> "spp":
     #
     config = _get_spp_config_calc(sppinp)
-    atomids = [1 for _ in range(natoms)]
-    spp = SurfacePointProvider.from_config(config, properties, nstates, natoms, atomids,
+    natoms = len(atomids)
+    spp = SurfacePointProvider.from_config(config, properties, nstates, natoms, nghost_states=0, atomids=atomids,
                                     logger=None)
     #
     return spp
@@ -49,7 +49,7 @@ def crds_from_sampler(sampler: "sampler", npoints: "int") -> "crds":
     return np.array(crds)
 
 @engine.register_action
-def sp_calculation(spp: "spp", crd: "crd", properties: "list"=['energy']) -> "request":
+def sp_calc(spp: "spp", crd: "crd", properties: "list"=['energy']) -> "request":
     return spp.request(crd, properties)
 
 def _get_spp_config_analysis(filename):
@@ -64,7 +64,11 @@ def _get_spp_config_analysis(filename):
 
 def _get_spp_config_calc(filename):
     questions = SurfacePointProvider.generate_questions(presets="""
-            use_db=no :: no
+            use_db=yes :: yes
+            [use_db(yes)]
+            write_only = yes :: yes
+            [use_db(yes)::interpolator]
+            fit_only = no :: no
             """)
     return questions.ask(config=filename, raise_read_error=False)
 
