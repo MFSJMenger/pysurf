@@ -8,6 +8,19 @@ from . import engine
 
 @engine.register_action
 def spp_analysis(sppinp: "file") -> "spp":
+    """ comment 
+        
+        Parameters
+        ----------
+            -sppinp: file
+                blabla
+
+        Returns
+        -------
+            spp
+                blabla4
+    """
+    #
     config = _get_spp_config_analysis(sppinp)
     #
     natoms, nstates, properties = _get_db_info(config['use_db']['database'])
@@ -20,7 +33,13 @@ def spp_analysis(sppinp: "file") -> "spp":
 @engine.register_action
 def spp_calc(sppinp: "file", atomids: "ilist", nstates: "int", properties: "list"=['energy']) -> "spp":
     #
-    config = _get_spp_config_calc(sppinp)
+    presets=f"""
+            use_db=yes :: yes
+            [use_db(yes)]
+            write_only = yes :: yes
+            properties = {properties} :: {properties}
+            """
+    config = SurfacePointProvider.generate_input(sppinp, config=sppinp, presets=presets)
     natoms = len(atomids)
     spp = SurfacePointProvider.from_config(config, properties, nstates, natoms, nghost_states=0, atomids=atomids,
                                     logger=None)
@@ -59,16 +78,6 @@ def _get_spp_config_analysis(filename):
             write_only = no :: no
             [use_db(yes)::interpolator]
             fit_only = yes :: yes
-            """)
-    return questions.ask(config=filename, raise_read_error=False)
-
-def _get_spp_config_calc(filename):
-    questions = SurfacePointProvider.generate_questions(presets="""
-            use_db=yes :: yes
-            [use_db(yes)]
-            write_only = yes :: yes
-            [use_db(yes)::interpolator]
-            fit_only = no :: no
             """)
     return questions.ask(config=filename, raise_read_error=False)
 

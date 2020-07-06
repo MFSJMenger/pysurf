@@ -179,6 +179,18 @@ class SurfacePointProvider(Colt):
             raise Exception("Interpolator not available")
         return interpolator
 
+    def request(self, crd, properties, states=None, same_crd=False):
+        """ The get method is the method which should be called by
+            external programs, which want to use the SPP. As an
+            input it takes the crdinates and gives back the
+            information at this specific position.
+
+            It does not perform any sanity checks anylonger, so insure that all
+            possible requested properties are in used!
+        """
+        request = self._request.request(crd, properties, states, same_crd=same_crd)
+        return self._interface.get(request)
+
     def _select_interface(self, mode_config, use_db, properties, natoms, 
                           nstates, nghost_states, atomids):
         """Select the correct interface based on the mode"""
@@ -220,17 +232,4 @@ Implemented: {interface.implemented}
             """)
         self.logger.info(f"Interface {interface} provides all necessary properties")
 
-    def request(self, crd, properties, states=None, same_crd=False):
-        request = self._request.request(crd, properties, states, same_crd=same_crd)
-        return self.get(request)
 
-    def get(self, request):
-        """ The get method is the method which should be called by
-            external programs, which want to use the SPP. As an
-            input it takes the crdinates and gives back the
-            information at this specific position.
-
-            It does not perform any sanity checks anylonger, so insure that all
-            possible requested properties are in used!
-        """
-        return self._interface.get(request)
