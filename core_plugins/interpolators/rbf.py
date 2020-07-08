@@ -8,7 +8,7 @@ from pysurf.spp import within_trust_radius, internal
 from pysurf.database.dbtools import DBVariable
 from pysurf.database.database import Database
 #
-from codetiming import Timer
+#from codetiming import Timer
 
 class RbfInterpolator(Interpolator):
     """Basic Rbf interpolator"""
