@@ -78,7 +78,7 @@ class Training(Colt):
                 use_db=yes :: yes
                 [use_db(yes)]
                 write_only = no :: no
-                [use_db(yes)::interpolator]
+                [use_db(yes)::write_only(no)]
                 fit_only = yes :: yes
                 """)
         return questions.ask(config=filename, raise_read_error=False)

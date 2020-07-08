@@ -229,8 +229,8 @@ class DataBaseInterpolation(Colt):
         self._parameters = get_fitting_size(self._db)
         properties = [prop for prop in properties if prop != 'crd']
         self.properties = properties
-        if config['write_only'] is False:
-            self.interpolator = Interpolator.setup_from_config(config['interpolator'], self._db,
+        if config['write_only'] == 'no':
+            self.interpolator = Interpolator.setup_from_config(config['write_only'], self._db,
                                                     properties,
                                                     logger=self.logger)
             self.fit_only = self.interpolator.fit_only
