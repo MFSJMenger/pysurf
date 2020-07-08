@@ -3,6 +3,7 @@ from copy import deepcopy
 import os
 #
 from jinja2 import Template
+import numpy as np
 #
 from ...qctools import generate_filereader, Event
 from ...qctools.events import join_events
@@ -233,7 +234,7 @@ class QChem(AbinitioBase):
             outst = [out['ExcitedState']]
         else:
             outst = out['ExcitedState']
-        request.set('energy', [out['SCFEnergy']] + outst)
+        request.set('energy', np.array([out['SCFEnergy']] + outst).flatten())
         if 'fosc' in request:
             if not isinstance(out['fosc'], list):
                 outfosc = [0.] + [value for value in out['fosc']]
