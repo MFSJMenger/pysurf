@@ -185,23 +185,24 @@ class QChem(AbinitioBase):
     #
     implemented = ['energy', 'gradient', 'fosc', 'transmom']
 
-    def __init__(self, config, atomids, nstates, chg, mult, qchemexe):
+    def __init__(self, config, atomids, nstates, nghost_states, chg, mult, qchemexe):
         self.molecule = Molecule(atomids, None)
         self.exe = qchemexe
         self.chg = chg
         self.mult = mult
         self.filename = 'qchem.in'
         self.nstates = nstates
-        self.reader._events['ExcitedStateInfo'].nmax = nstates-1
+        self.nghost_states = nghost_states
+        self.reader._events['ExcitedStateInfo'].nmax = nstates + nghost_states - 1
         self._update_settings(config)
-        self.excited_state_settings['cis_n_roots'] = nstates-1
+        self.excited_state_settings['cis_n_roots'] = nstates + nghost_states - 1
 
     def _update_settings(self, config):
         self.settings = {key: config[key] for key in self.settings}
 
     @classmethod
-    def from_config(cls, config, atomids, nstates):
-        return cls(config, atomids, nstates, config['chg'], config['mult'], config['exe'])
+    def from_config(cls, config, atomids, nstates, nghost_states):
+        return cls(config, atomids, nstates, nghost_states, config['chg'], config['mult'], config['exe'])
 
     def get(self, request):
         # update coordinates
@@ -234,7 +235,7 @@ class QChem(AbinitioBase):
             outst = [out['ExcitedState']]
         else:
             outst = out['ExcitedState']
-        request.set('energy', np.array([out['SCFEnergy']] + outst).flatten())
+        request.set('energy', np.sort(np.array([out['SCFEnergy']] + outst).flatten())[:self.nstates])
         if 'fosc' in request:
             if not isinstance(out['fosc'], list):
                 outfosc = [0.] + [value for value in out['fosc']]

@@ -27,7 +27,7 @@ class RunTrajectory(Colt):
    
     # Number of total states
     n_states = :: int
-
+    nghost_states = 0 :: int
     method = LandauZener :: str
 
     #Filepath for the inputfile of the Surface Point Provider
@@ -56,6 +56,7 @@ class RunTrajectory(Colt):
         propagator = PropagatorFactory._methods[config['method'].value](config['spp'], 
                                                                         sampling,
                                                                         config['n_states'],
+                                                                        nghost_states = config['nghost_states'],
                                                                         properties = config['properties'],
                                                                         restart=config['restart'],
                                                                         logger=self.logger)

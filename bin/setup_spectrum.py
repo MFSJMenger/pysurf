@@ -6,8 +6,11 @@ from pysurf.sampling import Sampling
 from pysurf.setup import SetupBase
 from pysurf.utils import exists_and_isfile
 from pysurf.spp import SurfacePointProvider
+from pysurf.colt import Colt
 
 from sp_calc import SinglePointCalculation
+
+
 
 class SetupSpectrum(SetupBase):
 

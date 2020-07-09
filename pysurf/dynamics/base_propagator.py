@@ -41,7 +41,7 @@ class PropagatorBase(PropagatorFactory):
     def get_runtime(self):
         return (time.perf_counter() - self.start_time)
 
-    def __init__(self, spp_inp, sampling, nstates, properties=None, restart=True, logger=None):
+    def __init__(self, spp_inp, sampling, nstates, nghost_states, properties=None, restart=True, logger=None):
         """Setup surface hopping using config in `configfile`
         and a SurfacePointProvider (SPP) abstract class
 
@@ -65,13 +65,15 @@ class PropagatorBase(PropagatorFactory):
         self.init = sampling.get_condition(0)
         # setup SPP
         if sampling.model is False:
-            self.spp = SurfacePointProvider.from_questions(self.properties, nstates,
+            self.spp = SurfacePointProvider.from_questions(self.properties, nstates, 
                                                            sampling.natoms,
+                                                           nghost_states=nghost_states,
                                                            atomids=sampling.atomids,
                                                            config=spp_inp)
         else:
             self.spp = SurfacePointProvider.from_questions(self.properties, nstates,
-                                                           sampling.nmodes, config=spp_inp)
+                                                           sampling.nmodes, nghost_states=nghost_states,
+                                                           config=spp_inp)
 
         if exists_and_isfile('prop.db'):
             self.db = DynDB.from_dynamics('prop.db')

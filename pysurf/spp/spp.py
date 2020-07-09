@@ -203,7 +203,7 @@ class SurfacePointProvider(Colt):
             self.logger.info('Ab initio calculations are used to generate the PES')
             # make sure that AB INITIO section is in the inputfile
             # add path to AB INITIO section
-            interface = AbinitioFactory.plugin_from_config(mode_config['software'], atomids, nstates+nghost_states)
+            interface = AbinitioFactory.plugin_from_config(mode_config['software'], atomids, nstates, nghost_states)
         else:
             # is atomatically caught through colt!
             self.logger.error("Mode has to be 'model' or 'ab-initio'")
