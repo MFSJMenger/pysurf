@@ -22,7 +22,7 @@ from pysurf.constants import U_TO_AMU, CM_TO_HARTREE
 from pysurf.system.atominfo import ATOMNAME_TO_ID, MASSES
 from pysurf.utils import exists_and_isfile
 from pysurf.qctools.converter import energy_converter
-from pysurf.colt import FromCommandline
+from pysurf.colt import from_commandline
 from pysurf.analysis import Plot3D
 
 
@@ -218,7 +218,7 @@ class AnalyseFitPes2Nm(Colt):
             energy += [np.copy(result['energy'])]
         return np.array(energy)
 
-@FromCommandline("""
+@from_commandline("""
 inputfile = analyse_fit_pes_2nm.inp :: file
 """)
 def command_analyse_pes(inputfile):

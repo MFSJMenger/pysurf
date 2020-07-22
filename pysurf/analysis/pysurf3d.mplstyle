@@ -1,7 +1,7 @@
 # Matplotlib style for pysurf plotting
 
-# Set color cycle: blue, green, yellow, red, violet, gray
-axes.prop_cycle : cycler('color', ['02a7fe', 'ffe94b',  '3f51b5', 'fd9530', 'fdc03d','fd5621',  '8ac149','9d9d9d'])
+# Set color cycle:
+axes.prop_cycle : cycler('color', ['1c98fa', 'fa6e1c',  'fadc1c', '1cfa7c', 'fdc03d','fd5621',  '8ac149','9d9d9d'])
 axes.labelpad : 30
 
 # Set default figure size
