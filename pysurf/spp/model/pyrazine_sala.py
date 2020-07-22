@@ -112,7 +112,7 @@ class PyrazineSala(Model):
          'v19b': {1: -0.013, 2: -0.006, 3: -0.015, 4: -0.006},
          'v20b': {1: 0.005,  2: 0.003,  3: 0.004,  4: 0.003}}
 
-    implemented = ["energy", "gradient"]
+    implemented = ["energy", "gradient", "fosc"]
 
     @classmethod
     def from_config(cls, config):
@@ -147,8 +147,12 @@ class PyrazineSala(Model):
            of the normal modes are returned for the kinetic Hamiltonian.
         """
         crd = request.crd
+        T = None
         if 'energy' in request.keys():
-            request.set('energy', self.adiab_en(crd))
+            en, T = self.adiab_en(crd)
+            request.set('energy', en)
+        if 'fosc' in request.keys():
+            request.set('fosc', self.adiab_fosc(crd, T))
         if 'gradient' in request.keys():
             grad = self.adiab_grad(crd)
             request.set('gradient', grad)
@@ -159,9 +163,21 @@ class PyrazineSala(Model):
            the position crd
         """
         diab_en = self.diab_en(crd)
-        adiab_en = np.linalg.eig(diab_en)[0]
-        adiab_en = np.sort(adiab_en)
-        return adiab_en
+        # eigh gives eigenvalues and eigenvectors in ascending order for hermitian matrix
+        res = np.linalg.eigh(diab_en)
+        adiab_en = res[0]
+        T = res[1]
+        return adiab_en, T
+
+    def adiab_fosc(self, crd, T=None):
+        """adiab_en returns a one dimensional vector with the adiabatic energies at
+           the position crd
+        """
+        if T is None:
+            diab_en = self.diab_en(crd)
+            T = np.linalg.eigh(diab_en)[1]
+        adiab_fosc = T.dot(self.diab_fosc(crd))
+        return adiab_fosc
 
     def diab_en(self, crd):
         """diab_en returns the full diabatic matrix of the system
@@ -221,6 +237,14 @@ class PyrazineSala(Model):
 
         return diab_en
 
+    def diab_fosc(self, crd):
+        if self.nstates == 3:
+            return np.array([0, 0, 1])
+        if self.nstates == 4:
+            return np.array([0, 0, 0, 1])
+        if self.nstates == 5:
+            return np.array([0, 0, 0, 1, 0])
+
     def adiab_grad(self, crd):
         """adiab_grad calculates and returns the numeric adiabatic gradients
         """
@@ -229,10 +253,10 @@ class PyrazineSala(Model):
         for i in range(len(self.q)):
             crd1 = deepcopy(crd)
             crd1[i] = crd1[i] + dq
-            en1 = self.adiab_en(crd1)
+            en1, _ = self.adiab_en(crd1)
             crd2 = deepcopy(crd)
             crd2[i] = crd2[i] - dq
-            en2 = self.adiab_en(crd2)
+            en2, _ = self.adiab_en(crd2)
             adiab_grad[:, i] = (en1 - en2)/2.0/dq
         return {i: adiab_grad[i] for i in range(self.nstates)}
 
