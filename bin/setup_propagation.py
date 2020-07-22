@@ -19,7 +19,7 @@ class SetupPropagation(SetupBase):
     n_traj = -1 :: int
 
     # Database containing all the initial conditions
-    sampling_db = sampling.db :: existing_file
+    sampling_db = :: existing_file
 
     # Filepath for the inputfile of the Surface Point Provider
     spp = spp.inp :: file
