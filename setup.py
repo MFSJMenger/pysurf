@@ -18,7 +18,7 @@ setup_requirements = ['pytest-runner', ]
 test_requirements = ['pytest>=3', ]
 
 setup(
-    author="Maximilian Menger",
+    author="Maximilian Menger, Johannes Ehrmaier",
     author_email='menger.maximilian@gmail.com',
     python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*',
     classifiers=[

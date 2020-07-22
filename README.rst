@@ -1,23 +1,13 @@
-=====================================================
-PATH: Pythonic Approach to Trajectory Surface Hopping
-=====================================================
-
-Python Surface Hopping Code
-
+=======
+PySurf:
+=======
 
 * Free software: GNU General Public License v3
 
 General Aim:
 ____________
 
- * Python 3.6+
- * Testing: pytest
- * ~80% test coverage
 
-DB:
-___
-
- * Format: NetCDF 
 
 
 Credits
