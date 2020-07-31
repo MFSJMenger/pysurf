@@ -9,7 +9,7 @@ from ..logger import get_logger, Logger
 # Interpolation
 from .dbinter import DataBaseInterpolation
 #
-from .request import RequestGenerator
+from .datacontainer import DataContainerGenerator
 
 """
 TODO:
@@ -188,8 +188,8 @@ class SurfacePointProvider(Colt):
             It does not perform any sanity checks anylonger, so insure that all
             possible requested properties are in used!
         """
-        request = self._request.request(crd, properties, states, same_crd=same_crd)
-        return self._interface.get(request)
+        datacontainer = self._request.request(crd, properties, states, same_crd=same_crd)
+        return self._interface.get(datacontainer)
 
     def _select_interface(self, mode_config, use_db, properties, natoms, 
                           nstates, nghost_states, atomids):
@@ -216,10 +216,10 @@ class SurfacePointProvider(Colt):
                                               properties, model=(mode_config=='model'))
             if use_db['properties'] is not None:
                 properties += use_db['properties']
-            request = RequestGenerator(nstates, properties, use_db=True)
+            request = DataContainerGenerator(nstates, properties, use_db=True)
             self.logger.info("Database ready to use")
         else:
-            request = RequestGenerator(nstates)
+            request = DataContainerGenerator(nstates)
         #
         return request, interface
 

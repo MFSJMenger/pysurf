@@ -196,14 +196,15 @@ class Turbomole(AbinitioBase):
     def _extend_questions(cls, questions):
         questions.generate_cases("method", {name: method.questions for name, method in cls._method.items()})
         
-    def __init__(self, config, atomids, nstates):
+    def __init__(self, config, atomids, nstates, nghost_states):
         self.logger = get_logger('tm_inter.log', 'turbomole_interface')
         self.molecule = Molecule(atomids, None)
         self.nstates = nstates
+        self.nghost_states = nghost_states
         self.atomids = atomids
         self.atomnames = [ATOMID_TO_NAME[idx] for idx in atomids]
         self._update_settings(config, nstates)
-        self.reader._events['ESCFEnergy'].nmax = nstates
+        self.reader._events['ESCFEnergy'].nmax = nstates+nghost_states
 
     def _update_settings(self, config, nstates):
         self.settings = {key: config[key] for key in self.settings}
@@ -211,8 +212,8 @@ class Turbomole(AbinitioBase):
         self.settings['nstates'] = nstates
 
     @classmethod
-    def from_config(cls, config, atomids, nstates):
-        return cls(config, atomids, nstates)
+    def from_config(cls, config, atomids, nstates, nghost_states):
+        return cls(config, atomids, nstates, nghost_states)
 
     def get(self, request):
         # update coordinates
@@ -264,7 +265,8 @@ class Turbomole(AbinitioBase):
         mp2energy = self.reader(ricc2_output, ['MP2Energy'])['MP2Energy']
         energies = [mp2energy]
         if self.nstates > 1:
-            exenergies = self.reader('exstates', ['ADCExEnergies'], {'nstates': self.nstates-1})['ADCExEnergies']
+            exenergies = self.reader('exstates', ['ADCExEnergies'], {'nstates': self.nstates-1+self.nghost_states})['ADCExEnergies']
+            exenergies = exenergies[:self.nstates-1]
             if isinstance(exenergies, list):
                 for ex in exenergies:
                     energies += [mp2energy + ex]
@@ -279,7 +281,7 @@ class Turbomole(AbinitioBase):
                 fosc += foscres
             elif isinstance(foscres, float):
                 fosc += [foscres]
-            request.set('fosc', fosc)
+            request.set('fosc', np.array(fosc).flatten()[:self.nstates])
     
     def _do_energy_dft(self, request):
         #create coord file
@@ -297,7 +299,7 @@ class Turbomole(AbinitioBase):
         energies = [dscfenergy]
         if self.nstates > 1:
             exenergies = self.reader(escf_output, ['ESCFEnergy'])['ESCFEnergy']
-            energies = exenergies
+            energies = exenergies[:self.nstates]
         energies = np.array(energies).flatten()
         request.set('energy', energies)
         #read oscillator strengths if requested
@@ -306,10 +308,10 @@ class Turbomole(AbinitioBase):
             if self.nstates > 1:
                 foscread = self.reader(escf_output, ['ESCFFosc'])['ESCFFosc']
                 if isinstance(foscread, list):
-                        fosc += foscread
+                        fosc += np.array(foscread).flatten()
                 if isinstance(foscread, float):
                     fosc += [foscread]
-            request.set('fosc', fosc)
+            request.set('fosc', np.array(fosc).flatten()[:self.nstates])
 
     def _do_ex_gradient_dft(self, request, state):
         coord = self._write_coord(self.molecule.crd, filename='coord')
@@ -379,7 +381,7 @@ class Turbomole(AbinitioBase):
                     fosc = tpl_fosc
                 else:
                     fosc = ''
-                f.write(tpl_energy.render(states=self.nstates-1, fosc=fosc))
+                f.write(tpl_energy.render(states=self.nstates-1+self.nghost_states, fosc=fosc))
             #for gradients
             if 'gradient' in mode:
                 #check ground state gradient calculation
@@ -405,7 +407,7 @@ class Turbomole(AbinitioBase):
                     f.write(line)
                 else:
                     break
-            f.write(tpl_dft.render(states=self.nstates-1, functional=self.settings['functional'], grid=self.settings['grid']))
+            f.write(tpl_dft.render(states=self.nstates-1+self.nghost_states, functional=self.settings['functional'], grid=self.settings['grid']))
             #for gradients
             if 'gradient' in mode:
                 #check ground state gradient calculation

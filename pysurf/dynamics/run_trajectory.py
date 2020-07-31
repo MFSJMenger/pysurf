@@ -35,7 +35,7 @@ class RunTrajectory(Colt):
     
     restart = True :: bool
 
-    properties = energy, gradient :: list
+#    properties = energy, gradient :: list
     """
 
     @classmethod
@@ -57,7 +57,7 @@ class RunTrajectory(Colt):
                                                                         sampling,
                                                                         config['n_states'],
                                                                         nghost_states = config['nghost_states'],
-                                                                        properties = config['properties'],
+                                                                        #properties = config['properties'],
                                                                         restart=config['restart'],
                                                                         logger=self.logger)
         propagator.run(self.nsteps, config['timestep [fs]']*fs2au)

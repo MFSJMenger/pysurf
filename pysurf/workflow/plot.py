@@ -20,6 +20,17 @@ def setup_lineplot(plot_input: "file") -> "plot":
     return [Plot(plot_config), None]
 
 @engine.register_action
+def mesh_plot(plot_input: "file", data: "meshplotdata") -> "plot":
+    if exists_and_isfile(plot_input):
+       plot_config = Plot.generate_input(plot_input, config=plot_input)
+    else:
+       plot_config = Plot.generate_input(plot_input)
+
+    plot = Plot(plot_config)
+    ax = plot.mesh_plot(data, x_units_in=None, y_units_in=None, ax=None, show_plot=False, save_plot=True)
+    return [plot, ax]
+
+@engine.register_action
 def add_plot(plot: "plot", data: "array2D", style: "style"=None):
     ax = plot[1]
     save_plot = False

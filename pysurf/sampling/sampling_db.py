@@ -10,6 +10,7 @@ from pysurf.colt import Colt
 from pysurf.logger import Logger, get_logger
 #
 from pysurf.system import Molecule
+from pysurf.spp import Model
 from pysurf.sampling.base_sampler import SamplerFactory
 from .base_sampler import DynCondition, CrdCondition
 from .normalmodes import Mode
@@ -50,7 +51,10 @@ class SamplingDB(PySurfDB):
 
         system = getinit['system']
         modes = getinit['modes']
-        model = config['model']
+        if isinstance(system, Model):
+            model = True
+        else:
+            model = False
         if sampler.condition.__name__ == "DynCondition":
             dynsampling = True
         else:

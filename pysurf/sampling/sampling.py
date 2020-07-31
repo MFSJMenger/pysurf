@@ -22,8 +22,6 @@ class Sampling(Colt):
     # Database containing all the initial conditions
     sampling_db = sampling.db :: file
 
-    #State whether the system is a model system
-    model = False :: bool
     """
 
     @classmethod

@@ -22,7 +22,7 @@ class Plot(Colt):
         y_label_unit = True :: bool
         x_label = :: str
         x_label_unit = True :: bool
-        legend = :: python(dict), optional
+        legend = :: list, optional
         title =  :: str, optional
         save_plot = yes :: str :: [yes, no]
         show_plot = True :: bool
@@ -167,7 +167,7 @@ class Plot(Colt):
 
         #legend
         if config['legend'] is not None:
-            ax.legend(**config['legend'])
+            ax.legend(config['legend'])
 
         #save plot
         if config['save_plot'] and save_plot:
@@ -179,3 +179,114 @@ class Plot(Colt):
 
         return ax
 
+
+    def mesh_plot(self, data, x_units_in, y_units_in, ax=None, save_plot=True, show_plot=True):
+        """ 
+        function that plots the data in a mesh plot
+
+        Args:
+            data, numpy array 
+                size (:, 2), containing the x and y data for the plot.
+
+            x_units_in, None or tuple:
+                If it is None, x data will not be converted
+                If it is a tuple of length 2, it has to contain the type of the x-data, i.e. length, energy or time
+                and the units of the input data. The data will be transformed accordingly from this unit to the
+                desired unit given in the Colt questins, i.e. self.config['x_units']
+
+            y_units_in, None or tuple:
+                If it is None, ydata will not be converted
+                If it is a tuple of length 2, it has to contain the type of the y-data, i.e. length, energy or time
+                and the units of the input data. The data will be transformed accordingly from this unit to the
+                desired unit given in the Colt questions, i.e. self.config['y_units']
+
+            ax, optional, pyplot axes object:
+                If ax is set, the Line Plot will be added to the chart, otherwise a new figure is created for the plot.
+
+            line_props, optional, dict:
+                dictionary containing the properties like linestyl, color, width, ... for the line plot. It will be used as is.
+                
+
+        Output:
+            ax, pyplot axes object:
+                ax is the updated axes object with the new plot, or the newly created object if ax was not set.
+
+        """
+
+
+        config = self.config
+         
+        #Get converter for x-data
+        if x_units_in is not None:
+            try:
+                xconverter = globals()[x_units_in[0]+'_converter'].get_converter(x_units_in[1], config['x_units'])
+            except:
+                raise InputException("Converter or units not known")
+        else:
+            xconverter = lambda x: x
+        #Get converter for y-data
+        if y_units_in is not None:
+            try:
+                yconverter = globals()[y_units_in[0]+'_converter'].get_converter(y_units_in[1], config['y_units'])
+            except:
+                    raise InputException("Converter or units not known")
+        else:
+            yconverter = lambda x: x
+        
+        #Convert data
+        x = np.empty_like(data[0])
+        y = np.empty_like(data[1])
+        x = xconverter(data[0])
+        y = yconverter(data[1])
+        if ax is None:
+            fig = plt.figure()
+            ax = fig.add_subplot(1, 1, 1)
+
+#        if config['title'] != None: ax.set_title(config['title'])
+
+
+        #set axis and axis label
+        lbl = r"{}".format(config['x_label'])
+        if config['x_label_unit']:
+            lbl += r" [{}]".format(config['x_units'])
+        ax.set_xlabel(lbl)
+ 
+        scale = False
+        lim = [config['x_start']]
+        lim += [config['x_end']]
+        if None in lim: scale = True
+        ax.set_xlim(*lim, auto=scale)
+
+        if config['x_units'] == 'a.u.':
+            ax.set_xticklabels('' for x in ax.get_xticks())
+        
+        lbl = r"{}".format(config['y_label'])
+        if config['y_label_unit']:
+            lbl += r" [{}]".format(config['y_units'])
+        ax.set_ylabel(lbl)
+        
+        scale = False
+        lim = [config['y_start']]
+        lim += [config['y_end']]
+        if None in lim: scale = True
+        ax.set_ylim(*lim, auto=scale)
+
+        if config['y_units'] == 'a.u.':
+            ax.set_yticklabels('' for y in ax.get_yticks())
+
+        #plot data
+        ax.pcolormesh(x, y, data[2])
+
+        #legend
+        if config['legend'] is not None:
+            ax.legend(config['legend'])
+
+        #save plot
+        if config['save_plot'] and save_plot:
+            plt.savefig(config['save_plot']['plot_file'])
+
+        #show plot
+        if config['show_plot'] and show_plot:
+            plt.show()
+
+        return ax

@@ -5,7 +5,7 @@ axes.prop_cycle : cycler('color', ['1c98fa', 'fa6e1c',  'fadc1c', '1cfa7c', 'fdc
 axes.labelpad : 30
 
 # Set default figure size
-figure.figsize : 12, 8
+figure.figsize : 8, 6
 
 # Set x axis
 xtick.direction : in
@@ -24,13 +24,14 @@ ytick.minor.width : 1.0
 ytick.minor.visible : False
 
 # Set z axis
-ytick.direction : in
-ytick.major.size : 8
-ytick.major.width : 1.0
-ytick.minor.size : 6.0
-ytick.minor.width : 1.0
-ytick.minor.visible : False
-ytick.right : True
+#ztick.direction : in
+#ztick.major.size : 8
+#ztick.major.pad: 3.0
+#ztick.major.width : 1.0
+#ztick.minor.size : 6.0
+#ztick.minor.width : 1.0
+#ztick.minor.visible : False
+#ztick.right : True
 
 # Set line widths
 axes.linewidth : 1.0
@@ -48,7 +49,7 @@ savefig.pad_inches : 0.1
 font.serif : Times
 font.family : serif
 mathtext.fontset : dejavuserif
-font.size : 24
+font.size : 22
 
 # Use LaTeX for math formatting
 text.usetex : True

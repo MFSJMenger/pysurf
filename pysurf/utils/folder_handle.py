@@ -39,7 +39,7 @@ class SubfolderHandle:
     def fileiter(self, filename): 
         """Returns an iterator over all files with name
            filename in folder/subfolder_*/ """
-        for folder in self:
+        for folder in self._folders:
             name = os.path.join(folder, filename)
             if os.path.isfile(name):
                 yield name
@@ -114,3 +114,13 @@ class SubfolderHandle:
         name = self._folder_name(1)
         if self.reg.match(name) is None:
             raise Exception("template and regex are not in sync")
+
+
+class FileHandle(SubfolderHandle):
+    def __init__(self, folder, subfolder, filename):
+        super().__init__(folder, subfolder)
+        self.files = self.fileiter(filename)
+
+    def __iter__(self):
+        for f in self.files:
+            yield f

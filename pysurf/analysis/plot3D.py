@@ -38,7 +38,7 @@ class Plot3D(Plot):
             plt.style.use(style)
         except:
             raise Exception(f"Matplotlib style {style} could not be set")
-            
+
 
 
     def surface_plot(self, data, x_units_in, y_units_in, z_units_in, ax=None, line_props={}, save_plot=True, show_plot=True):
@@ -128,19 +128,23 @@ class Plot3D(Plot):
         ax.set_zlim(*lim, auto=scale)
 
         if config['z_units'] == 'a.u.':
-            ax.set_zticklabels('' for y in ax.get_zticks())
+           ax.set_zticklabels('' for z in ax.get_zticks())
 
         #plot data
         ax.plot_surface(convdatax, convdatay, convdataz, antialiased=True, shade=True, linewidth=0)
 
         #legend
         if config['legend'] is not None:
-            ax.legend(**config['legend'])
+            ax.legend(*config['legend'])
 
+        #reduce number of ticks
+        plt.locator_params(nbins=4)
+        
+        ax.dist = 13
         #save plot
         if config['save_plot'] and save_plot:
             plt.savefig(config['save_plot']['plot_file'])
-
+        
         #show plot
         if config['show_plot'] and show_plot:
             plt.show()

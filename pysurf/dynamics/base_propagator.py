@@ -41,7 +41,7 @@ class PropagatorBase(PropagatorFactory):
     def get_runtime(self):
         return (time.perf_counter() - self.start_time)
 
-    def __init__(self, spp_inp, sampling, nstates, nghost_states, properties=None, restart=True, logger=None):
+    def __init__(self, spp_inp, sampling, nstates, nghost_states, restart=True, logger=None):
         """Setup surface hopping using config in `configfile`
         and a SurfacePointProvider (SPP) abstract class
 
@@ -58,9 +58,9 @@ class PropagatorBase(PropagatorFactory):
         else:
             self.logger = logger
 
-        for prop in properties:
-            if prop not in self.properties:
-                self.properties += [prop]
+#       for prop in properties:
+#           if prop not in self.properties:
+#               self.properties += [prop]
 
         self.init = sampling.get_condition(0)
         # setup SPP

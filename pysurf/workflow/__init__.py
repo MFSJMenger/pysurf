@@ -11,3 +11,4 @@ from . import pysurf
 # type checks at the end
 from . import wf_types
 from . import crds
+from . import copy_execute

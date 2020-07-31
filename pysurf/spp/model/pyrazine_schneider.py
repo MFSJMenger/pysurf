@@ -9,7 +9,7 @@ ev2au = 1./27.2113961
 
 class PyrazineSchneider(Model):
 
-    implemented = ["energy", "gradient"]
+    implemented = ["energy", "gradient", "fosc"]
     frequencies = np.array([0.126*ev2au, 0.074*ev2au, 0.118*ev2au])
     masses = np.array(np.ones(3)/frequencies)
     displacements = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
@@ -45,8 +45,12 @@ class PyrazineSchneider(Model):
            of the normal modes are returned for the kinetic Hamiltonian.
         """
         crd = request.crd
+        T = None
         if 'energy' in request.keys():
-            request.set('energy', self.adiab_en(crd))
+            en, T = self.adiab_en(crd)
+            request.set('energy', en)
+        if 'fosc' in request.keys():
+            request.set('fosc', self.adiab_fosc(crd, T))
         if 'gradient' in request.keys():
             grad = self.adiab_grad(crd)
             request.set('gradient', grad)
@@ -57,9 +61,16 @@ class PyrazineSchneider(Model):
            the position crd
         """
         diab_en = self.diab_en(crd)
-        adiab_en = np.linalg.eig(diab_en)[0]
+        (adiab_en, T) = np.linalg.eigh(diab_en)
         adiab_en = np.sort(adiab_en)
-        return adiab_en
+        return adiab_en, T
+
+    def adiab_fosc(self, crd,  T=None):
+        diab_fosc = [0, 0, 1]
+        if T is None:
+            diab_en = self.diab_en(crd)
+            (en, T) = np.linalg.eigh(diab_en)
+        return np.abs(T.dot(diab_fosc))
 
     def diab_en(self, crd):
         """diab_en returns the full diabatic matrix of the system
@@ -88,10 +99,10 @@ class PyrazineSchneider(Model):
         for i in range(3):
             crd1 = deepcopy(crd)
             crd1[i] = crd1[i] + dq
-            en1 = self.adiab_en(crd1)
+            en1, _ = self.adiab_en(crd1)
             crd2 = deepcopy(crd)
             crd2[i] = crd2[i] - dq
-            en2 = self.adiab_en(crd2)
+            en2, _ = self.adiab_en(crd2)
             adiab_grad[:, i] = (en1 - en2)/2.0/dq
         return {i: adiab_grad[i] for i in range(3)}
 

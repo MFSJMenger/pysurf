@@ -177,7 +177,7 @@ class PyrazineSala(Model):
             diab_en = self.diab_en(crd)
             T = np.linalg.eigh(diab_en)[1]
         adiab_fosc = T.dot(self.diab_fosc(crd))
-        return adiab_fosc
+        return np.abs(adiab_fosc)
 
     def diab_en(self, crd):
         """diab_en returns the full diabatic matrix of the system
