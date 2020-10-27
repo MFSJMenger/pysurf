@@ -1,6 +1,6 @@
 import numpy as np
 
-from pysurf.database import PySurfDB
+from ..database import PySurfDB
 
 class DynDB(PySurfDB):
     variables_molecule = ['crd_equi', 'modes_equi', 'model', 'atomids', 'freqs_equi', 'masses', 'currstate', 'crd', 'veloc', 'energy', 'ekin', 'epot', 'etot', 'time']

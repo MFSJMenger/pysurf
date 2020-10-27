@@ -1,7 +1,7 @@
 import numpy as np
-from pysurf.random.shrandom import RandomNumberGeneratorNP
+from ..random.shrandom import RandomNumberGeneratorNP
 
-from pysurf.spp import SurfacePointProvider
+from ..spp import SurfacePointProvider
 #from pysurf.dynamics import *
 
 from .base_propagator import PropagatorBase

@@ -3,15 +3,16 @@ import numpy as np
 
 from collections import namedtuple
 
-from pysurf.logger import Logger, get_logger
-from pysurf.colt import Colt
-from pysurf.database.database import Database
-from pysurf.database.dbtools import DBVariable
-from pysurf.utils.constants import fs2au
-from pysurf.utils.strutils import split_str
-from pysurf.spp import SurfacePointProvider
+from ..logger import Logger, get_logger
+from ..database.database import Database
+from ..database.dbtools import DBVariable
+from ..utils.constants import fs2au
+from ..utils.strutils import split_str
+from ..spp import SurfacePointProvider
 from .base_propagator import PropagatorFactory
-from pysurf.sampling import Sampling
+from ..sampling import Sampling
+#
+from colt import Colt
 
 
 class RunTrajectory(Colt):

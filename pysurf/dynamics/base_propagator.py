@@ -3,11 +3,12 @@ import os
 import numpy as np
 import time
 
-from pysurf.colt import Plugin
-from pysurf.spp import SurfacePointProvider
-from pysurf.utils import exists_and_isfile
-from pysurf.logger import get_logger
-from pysurf.qctools.converter import Converter, time_converter
+from ..spp import SurfacePointProvider
+from ..utils import exists_and_isfile
+from ..logger import get_logger
+
+from qctools.converter import Converter, time_converter
+from colt import Plugin
 
 from .dyn_db import DynDB
 
