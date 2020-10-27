@@ -1,8 +1,8 @@
 import numpy as np
 
-from pysurf.spp import SurfacePointProvider
-from pysurf.database import PySurfDB
-from pysurf.sampling import Sampler
+from ..spp import SurfacePointProvider
+from ..database import PySurfDB
+from ..sampling import Sampler
 
 from . import engine
 

@@ -4,9 +4,9 @@ import copy
 import numpy as np
 import matplotlib.pyplot as plt
 
-from pysurf.utils import exists_and_isfile
-from pysurf.utils.colors import COLORS
-from pysurf.analysis import Plot
+from ..utils import exists_and_isfile
+from ..utils.colors import COLORS
+from ..analysis import Plot
 
 from . import engine
 

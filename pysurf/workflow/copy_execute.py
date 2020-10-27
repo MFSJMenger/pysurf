@@ -1,7 +1,7 @@
 from shutil import copy2 as copy
 from subprocess import run, CalledProcessError
 
-from pysurf.utils import SubfolderHandle, FileHandle
+from ..utils import SubfolderHandle, FileHandle
 
 from . import engine
 

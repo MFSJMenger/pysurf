@@ -1,4 +1,4 @@
-from pysurf.colt.workflow import WorkflowGenerator
+from colt.workflow import WorkflowGenerator
 
 
 engine = WorkflowGenerator()

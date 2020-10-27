@@ -1,9 +1,10 @@
 import numpy as np
 
-from pysurf.spp import SurfacePointProvider
-from pysurf.database import PySurfDB
-from pysurf.system import ATOMNAME_TO_ID
-from pysurf.qctools.converter import length_converter
+from ..spp import SurfacePointProvider
+from ..database import PySurfDB
+from ..system import ATOMNAME_TO_ID
+#
+from qctools.converter import length_converter
 
 from . import engine
 
