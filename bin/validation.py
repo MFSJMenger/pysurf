@@ -10,7 +10,7 @@ import numpy as np
 from pysurf.database import PySurfDB
 from pysurf.spp import SurfacePointProvider
 from pysurf.logger import get_logger
-from pysurf.colt import Colt
+from colt import Colt
 
 from scipy.optimize import minimize
 

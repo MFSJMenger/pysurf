@@ -1,7 +1,7 @@
 from shutil import copy2 as copy
 from subprocess import run, CalledProcessError
 
-from pysurf.colt import Colt
+from colt import Colt
 from pysurf.utils import SubfolderHandle
 
     

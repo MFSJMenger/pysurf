@@ -3,7 +3,7 @@ import numpy as np
 from scipy.spatial.distance import cdist
 from scipy.spatial.distance import cdist, pdist, squareform
 
-from pysurf.colt import Colt
+from colt import Colt
 from pysurf.database import PySurfDB
 from pysurf.spp import within_trust_radius
 from pysurf.spp import internal

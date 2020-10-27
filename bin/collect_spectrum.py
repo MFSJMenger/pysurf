@@ -2,7 +2,7 @@ import os
 
 from copy_execute import CopyExecute
 from setup_spectrum import SetupSpectrum
-from pysurf.colt import Colt
+from colt import Colt
 from pysurf.utils import exists_and_isfile
 from pysurf.utils import SubfolderHandle
 from pysurf.logger import get_logger, Logger

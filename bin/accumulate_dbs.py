@@ -1,7 +1,7 @@
 import os
 from shutil import copy2 as copy
 
-from pysurf.colt import Colt
+from colt import Colt
 from pysurf.utils import SubfolderHandle
 from pysurf.utils import exists_and_isfile
 from pysurf.database import PySurfDB

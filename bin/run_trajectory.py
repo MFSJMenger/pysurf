@@ -1,5 +1,5 @@
-from pysurf.colt import Colt
-from pysurf.colt import from_commandline
+from colt import Colt
+from colt import from_commandline
 from pysurf.dynamics.run_trajectory import RunTrajectory
 
 
