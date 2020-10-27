@@ -117,9 +117,8 @@ class Wigner(DynSamplerBase):
 
 
 def get_initial_condition(system, modes):
-    """Generate an initial condition based on the normal modes of
-       the molecule, according to a Wigner distribution
-       Method is based on L. Sun, W. L. Hase J. Chem. Phys. 133, 044313 (2010).
+    """Wigner sampling condition according to
+       L. Sun, W. L. Hase J. Chem. Phys. 133, 044313 (2010).
     """
     Epot = 0.0
     #
