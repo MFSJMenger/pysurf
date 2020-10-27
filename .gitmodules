@@ -1,6 +1,0 @@
-[submodule "colt"]
-	path = libraries/colt
-	url = git://github.com/mfsjmenger/colt.git
-[submodule "libraries/qctools"]
-	path = libraries/qctools
-	url = git://github.com/mfsjmenger/qctools.git
