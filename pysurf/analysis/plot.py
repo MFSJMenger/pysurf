@@ -3,8 +3,9 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-from pysurf.colt import Colt
-from pysurf.qctools.converter import energy_converter, length_converter, time_converter
+#
+from colt import Colt
+from qctools.converter import energy_converter, length_converter, time_converter
 
 class Plot(Colt):
     """ Plotting class for pysurf results. It uses Matplotlib to plot and Colt to 

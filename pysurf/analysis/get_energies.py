@@ -8,9 +8,10 @@ from pysurf.database.dbtools import DatabaseTools
 from pysurf.database.dbtools import DBVariable
 from pysurf.database.dbtools import load_database
 from pysurf.system.atominfo import get_atom_from_mass
-from pysurf.colt import FromCommandline
 
 from pysurf.utils.constants import au2ev
+#
+from colt import from_commandline
 
 
 
@@ -22,7 +23,7 @@ def write_energy(energy, step):
     return string
 
 
-@FromCommandline("""
+@from_commandline("""
 outfile = energy.dat :: file
 infile = prop.db :: file
 """)

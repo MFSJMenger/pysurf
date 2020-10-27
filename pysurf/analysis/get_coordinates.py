@@ -9,7 +9,8 @@ from pysurf.database.dbtools import DatabaseTools
 from pysurf.database.dbtools import DBVariable
 from pysurf.database.dbtools import load_database
 from pysurf.system.atominfo import get_atom_from_mass
-from pysurf.colt import FromCommandline
+#
+from colt import from_commandline
 
 from pysurf.utils.constants import bohr2angstrom
 
@@ -33,7 +34,7 @@ def write_crd(crd, step):
     return string
 
 
-@FromCommandline("""
+@from_commandline("""
 infile = :: existing_file
 outfile = crd.xyz :: file
 """)

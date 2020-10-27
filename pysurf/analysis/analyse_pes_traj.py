@@ -1,9 +1,10 @@
 import numpy as np
 
 from pysurf.analysis import Plot
-from pysurf.colt import Colt
 from pysurf.dynamics import DynDB
 from pysurf.utils import exists_and_isfile
+#
+from colt import Colt
 
 class PESTraj(Colt):
     _questions = """

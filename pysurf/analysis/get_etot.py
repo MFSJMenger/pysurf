@@ -10,7 +10,7 @@ from pysurf.database.dbtools import load_database
 from pysurf.system.atominfo import get_atom_from_mass
 
 from pysurf.utils.constants import au2ev
-from pysurf.colt import FromCommandline
+from colt import from_commandline
 
 
 
@@ -21,7 +21,7 @@ def write_etot(ekin, epot, etot, step):
     return string
 
 
-@FromCommandline("""
+@from_commandline("""
 infile = prop.db :: file_exists
 outfile = etot.dat :: file
 """)

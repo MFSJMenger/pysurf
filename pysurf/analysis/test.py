@@ -1,4 +1,5 @@
-from pysurf.colt import Colt
+from colt import Colt
+
 
 class Test(Colt):
     _questions = """

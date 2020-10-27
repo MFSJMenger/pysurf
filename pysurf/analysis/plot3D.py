@@ -4,8 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from mpl_toolkits.mplot3d import Axes3D
-from pysurf.colt import Colt
-from pysurf.qctools.converter import energy_converter, length_converter, time_converter
+#
+from colt import Colt
+from qctools.converter import energy_converter, length_converter, time_converter
 
 from .plot import Plot
 

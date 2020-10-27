@@ -10,7 +10,8 @@ from pysurf.database.dbtools import load_database
 from pysurf.system.atominfo import get_atom_from_mass
 
 from pysurf.utils.constants import bohr2angstrom
-from pysurf.colt import FromCommandline
+#
+from colt import from_commandline
 
 def write_veloc(atoms, crd, step):
     string = str(len(crd)) + '\n'
@@ -28,7 +29,7 @@ def write_veloc_model(crd, step):
     string += '\n'
     return string
 
-@FromCommandline("""
+@from_commandline("""
 infile = prop.db :: file_exists
 outfile = veloc.dat :: file
 """)

@@ -10,7 +10,6 @@ import numpy as np
 from pysurf.database import PySurfDB
 from pysurf.spp import SurfacePointProvider
 from pysurf.logger import get_logger
-from pysurf.colt import Colt
 from pysurf.sampling.normalmodes import Mode
 from pysurf.system import Molecule
 from pysurf.sampling.normalmodes import NormalModes as nm
@@ -18,12 +17,14 @@ from pysurf.molden import MoldenParser
 from pysurf.constants import U_TO_AMU, CM_TO_HARTREE
 from pysurf.system.atominfo import ATOMNAME_TO_ID, MASSES
 from pysurf.utils import exists_and_isfile
-from pysurf.qctools.converter import energy_converter
-from pysurf.colt import FromCommandline
 
 from pysurf.analysis import Plot
 
 from scipy.optimize import minimize
+#
+from colt import from_commandline
+from colt import Colt
+from qctools.converter import energy_converter
 
 
 
@@ -200,7 +201,7 @@ class AnalyseFitPesNm(Colt):
             energy += [np.copy(result['energy'])]
         return energy
 
-@FromCommandline("""
+@from_commandline("""
 inputfile = analyse_fit_pes_nm.inp :: file
 """)
 def command_analyse_pes(inputfile):

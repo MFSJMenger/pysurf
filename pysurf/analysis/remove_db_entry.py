@@ -1,7 +1,8 @@
 from pysurf.database.database import Database
-from pysurf.colt import FromCommandline
+from colt import from_commandline
 
-@FromCommandline("""
+
+@from_commandline("""
 db = :: file
 rm_entry = :: int
 """)

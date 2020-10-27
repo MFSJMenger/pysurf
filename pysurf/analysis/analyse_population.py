@@ -3,12 +3,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from pysurf.sampling import Sampling
-from pysurf.colt import Colt, from_commandline 
-from pysurf.qctools.converter import Converter, time_converter
 from pysurf.utils import exists_and_isfile
 from pysurf.analysis import Plot
 from pysurf.utils import SubfolderHandle
 from pysurf.dynamics import DynDB
+#
+from qctools.converter import Converter, time_converter
+from colt import Colt, from_commandline 
 
 class NoFurtherQuestions(Colt):
     _questions = ""

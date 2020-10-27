@@ -3,10 +3,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from pysurf.sampling import Sampling
-from pysurf.colt import Colt, FromCommandline
-from pysurf.qctools.converter import Converter, energy_converter
 from pysurf.utils import exists_and_isfile
 from pysurf.analysis import Plot
+#
+from colt import Colt, from_commandline 
+from qctools.converter import Converter, energy_converter
 
 class NoFurtherQuestions(Colt):
     _questions = ""
@@ -146,7 +147,7 @@ class AnalyseSpectrum(Colt):
 
 
 
-@FromCommandline("""
+@from_commandline("""
 inputfile = spectrum/analyse_spectrum.inp :: file
 """)
 def command_analyse_spectrum(inputfile):
