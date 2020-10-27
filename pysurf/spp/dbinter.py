@@ -3,12 +3,13 @@ from abc import abstractmethod
 from scipy.spatial.distance import cdist, pdist
 import numpy as np
 
-from ..colt import Colt, Plugin
-from ..colt.obj import NoFurtherQuestions
 from ..database.pysurf_db import PySurfDB
 from ..utils.osutils import exists_and_isfile
 # logger
 from ..logger import get_logger
+#
+from colt import Colt, Plugin
+from colt.obj import NoFurtherQuestions
 
 
 def internal(crd):

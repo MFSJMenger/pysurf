@@ -7,13 +7,13 @@ import numpy as np
 #
 from jinja2 import Template
 #
-from pysurf.qctools import generate_filereader, Event
-from pysurf.qctools.events import join_events
+from qctools import generate_filereader, Event
+from qctools.events import join_events
 #
-from pysurf.colt import Colt
-from pysurf.utils import exists_and_isfile
-from pysurf.system import ATOMID_TO_NAME
-from pysurf.logger import Logger, get_logger
+from colt import Colt
+from ...utils import exists_and_isfile
+from ...system import ATOMID_TO_NAME
+from ...logger import Logger, get_logger
 #
 from . import AbinitioBase
 from ...system import Molecule

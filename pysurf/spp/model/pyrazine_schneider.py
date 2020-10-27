@@ -1,7 +1,7 @@
 import numpy as np
 from copy import deepcopy
 from ..methodbase import Model
-from pysurf.system import Mode
+from ...system import Mode
 
 
 

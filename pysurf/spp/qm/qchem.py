@@ -5,11 +5,12 @@ import os
 from jinja2 import Template
 import numpy as np
 #
-from ...qctools import generate_filereader, Event
-from ...qctools.events import join_events
 #
 from . import AbinitioBase
 from ...system import Molecule
+#
+from qctools import generate_filereader, Event
+from qctools.events import join_events
 
 
 qchem = """

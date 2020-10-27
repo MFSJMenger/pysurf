@@ -1,8 +1,8 @@
 import numpy as np
 from copy import deepcopy
 from ..methodbase import Model
-from pysurf.system import Mode
-from pysurf.qctools.converter import energy_converter 
+from ...system import Mode
+from qctools.converter import energy_converter 
 
 
 ev2au = 1./27.2113961
