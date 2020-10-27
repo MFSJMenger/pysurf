@@ -2,7 +2,7 @@ from collections.abc import Mapping
 import numpy as np
 
 
-class DataContainerGenerator:
+class RequestGenerator:
     """Abstraction to generate Requests consistently"""
 
     def __init__(self, nstates, properties=None, use_db=False):
@@ -52,7 +52,7 @@ class StateData:
         return self.data[idx]
 
 
-class DataContainer(Mapping):
+class Request(Mapping):
 
     def __init__(self, crd, properties, states, same_crd=False):
         self._properties = {prop: None for prop in properties if prop != 'crd'}

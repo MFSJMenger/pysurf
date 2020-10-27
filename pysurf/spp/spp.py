@@ -2,14 +2,14 @@ import os
 # Numpy
 import numpy as np
 # Database related
-from ..colt import Colt, Plugin
-from ..colt.obj import NoFurtherQuestions
+from colt import Colt, Plugin
+from colt.obj import NoFurtherQuestions
 # logger
 from ..logger import get_logger, Logger
 # Interpolation
 from .dbinter import DataBaseInterpolation
 #
-from .datacontainer import DataContainerGenerator
+from .request import RequestGenerator
 
 """
 TODO:
@@ -216,10 +216,10 @@ class SurfacePointProvider(Colt):
                                               properties, model=(mode_config=='model'))
             if use_db['properties'] is not None:
                 properties += use_db['properties']
-            request = DataContainerGenerator(nstates, properties, use_db=True)
+            request = RequestGenerator(nstates, properties, use_db=True)
             self.logger.info("Database ready to use")
         else:
-            request = DataContainerGenerator(nstates)
+            request = RequestGenerator(nstates)
         #
         return request, interface
 
