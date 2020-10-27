@@ -14,52 +14,42 @@ PySurf: A Framework for Database Accelerated Quantum Chemistry
             |___/                           
 
 
-::
 
-   ______        _____                __ 
-   | ___ \      /  ___|              / _|
-   | |_/ /_   _ \ `--.  _   _  _ __ | |_ 
-   |  __/| | | | `--. \| | | || '__||  _|
-   | |   | |_| |/\__/ /| |_| || |   | |  
-   \_|    \__, |\____/  \__,_||_|   |_|  
-           __/ |                         
-          |___/ 
+Requirements
+------------
+
+    - pycolt >=0.2
+    - qctools
+
+Both can be installed by:
 
 ::
 
-    _______           _______           _______  _______ 
-   (  ____ )|\     /|(  ____ \|\     /|(  ____ )(  ____ \
-   | (    )|( \   / )| (    \/| )   ( || (    )|| (    \/
-   | (____)| \ (_) / | (_____ | |   | || (____)|| (__    
-   |  _____)  \   /  (_____  )| |   | ||     __)|  __)   
-   | (         ) (         ) || |   | || (\ (   | (      
-   | )         | |   /\____) || (___) || ) \ \__| )      
-   |/          \_/   \_______)(_______)|/   \__/|/       
-   
-::
+    pip install pycolt qctools
 
-     ____          ____                 __ 
-    |  _ \  _   _ / ___|  _   _  _ __  / _|
-    | |_) || | | |\___ \ | | | || '__|| |_ 
-    |  __/ | |_| | ___) || |_| || |   |  _|
-    |_|     \__, ||____/  \__,_||_|   |_|  
-            |___/                          
+Additionally:
+
+    - netcdf4
+    - numpy
+    - matplotlib
 
 
 
-
-
-
-* Free software: GNU General Public License v3
+* Free software: Apache License 2.0
 
 General Aim:
 ____________
 
-
+    - Fast prototyping
+    - Easily extensible
+    - Light-weight 
+    - Developer/user friendly
 
 
 Credits
 -------
+
+This work was supported by the Innovational Research Incentives Scheme Vidi 2017 with project number 016.Vidi.189.044, (partly) funded by the Dutch Research Council (NWO).
 
 This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
 
