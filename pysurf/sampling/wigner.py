@@ -1,10 +1,9 @@
 import numpy as np
 import numpy.random as random
 #
-from pysurf.constants import U_TO_AMU, CM_TO_HARTREE
-from pysurf.molden import MoldenParser
-from pysurf.spp import ModelFactory
-from pysurf.colt import Colt
+from ..constants import U_TO_AMU, CM_TO_HARTREE
+from ..molden import MoldenParser
+from ..spp import ModelFactory
 #
 from ..system import Molecule
 from ..system.atominfo import MASSES
@@ -12,6 +11,8 @@ from ..system.atominfo import ATOMNAME_TO_ID
 from .normalmodes import NormalModes as nm
 from .normalmodes import Mode
 from .base_sampler import DynSamplerBase, DynCondition
+#
+from colt import Colt
 
 
 class Molden(Colt):

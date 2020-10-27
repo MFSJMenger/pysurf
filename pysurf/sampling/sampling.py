@@ -3,10 +3,11 @@ import numpy as np
 from .sampling_db import SamplingDB
 from .base_sampler import SamplerFactory
 
-from pysurf.utils import exists_and_isfile
-from pysurf.logger import Logger, get_logger
-from pysurf.colt import Colt
-from pysurf.system import Molecule
+from ..utils import exists_and_isfile
+from ..logger import Logger, get_logger
+from ..system import Molecule
+#
+from colt import Colt
 
 
 class Sampling(Colt):

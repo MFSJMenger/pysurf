@@ -1,7 +1,7 @@
 from collections import namedtuple
 from abc import abstractmethod
 
-from pysurf.colt import Plugin
+from colt import Plugin
 
 CrdCondition = namedtuple("CrdCondition",['crd'])
 DynCondition = namedtuple("DynCondition", ['crd', 'veloc', 'state'])

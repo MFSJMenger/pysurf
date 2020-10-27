@@ -4,16 +4,17 @@ from copy import deepcopy
 #
 import numpy as np
 #from pysurf.logger import get_logger
-from pysurf.utils.osutils import exists_and_isfile
-from pysurf.database.database import Database
-from pysurf.database.dbtools import DBVariable
-from pysurf.colt import Colt
-from pysurf.logger import Logger, get_logger
+from ..utils.osutils import exists_and_isfile
+from ..database.database import Database
+from ..database.dbtools import DBVariable
+from ..logger import Logger, get_logger
 #
-from pysurf.system import Molecule
-from pysurf.sampling.base_sampler import SamplerFactory
+from ..system import Molecule
+from ..sampling.base_sampler import SamplerFactory
 from .base_sampler import DynCondition, CrdCondition
 from .normalmodes import Mode
+#
+from colt import Colt
 
 
 

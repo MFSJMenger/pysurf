@@ -1,9 +1,9 @@
 import numpy as np
 
-from pysurf.colt import Colt
-from pysurf.spp import ModelFactory
-from pysurf.molden import MoldenParser
-from pysurf.constants import U_TO_AMU, CM_TO_HARTREE
+from colt import Colt
+from ..spp import ModelFactory
+from ..molden import MoldenParser
+from ..constants import U_TO_AMU, CM_TO_HARTREE
 
 from .base_sampler import CrdSamplerBase
 from .normalmodes import NormalModes as nm

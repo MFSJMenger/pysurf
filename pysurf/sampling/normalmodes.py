@@ -4,7 +4,7 @@ from collections import namedtuple
 #
 import numpy as np
 #
-from pysurf.constants import U_TO_AMU
+from ..constants import U_TO_AMU
 #
 
 Mode = namedtuple("Mode", ["freq", "displacements"])
