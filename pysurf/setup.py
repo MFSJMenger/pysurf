@@ -2,7 +2,8 @@ from abc import abstractmethod
 #
 from .utils import SubfolderHandle
 from .logger import get_logger
-from .colt import Colt
+#
+from colt import Colt
 
 
 class SetupBase(Colt, SubfolderHandle):

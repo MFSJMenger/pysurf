@@ -9,7 +9,7 @@ __version__ = '0.1.0'
 #
 import os
 #
-from .colt import PluginLoader
+from colt import PluginLoader
 from .spp.spp import SurfacePointProvider
 from .spp import  AbinitioBase, Model, Interpolator
 # load plugins
