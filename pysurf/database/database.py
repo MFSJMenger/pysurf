@@ -1,6 +1,6 @@
 import numpy as np
 
-from pysurf.utils import exists_and_isfile
+from ..utils import exists_and_isfile
 from .dbtools import DatabaseRepresentation, DatabaseGenerator
 from .dbtools import load_database as l_db
 

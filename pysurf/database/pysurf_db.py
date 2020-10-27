@@ -1,10 +1,10 @@
 from functools import lru_cache
 import numpy as np
 #
-from pysurf.utils import exists_and_isfile
+from ..utils import exists_and_isfile
 from .dbtools import DatabaseGenerator
 from .database import Database
-from pysurf.system import Molecule, Mode, ModelInfo
+from ..system import Molecule, Mode, ModelInfo
 
 
 def cached_property(func):
