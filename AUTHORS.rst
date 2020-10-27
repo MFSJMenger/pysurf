@@ -12,6 +12,8 @@ Development Lead
 Contributors
 ------------
 
+* Albert Thie
+
 
 Acknowledgment
 --------------
