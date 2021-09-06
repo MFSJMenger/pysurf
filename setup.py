@@ -11,7 +11,7 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = ['Click>=7.0', ]
+requirements = [ ]
 
 setup_requirements = ['pytest-runner', ]
 
@@ -20,27 +20,21 @@ test_requirements = ['pytest>=3', ]
 setup(
     author="Maximilian Menger, Johannes Ehrmaier",
     author_email='menger.maximilian@gmail.com',
-    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*',
+    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+        'License :: OSI Approved :: Apache License 2.0',
         'Natural Language :: English',
-        "Programming Language :: Python :: 2",
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
     ],
     description="Python Surface Hopping Code",
     entry_points={
-        'console_scripts': [
-            'pysurf=pysurf.cli:main',
-        ],
+        'console_scripts': [],
     },
     install_requires=requirements,
-    license="GNU General Public License v3",
+    license="Apache License 2.0",
     long_description=readme + '\n\n' + history,
     include_package_data=True,
     keywords='pysurf',
