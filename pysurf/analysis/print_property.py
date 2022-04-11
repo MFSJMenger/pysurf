@@ -31,7 +31,7 @@ def write_crd(crd, step):
 
 class PrintProperty(Colt):
 
-    _questions="""
+    _user_input ="""
         infile = :: existing_file
 
         property = :: str

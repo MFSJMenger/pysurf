@@ -25,14 +25,14 @@ class AbinitioFactory(Plugin):
     _is_plugin_factory = True
     _plugins_storage = 'software'
 
-    _questions = """
+    _user_input = """
         software =
     """
 
     reader = None
 
     @classmethod
-    def _extend_questions(cls, questions):
+    def _extend_user_input(cls, questions):
         questions.add_branching("software", {name: software.questions 
                                              for name, software in cls.software.items()})
 
@@ -43,12 +43,12 @@ class ModelFactory(Plugin):
     _is_plugin_factory = True
     _plugins_storage = '_models'
 
-    _questions = """
+    _user_input = """
         model =
     """
 
     @classmethod
-    def _extend_questions(cls, questions):
+    def _extend_user_input(cls, questions):
         questions.generate_cases("model", {name: model.questions 
                                            for name, model in cls._models.items()})
 
@@ -58,7 +58,7 @@ class SurfacePointProvider(Colt):
         to perform calculations of a given system at a specific coordinate.
     """
     # Main Questions for SPP
-    _questions = """
+    _user_input = """
         logging = debug :: str ::
         mode = ab-initio
         use_db = no
@@ -74,7 +74,7 @@ class SurfacePointProvider(Colt):
             }
 
     @classmethod
-    def _extend_questions(cls, questions):
+    def _extend_user_input(cls, questions):
         """ Extend the questions of the surface point provider using
             the questions of the `Abinitio` and `Model` """
         questions.generate_cases("mode", {name: mode.questions for name, mode in cls._modes.items()})

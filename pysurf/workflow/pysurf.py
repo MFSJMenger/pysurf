@@ -72,7 +72,7 @@ def sp_calc(spp: "spp", crd: "crd", properties: "list"=['energy']) -> "request":
     return spp.request(crd, properties)
 
 def _get_spp_config_analysis(filename):
-    questions = SurfacePointProvider.generate_questions(presets="""
+    questions = SurfacePointProvider.generate_user_input(presets="""
             use_db=yes :: yes
             [use_db(yes)]
             write_only = no :: no

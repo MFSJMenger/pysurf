@@ -20,7 +20,7 @@ from colt import Colt
 
 
 class Sampler(Colt):
-    _questions = """
+    _user_input = """
     method = :: str
 
     #State whether the system is a model system
@@ -28,7 +28,7 @@ class Sampler(Colt):
     """
 
     @classmethod
-    def _extend_questions(cls, questions):
+    def _extend_user_input(cls, questions):
         questions.generate_cases("method", {name: method.questions
                                  for name, method in SamplerFactory._methods.items()})
 

@@ -12,13 +12,13 @@ from qctools.converter import Converter, time_converter
 from colt import Colt, from_commandline 
 
 class NoFurtherQuestions(Colt):
-    _questions = ""
+    _user_input = ""
 
 
 
 class AnalysePopulation(Colt):
 
-    _questions="""
+    _user_input ="""
     time_units = fs :: str :: [au, fs]
     save_data = yes :: str :: [yes, no]
     plot_population = yes :: str :: [yes, no]
@@ -38,7 +38,7 @@ class AnalysePopulation(Colt):
             }
     
     @classmethod
-    def _extend_questions(cls, questions):
+    def _extend_user_input(cls, questions):
         questions.generate_cases('save_data', {name: mode for name, mode in cls._save_data.items() })
         questions.generate_cases('plot_population', {name: mode for name, mode in cls._plot_population.items()})
 
@@ -48,7 +48,7 @@ class AnalysePopulation(Colt):
             config = cls.generate_input(inputfile, config=None)
         else:
             config = cls.generate_input(inputfile, config=inputfile)
-        quests = cls.generate_questions(config=inputfile)
+        quests = cls.generate_user_input(config=inputfile)
         config = quests.check_only(inputfile)
         
         plot_config={}

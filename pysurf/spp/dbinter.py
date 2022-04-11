@@ -28,7 +28,7 @@ class InterpolatorFactory(Plugin):
 
 class Interpolator(InterpolatorFactory):
 
-    _questions="""
+    _user_input = """
     weights_file = :: file, optional
     # only fit to the existing data
     fit_only = False :: bool
@@ -42,7 +42,7 @@ class Interpolator(InterpolatorFactory):
     _register_plugin = False
 
     @classmethod
-    def _extend_questions(cls, questions):
+    def _extend_user_input(cls, questions):
         questions.generate_cases("interpolator",
                                  {name: interpolator.questions
                                   for name, interpolator in cls.plugins.items()})
@@ -184,7 +184,7 @@ class DataBaseInterpolation(Colt):
         saves the data and does the interpolation
     """
 
-    _questions = """
+    _user_input = """
         # additional properties to be fitted
         properties = :: list, optional
         # only write
@@ -198,7 +198,7 @@ class DataBaseInterpolation(Colt):
                    'no': Interpolator
                   }
     @classmethod
-    def _extend_questions(cls, questions):
+    def _extend_user_input(cls, questions):
         questions.generate_cases("write_only", {name: mode.questions for name, mode in cls._write_only.items()})
 #        questions.generate_block("interpolator", Interpolator.questions)
 

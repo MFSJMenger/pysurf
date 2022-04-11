@@ -14,11 +14,11 @@ class Plot3D(Plot):
     """ Plotting class for pysurf results. It uses Matplotlib to plot and Colt to 
         handle the user input
     """
-    _questions = 'inherited'
-    extend_questions : 'inherited'
+    _user_input = 'inherited'
+    extend_user_input : 'inherited'
 
     @classmethod
-    def _extend_questions(cls, questions):
+    def _extend_user_input(cls, questions):
         questions.add_questions_to_block("""
         z_units = au :: str :: [au, eV, fs, a.u., nm, ang, bohr, ps, ns]
         z_start =  :: float, optional

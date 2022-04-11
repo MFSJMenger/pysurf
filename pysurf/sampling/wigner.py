@@ -16,14 +16,14 @@ from colt import Colt
 
 
 class Molden(Colt):
-    _questions = """
+    _user_input = """
     moldenfile = :: existing_file
     """
 
 
 class Wigner(DynSamplerBase):
 
-    _questions = """
+    _user_input = """
         # Input source for the normal modes and/or frequencies, which are used to generate the
         # initial conditions.
         from = :: str
@@ -34,7 +34,7 @@ class Wigner(DynSamplerBase):
     }
 
     @classmethod
-    def _extend_questions(cls, questions):
+    def _extend_user_input(cls, questions):
         questions.generate_cases("from", {name: val.questions for name, val in cls._from.items()})
         
     

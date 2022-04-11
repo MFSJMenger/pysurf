@@ -12,7 +12,7 @@ class Plot(Colt):
         handle the user input
     """
 
-    _questions = """
+    _user_input = """
         x_units = au :: str :: [au, eV, fs, a.u., nm, ang, bohr, ps, ns]
         y_units = au :: str :: [au, eV, fs, a.u., nm, ang, bohr, ps, ns]
         x_start =  :: float, optional
@@ -37,7 +37,7 @@ class Plot(Colt):
             }
 
     @classmethod
-    def _extend_questions(cls, questions):
+    def _extend_user_input(cls, questions):
         questions.generate_cases('save_plot', {name: mode for name, mode in cls._save_plot.items()})
 
     @classmethod
