@@ -33,7 +33,7 @@ class AbinitioFactory(Plugin):
 
     @classmethod
     def _extend_user_input(cls, questions):
-        questions.add_branching("software", {name: software.questions 
+        questions.add_branching("software", {name: software.colt_user_input
                                              for name, software in cls.software.items()})
 
 
@@ -49,7 +49,7 @@ class ModelFactory(Plugin):
 
     @classmethod
     def _extend_user_input(cls, questions):
-        questions.generate_cases("model", {name: model.questions 
+        questions.generate_cases("model", {name: model.colt_user_input
                                            for name, model in cls._models.items()})
 
 
@@ -77,8 +77,8 @@ class SurfacePointProvider(Colt):
     def _extend_user_input(cls, questions):
         """ Extend the questions of the surface point provider using
             the questions of the `Abinitio` and `Model` """
-        questions.generate_cases("mode", {name: mode.questions for name, mode in cls._modes.items()})
-        questions.generate_cases("use_db", {name: mode.questions for name, mode in cls._database.items()})
+        questions.generate_cases("mode", {name: mode.colt_user_input for name, mode in cls._modes.items()})
+        questions.generate_cases("use_db", {name: mode.colt_user_input for name, mode in cls._database.items()})
 
     @classmethod
     def from_config(cls, config, properties, nstates, natoms, *,

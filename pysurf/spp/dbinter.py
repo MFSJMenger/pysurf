@@ -44,7 +44,7 @@ class Interpolator(InterpolatorFactory):
     @classmethod
     def _extend_user_input(cls, questions):
         questions.generate_cases("interpolator",
-                                 {name: interpolator.questions
+                                 {name: interpolator.colt_user_input
                                   for name, interpolator in cls.plugins.items()})
     
     @classmethod
@@ -199,7 +199,7 @@ class DataBaseInterpolation(Colt):
                   }
     @classmethod
     def _extend_user_input(cls, questions):
-        questions.generate_cases("write_only", {name: mode.questions for name, mode in cls._write_only.items()})
+        questions.generate_cases("write_only", {name: mode.colt_user_input for name, mode in cls._write_only.items()})
 #        questions.generate_block("interpolator", Interpolator.questions)
 
     @classmethod

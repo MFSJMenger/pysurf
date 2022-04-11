@@ -65,7 +65,7 @@ class DatabaseGenerator(Generator):
     leafnode_type = (str, int, _DBVariable)
 
     def __init__(self, string):
-        tree, _keys = self._configstring_to_keys_and_tree(string)
+        tree, _keys = self._configstring_to_keys_and_tree(string, None)
         if 'vars' in tree:
             tree['variables'] = tree.pop('vars')
         if 'dims' in tree:
@@ -73,7 +73,7 @@ class DatabaseGenerator(Generator):
 
         self.tree = tree
 
-    def leaf_from_string(self, name, value, parent):
+    def leaf_from_string(self, entry, *, parent=None):
         """Create a leaf from an entry in the config file
 
         Args:
@@ -95,7 +95,7 @@ class DatabaseGenerator(Generator):
                 If the value cannot be parsed
         """
         if parent in ["vars", "variables"]:
-            typ, dims = value.split(self.seperator)
+            typ, dims = entry.value.split(self.seperator)
             # get rid of brackets
             dims = dims.replace("(", "").replace(")", "")
             # split according to , or not
@@ -106,9 +106,9 @@ class DatabaseGenerator(Generator):
             # return DBVariable
             return _DBVariable(self.select_type(typ), dims)
         elif parent in ["dims", "dimensions"]:
-            if value in ['unlimited', 'unlim']:
+            if entry.value in ['unlimited', 'unlim']:
                 return 'unlimited'
-            return int(value)
+            return int(entry.value)
         else:
             raise ValueError("Database can only have Dimensions and Variables")
 

@@ -38,7 +38,7 @@ class CrdSamplerBase(SamplerFactory):
 class DynSamplerFactory(CrdSamplerBase):
     """Factory to store intial condition samplers"""
     # setup questions
-    colt_user_input = 'inherited'
+    _colt_user_input = 'inherited'
     extend_user_input: 'inherited'
     # setup plugin
     _plugins_storage = '_methods'
@@ -64,7 +64,7 @@ class DynSamplerBase(DynSamplerFactory):
     """Base Class for Dynamics Conditions Sampler"""
 
     _register_plugin = False
-    colt_user_input = 'inherited'
+    _colt_user_input = 'inherited'
 
     @classmethod
     @abstractmethod
