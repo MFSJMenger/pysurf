@@ -11,7 +11,7 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = ['pycolt>=0.5.3', 'qctools>=0.3.0', 'netcdf4>=1.5', 'numpy>=1.22', 'scipy>=1.8', 'jinja2>=3.1']
+requirements = ['pycolt>=0.5.3', 'qctools>=0.3.0', 'netcdf4>=1.5', 'numpy>=1.21', 'scipy>=1.8', 'jinja2>=3.1']
 
 setup_requirements = ['pytest-runner', ]
 
