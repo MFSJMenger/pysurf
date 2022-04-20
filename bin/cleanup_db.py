@@ -10,7 +10,7 @@ from pysurf.spp import internal
 
 
 class CleanupDB(Colt):
-    _questions = """
+    _user_input = """
     db_in = db.dat :: file
     db_out = clean_db.dat :: file
     trust_radius_general = 0.75 :: float

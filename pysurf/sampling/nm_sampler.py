@@ -48,7 +48,7 @@ class NMSampler(CrdSamplerBase):
 
     @classmethod
     def _extend_user_input(cls, questions):
-        questions.generate_cases("from", {name: method.questions
+        questions.generate_cases("from", {name: method.colt_user_input
                                  for name, method in cls._from.items()})
         questions.generate_cases("select_nmodes", {name: value
                                  for name, value in cls._select_nmodes.items()})

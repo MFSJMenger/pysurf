@@ -10,7 +10,7 @@ class SubmitSpecCalc(Colt):
 
     folder = SetupSpectrum.folder
     subfolder = SetupSpectrum.subfolder
-    _questions="""
+    _user_input ="""
     copy = :: list
     exe = :: str
     """

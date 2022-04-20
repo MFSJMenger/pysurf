@@ -24,7 +24,7 @@ class SinglePointCalculation(Colt):
         Methods:
     """
 
-    _questions = """
+    _user_input = """
     # Number of states
     nstates =  :: int
     nghost_states = 0 :: int

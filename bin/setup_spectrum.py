@@ -17,7 +17,7 @@ class SetupSpectrum(SetupBase):
     folder = 'spectrum'
     subfolder = 'condition'
 
-    _questions = """
+    _user_input = """
     # Number of conditions
     n_cond = :: int
 
@@ -25,22 +25,24 @@ class SetupSpectrum(SetupBase):
     nstates = :: int
    
     #Properties that should be calculated
-    properties = ['energy', 'fosc'] :: list
+    properties = :: list(str), optional, alias=p
 
     # Database containing all the initial conditions
-    sampling_db = sampling.db :: existing_file
+    sampling_db = sampling.db :: existing_file, alias=db
 
     # Filepath for the inputfile of the Surface Point Provider
-    spp = spp.inp :: file
+    spp = spp.inp :: file, alias=s
 
     # Filepath for the inputfile of the Single Point Calculation
-    sp_calc = sp_calc.inp :: file
+    sp_calc = sp_calc.inp :: file, alias=sp
     """
 
     def __init__(self, config):
         """ Class to create initial conditions due to user input. Initial conditions are saved 
             in a file for further usage.
         """
+        if config['properties'] is None:
+            config.update({'properties': ['energy', 'fosc']})
         logger = get_logger('setup_spectrum.log', 'setup_spectrum')
         logger.header('SETUP SPECTRUM', config)
         SetupBase.__init__(self, logger)

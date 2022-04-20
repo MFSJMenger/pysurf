@@ -35,7 +35,7 @@ class Wigner(DynSamplerBase):
 
     @classmethod
     def _extend_user_input(cls, questions):
-        questions.generate_cases("from", {name: val.questions for name, val in cls._from.items()})
+        questions.generate_cases("from", {name: val.colt_user_input for name, val in cls._from.items()})
         
     
     def __init__(self, system, modes, check=True, is_massweighted=False):

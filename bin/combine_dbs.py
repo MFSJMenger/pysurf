@@ -22,7 +22,7 @@ class NextNeighbor():
 
 
 class CombineDBs(Colt):
-    _questions = """
+    _user_input = """
     main_db = :: existing_file
     added_db = :: existing_file
     start_value = 0 :: int
