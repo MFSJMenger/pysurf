@@ -142,7 +142,7 @@ class UpdatableDict(MutableMapping):
 
 class QChem(AbinitioBase):
 
-    _questions = """
+    _user_input = """
     exe = 
 #    remsection = :: literal
     chg = 0 :: int
