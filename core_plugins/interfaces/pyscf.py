@@ -1,6 +1,6 @@
 import numpy as np
 #
-from pysurf.colt import Colt
+from colt import Colt
 from pysurf.system import ATOMID_TO_NAME
 from pysurf.logger import Logger, get_logger
 #
