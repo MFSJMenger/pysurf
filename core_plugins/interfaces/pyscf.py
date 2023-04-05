@@ -127,7 +127,7 @@ class PySCF(AbinitioBase):
     methods = {'DFT/TDDFT': DFT}
 
     @classmethod
-    def _extend_questions(cls, questions):
+    def _extend_user_input(cls, questions):
         questions.generate_cases("method", {name: method.questions
                                              for name, method in cls.methods.items()})
 
