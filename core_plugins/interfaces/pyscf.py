@@ -128,7 +128,7 @@ class PySCF(AbinitioBase):
 
     @classmethod
     def _extend_user_input(cls, questions):
-        questions.generate_cases("method", {name: method.questions
+        questions.generate_cases("method", {name: method.colt_user_input
                                              for name, method in cls.methods.items()})
 
     @classmethod
