@@ -13,7 +13,7 @@ from pyscf import gto, dft, tddft, grad
 class DFT(Colt):
     """ class which executes the DFT and TDDFT calculations using the PySCF package """
 
-    _questions = """
+    _user_input = """
     functional = :: str :: ['pbe0']
     """
 
@@ -114,7 +114,7 @@ class PySCF(AbinitioBase):
         corresponding classes
     """
 
-    _questions = """
+    _user_input = """
     basis = 631g*
     # Calculation Method
     method = DFT/TDDFT :: str :: [DFT/TDDFT]
