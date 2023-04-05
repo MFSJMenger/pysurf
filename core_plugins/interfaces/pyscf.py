@@ -132,7 +132,9 @@ class PySCF(AbinitioBase):
                                              for name, method in cls.methods.items()})
 
     @classmethod
-    def from_config(cls, config, atomids, nstates):
+    def from_config(cls, config, atomids, nstates, nghost):
+        if nghost != 0:
+            raise ValueError("Number of ghost states has to be 0 for the PySCF interface")
         method = config['method'].value
         basis = config['basis']
         config_method = config['method']
