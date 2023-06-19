@@ -2,7 +2,7 @@ import numpy as np
 import numpy.random as random
 #
 from ..constants import U_TO_AMU, CM_TO_HARTREE
-from ..molden import MoldenParser
+from ..molden import MoldenParser, parse_molden
 from ..spp import ModelFactory
 #
 from ..system import Molecule
@@ -86,8 +86,14 @@ class Wigner(DynSamplerBase):
         print("[" + ", ".join(map(to_strg, img)) + "]")
 
     @classmethod
-    def from_molden(cls, filename):
-        molden = MoldenParser(filename, ['Info', 'Freqs', 'FrCoords', 'FrNormCoords'])
+    def from_molden(cls, filename, format=2):
+        if format == 1:
+            molden = MoldenParser(filename, ['Info', 'Freqs', 'FrCoords', 'FrNormCoords'])
+        else:
+            freqs, frcoords, frnorm = parse_molden(filename)
+            molden = {'FrCoords': frcoords,
+                      'Freqs': freqs,
+                      'FrNormCoords': frnorm,}
         # get molecule info
         atoms = [atom for atom, _, _, _ in molden['FrCoords']]
         atomids = np.array([ATOMNAME_TO_ID[atom] for atom in atoms])
