@@ -105,7 +105,7 @@ class SamplingDB(PySurfDB):
         crd = self.get('crd', idx)
         if self.dynsampling:
             veloc = self.get('veloc', idx)
-            state = np.int(self.get('currstate', idx))
+            state = int(self.get('currstate', idx))
             return self.condition(crd, veloc, state)
         return self.condition(crd)
 
