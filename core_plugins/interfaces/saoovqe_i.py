@@ -15,6 +15,21 @@ nocom
 noreorient 
 """)
 
+def ovlp_half(overlap):
+    """Convert overlap matrix to S^1/2"""
+    # Calculate the square root of the overlap matrix
+    S_eigval, S_eigvec = np.linalg.eigh(overlap)
+    S_half = S_eigvec @ np.diag((S_eigval) ** (1.0 / 2.0)) @ S_eigvec.T
+    return S_half
+
+
+def ovlp_min_half(overlap):
+    """Convert overlap matrix to S^1/2"""
+    # Calculate minus the square root of the overlap matrix
+    S_eigval, S_eigvec = np.linalg.eigh(overlap)
+    S_half = S_eigvec @ np.diag((S_eigval) ** (-1.0 / 2.0)) @ S_eigvec.T
+    return S_half
+
 class INTSAOOVQE(AbinitioBase):
     """ Interface for the SAOOVQE code, which is free available 
         The communication with the SPP is the get function with the request object.
@@ -98,15 +113,22 @@ class INTSAOOVQE(AbinitioBase):
                           print_timings=False, # Use this if you want to compute all the timings...
                           do_oo_process=self.do_oo_process,
                           ucc_ansatz=self.ucc_ansatz)
-        """Read molecular orbitals after first timestep"""
+        """Read molecular orbitals after the first timestep"""
         if self.read_mos:
-            saoovqe_class.c_rhf = np.loadtxt("mos_save")
+            old_mo = np.loadtxt("mos_save")
+            old_ovlp_half = ovlp_half(np.loadtxt("ovlp_save"))
+            new_ovlp_min_half = ovlp_min_half(saoovqe_class.psi4_vars['S_ao'])
+            saoovqe_class.c_rhf = new_ovlp_min_half @ old_ovlp_half @ old_mo
         else:
             pass
-        e_0, e_1 = saoovqe_class.vqe_kernel()
+        saoovqe_class.vqe_kernel()
         """Save molecular orbitals"""
         mos_save = saoovqe_class.c_optimized
         np.savetxt("mos_save", mos_save)
+        ovlp_save = saoovqe_class.psi4_vars['S_ao']
+        np.savetxt("ovlp_save", ovlp_save)
+        """Saving energies, gradients and NACs"""
+        self.energies = [saoovqe_class.e_a, saoovqe_class.e_b]
         grad = []
         nac = []
         for i in range(self.natoms):
@@ -114,7 +136,6 @@ class INTSAOOVQE(AbinitioBase):
             nx,ny,nz = saoovqe_class.get_nac(i)
             grad.append([dx*self.bohr,dy*self.bohr,dz*self.bohr])
             nac.append([-nx*self.bohr,-ny*self.bohr,-nz*self.bohr])
-        self.energies = [e_0, e_1]
         self.grads = grad
         self.nacs = nac
 
