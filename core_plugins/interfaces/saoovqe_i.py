@@ -8,7 +8,7 @@ from pysurf.system import Molecule
 #geometry in units bohr
 tpl = Template("""
 units    bohr
- {% for atomid, crd in mol %} 
+{{chg}} {{mult}} {% for atomid, crd in mol %} 
  {{mol.format(atomid, crd)}} {% endfor %}
 symmetry c1
 nocom
@@ -40,6 +40,10 @@ class INTSAOOVQE(AbinitioBase):
     """
 
     _user_input = """
+    # Chage
+    chg = 0 :: int
+    # Multiplicity
+    mult = 1 :: int
     # Basis set
     basis = cc-pvdz :: str :: cc-pvdz, 6-31G*
     # Number of active electrons in the Active-Space
@@ -56,11 +60,13 @@ class INTSAOOVQE(AbinitioBase):
     implemented = ['energy', 'gradient', 'nacs']
 
 
-    def __init__(self, config, atomids, nstates, basis, nelec_active, frozen_indices, active_indices, virtual_indices, do_oo_process):
+    def __init__(self, config, atomids, nstates, basis, chg, mult, nelec_active, frozen_indices, active_indices, virtual_indices, do_oo_process):
         self.molecule = Molecule(atomids, None) 
         self.natoms = len(atomids)
         self.nstates = nstates
         self.basis = basis
+        self.chg = chg
+        self.mult = mult
         self.nelec_active = nelec_active
         self.frozen_indices = [i for i in range(frozen_indices)]
         self.active_indices = [i for i in range(active_indices[0], active_indices[1])] 
@@ -79,7 +85,7 @@ class INTSAOOVQE(AbinitioBase):
         
     @classmethod
     def from_config(cls, config, atomids, nstates, nghost_states):
-        return cls(config, atomids, nstates, config['basis'], config['nelec_active'], config['frozen_indices'], config['active_indices'], config['virtual_indices'], config['do_oo_process'])
+        return cls(config, atomids, nstates, config['basis'], config['chg'], config['mult'], config['nelec_active'], config['frozen_indices'], config['active_indices'], config['virtual_indices'], config['do_oo_process'])
 
     
     def get(self, request):
@@ -99,7 +105,8 @@ class INTSAOOVQE(AbinitioBase):
         return request
 
     def _do_saoovqe_ene_grad_nacs(self, state):
-        string_geo = self.tpl.render(mol=self.molecule)
+        string_geo = self.tpl.render(chg=self.chg, mult=self.mult,
+                     mol=self.molecule)
         saoovqe_class = SAOOVQE(string_geo,
                           self.basis,
                           self.nelec_active,
