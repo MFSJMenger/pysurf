@@ -140,11 +140,25 @@ class Propagator:
         elif self.prob_name in  ("tully", "lz"):
             return g_mch
 
+    def _interpolator(self, new, old, substeps):
+        result = zeros_like(old) 
+        for i in range(1,substeps+1):
+            result += old + (i/substeps)*(new-old)
+        return result
+
+    def mch_propagator_interpolator(self, ene_old, ene_new, vk_old, vk_new, substeps, dt):
+        h_mch = self._interpolator(ene_new, ene_old, substeps)
+        vk = self._interpolator(vk_new, vk_old, substeps)
+        h_total = diag(h_mch) - 1j*(vk) 
+        ene, u = linalg.eigh(h_total)
+        p_mch = linalg.multi_dot([u, diag(exp( -1j * ene * (dt/substeps))), u.T.conj()])
+        return p_mch, h_total
+
     def mch_propagator(self, h_mch, vk, dt):
         h_total = diag(h_mch) - 1j*(vk) 
         ene, u = linalg.eigh(h_total)
         p_mch = linalg.multi_dot([u, diag(exp( -1j * ene * dt)), u.T.conj()])
-        return p_mch
+        return p_mch, h_total
 
     def elec_density_new(self, state,  rho_old, p_mch):
         """ Computing propagation and new density:
@@ -178,10 +192,13 @@ class Propagator:
         instate = state.instate
         ene_old = state.ene
         vk_new = state.vk
-        ene = 0.5*(ene_old + ene_new)
-        vk = 0.5*(vk_old + vk_new)
-        h_total = diag(ene) - 1j*(vk)
-        p_mch = self.mch_propagator(ene, vk, dt)
+        if state.substeps:
+            substeps = state.n_substeps
+            p_mch, h_total = self.mch_propagator_interpolator(ene_old, ene_new, vk_old, vk_new, substeps, dt)
+        else: 
+            ene = 0.5*(ene_old + ene_new)
+            vk = 0.5*(vk_old + vk_new)
+            p_mch, h_total = self.mch_propagator(ene, vk, dt)
         probs = (2.0 * imag(rho_old[instate,:] * h_total[:,instate]) * dt)/(real(rho_old[instate,instate])) 
         probs[instate] = 0.0
         probs = maximum(probs, 0.0)
@@ -622,6 +639,7 @@ class State(Colt):
     t = 0.0 :: float
     dt = 1.0 :: float
     mdsteps = 40000 :: float
+    substeps = :: str 
     # instate is the initial state: 0 = G.S, 1 = E_1, ...
     instate = 1 :: int
     nstates = 2 :: int
@@ -633,9 +651,13 @@ class State(Colt):
     coupling = nacs :: str :: nacs, wf_overlap, non_coup
     method = Surface_Hopping :: str :: Surface_Hopping, Born_Oppenheimer  
     decoherence = EDC :: str :: EDC, IDC_A, IDC_S, No_DC 
+    [substeps(true)]
+    n_substeps = 10 :: int
+    [substeps(false)]
+    n_substeps = false :: bool
     """
     
-    def __init__(self, crd, vel, mass, model, t, dt, mdsteps, instate, nstates, states, ncoeff, prob, rescale_vel, coupling, method, decoherence, atomids):
+    def __init__(self, config, crd, vel, mass, model, t, dt, mdsteps, instate, nstates, states, ncoeff, prob, rescale_vel, coupling, method, decoherence, atomids, substeps):
         self.crd = crd
         self.natoms = len(crd)
         self.atomids = atomids
@@ -659,6 +681,11 @@ class State(Colt):
             raise SystemExit("Wrong coupling method or wrong rescaling velocity approach")
         self.method = method
         self.decoherence = decoherence
+        if config['substeps'] == "true":
+            self.substeps = True 
+            self.n_substeps = config['substeps']['n_substeps']
+        else:
+            self.substeps = False 
         self.e_curr = None
         self.e_prev_step = None
         self.e_two_prev_steps = None
@@ -689,7 +716,8 @@ class State(Colt):
         coupling = config['coupling']
         method = config['method']
         decoherence = config['decoherence']
-        return cls(crd, vel, mass, model, t, dt, mdsteps, instate, nstates, states, ncoeff, prob, rescale_vel, coupling, method, decoherence, atomids)  
+        substeps = config['substeps']
+        return cls(config, crd, vel, mass, model, t, dt, mdsteps, instate, nstates, states, ncoeff, prob, rescale_vel, coupling, method, decoherence, atomids, substeps)  
 
     @staticmethod
     def read_db(db_file):
@@ -706,8 +734,8 @@ class State(Colt):
         return crd, vel, mass, atomids, model
 
     @classmethod
-    def from_initial(cls, crd, vel, mass, model, t, dt, mdsteps, instate, nstates, states, ncoeff, prob, rescale_vel, coupling, method, decoherence, atomids):
-        return cls(crd, vel, mass, model, t, dt, mdsteps, instate, nstates, states, ncoeff, prob, rescale_vel, coupling, method, decoherence, atomids)
+    def from_initial(cls, config, crd, vel, mass, model, t, dt, mdsteps, instate, nstates, states, ncoeff, prob, rescale_vel, coupling, method, decoherence, atomids, substeps):
+        return cls(config, crd, vel, mass, model, t, dt, mdsteps, instate, nstates, states, ncoeff, prob, rescale_vel, coupling, method, decoherence, atomids, substeps)
 
 class PrintResults:
  
