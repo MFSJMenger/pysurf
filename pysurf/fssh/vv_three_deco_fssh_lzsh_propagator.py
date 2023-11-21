@@ -140,23 +140,9 @@ class Propagator:
         elif self.prob_name in  ("tully", "lz"):
             return g_mch
 
-    #def _interpolator(self, new, old, substeps):
-    #    result = zeros_like(old) 
-    #    for i in range(1,substeps+1):
-    #        result += old + (i/substeps)*(new-old)
-    #    return result
-
-    #def mch_propagator_interpolator(self, ene_old, ene_new, vk_old, vk_new, substeps, dt):
-    #    h_mch = self._interpolator(ene_new, ene_old, substeps)
-    #    vk = self._interpolator(vk_new, vk_old, substeps)
-    #    h_total = diag(h_mch) - 1j*(vk) 
-    #    ene, u = linalg.eigh(h_total)
-    #    p_mch = linalg.multi_dot([u, diag(exp( -1j * ene * (dt/substeps))), u.T.conj()])
-    #    return p_mch, h_total
-
     def _interpolator(self, new, old, index, substeps):
         return old + (index/substeps)*(new-old)
-§
+
     def _prop_inter_i(self, ene_old, ene_new, vk_old, vk_new, index, substeps, dt):
         h_i = self._interpolator(ene_new, ene_old, index, substeps)
         vk_i = self._interpolator(vk_new, vk_old, index, substeps)
