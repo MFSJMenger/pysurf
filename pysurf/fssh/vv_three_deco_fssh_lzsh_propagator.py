@@ -140,21 +140,42 @@ class Propagator:
         elif self.prob_name in  ("tully", "lz"):
             return g_mch
 
-    def _interpolator(self, new, old, substeps):
-        result = zeros_like(old) 
-        for i in range(1,substeps+1):
-            result += old + (i/substeps)*(new-old)
-        return result
+    #def _interpolator(self, new, old, substeps):
+    #    result = zeros_like(old) 
+    #    for i in range(1,substeps+1):
+    #        result += old + (i/substeps)*(new-old)
+    #    return result
+
+    #def mch_propagator_interpolator(self, ene_old, ene_new, vk_old, vk_new, substeps, dt):
+    #    h_mch = self._interpolator(ene_new, ene_old, substeps)
+    #    vk = self._interpolator(vk_new, vk_old, substeps)
+    #    h_total = diag(h_mch) - 1j*(vk) 
+    #    ene, u = linalg.eigh(h_total)
+    #    p_mch = linalg.multi_dot([u, diag(exp( -1j * ene * (dt/substeps))), u.T.conj()])
+    #    return p_mch, h_total
+
+    def _interpolator(self, new, old, index, substeps):
+        return old + (index/substeps)*(new-old)
+§
+    def _prop_inter_i(self, ene_old, ene_new, vk_old, vk_new, index, substeps, dt):
+        h_i = self._interpolator(ene_new, ene_old, index, substeps)
+        vk_i = self._interpolator(vk_new, vk_old, index, substeps)
+        h_total_i = diag(h_i) - 1j*(vk_i) 
+        ene, u = linalg.eigh(h_total_i)
+        return linalg.multi_dot([u, diag(exp( -1j * ene * (dt/substeps))), u.T.conj()])
 
     def mch_propagator_interpolator(self, ene_old, ene_new, vk_old, vk_new, substeps, dt):
-        h_mch = self._interpolator(ene_new, ene_old, substeps)
-        vk = self._interpolator(vk_new, vk_old, substeps)
+        h_mch = 0.5*(ene_old + ene_new)
+        vk = 0.5*(vk_old + vk_new)
         h_total = diag(h_mch) - 1j*(vk) 
-        ene, u = linalg.eigh(h_total)
-        p_mch = linalg.multi_dot([u, diag(exp( -1j * ene * (dt/substeps))), u.T.conj()])
-        return p_mch, h_total
+        p_i = zeros_like(h_total) 
+        for index in range(1,substeps+1):
+            p_i = dot(p_i,self._prop_inter_i(ene_old, ene_new, vk_old, vk_new, index, substeps, dt))
+        return p_i, h_total
 
-    def mch_propagator(self, h_mch, vk, dt):
+    def mch_propagator(self, ene_old, ene_new, vk_old, vk_new, dt):
+        h_mch = 0.5*(ene_old + ene_new)
+        vk = 0.5*(vk_old + vk_new)
         h_total = diag(h_mch) - 1j*(vk) 
         ene, u = linalg.eigh(h_total)
         p_mch = linalg.multi_dot([u, diag(exp( -1j * ene * dt)), u.T.conj()])
@@ -196,9 +217,7 @@ class Propagator:
             substeps = state.n_substeps
             p_mch, h_total = self.mch_propagator_interpolator(ene_old, ene_new, vk_old, vk_new, substeps, dt)
         else: 
-            ene = 0.5*(ene_old + ene_new)
-            vk = 0.5*(vk_old + vk_new)
-            p_mch, h_total = self.mch_propagator(ene, vk, dt)
+            p_mch, h_total = self.mch_propagator(ene_old, ene_new, vk_old, vk_new, dt)
         probs = (2.0 * imag(rho_old[instate,:] * h_total[:,instate]) * dt)/(real(rho_old[instate,instate])) 
         probs[instate] = 0.0
         probs = maximum(probs, 0.0)
