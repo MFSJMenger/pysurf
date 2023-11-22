@@ -233,3 +233,35 @@ Implemented: {interface.implemented}
         self.logger.info(f"Interface {interface} provides all necessary properties")
 
 
+def get_spp(configfile, properties, nstates, natoms, *,
+        nghost_states=0, atomids=None, logger=None, checkonly=True):
+    """Initialize a Surface point provider from a config file 
+
+    Args
+    ----
+
+    configfile: str
+        name of the config file
+
+    properties: list(str)
+        list of properties the spp should be able to provide
+
+    nstates: int
+        Number of states
+
+    natoms: int
+        Number of atoms
+
+    nghost_states: int, optional
+        Number of ghost states
+
+    Kwargs
+    ------
+
+    atomids: list
+        atomids of the system
+
+
+    """
+    return SurfacePointProvider.from_questions(properties, nstates, natoms, nghost_states=nghost_states, atomids=atomids,
+                                               config=configfile, checkonly=checkonly)
