@@ -55,15 +55,15 @@ class Wigner(DynSamplerBase):
         #start keyword is not needed here, but has to be provided for DynSamplerBase
         if config['from'] == 'molden':
             return cls.from_molden(config['from']['moldenfile'])
-        elif config['from'].value == 'model':
+        if config['from'].value == 'model':
             model = ModelFactory.plugin_from_config(config['from']['model'])
             return cls.from_model(model)
         raise Exception("only (molden, frequencies) implemented")
 
     @classmethod
     def from_db(cls, database):
+        # CHECK: Is this intentional?
         return cls(None, None, check=False)
-
 
     def get_init(self):
         """Return all infos needed for the initial condition parser"""
@@ -114,9 +114,11 @@ class Wigner(DynSamplerBase):
     # method to create initial conditions for model systems like the pyrazine model
     @classmethod
     def from_model(cls, model):
+        """Create Wigner class from a analytic model"""
         return cls(model, model.modes, True)
 
     def to_mass_weighted(self):
+        """transform normalmodes to massweighted"""
         if self.is_massweighted is True:
             return
         self.modes = nm.create_mass_weighted_normal_modes(self.modes, self.system)
