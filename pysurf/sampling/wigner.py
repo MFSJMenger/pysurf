@@ -122,8 +122,23 @@ class Wigner(DynSamplerBase):
             self.is_massweighted = True
 
 
+def get_random(*args):
+    if len(args) == 0:
+        return random.random()
+    if len(args) == 2:
+        return _get_random(*args)
+    raise ValueError("Please give upper and lower bounds")
+
+
+def _get_random(lower, upper):
+    assert upper > lower
+    diff = upper - lower
+    return random.random() * diff + lower
+
+
 def get_initial_condition(system, modes):
     """Wigner sampling condition according to
+
        L. Sun, W. L. Hase J. Chem. Phys. 133, 044313 (2010).
     """
     Epot = 0.0
@@ -139,20 +154,16 @@ def get_initial_condition(system, modes):
         #
         while True:
             # get random Q and P in the interval [-5, +5]
-            Q = random.random()*10.0 - 5.0
-            P = random.random()*10.0 - 5.0
-            # calculate probability for this set of P and Q with Wigner distr.
+            Q = get_random(-5, 5)
+            P = get_random(-5, 5)
+            # 
             probability = wigner_gs(Q, P)
             #
-            if probability > random.random():
+            if probability > get_random():
                 break  # coordinates accepted
-        # now transform the dimensionless coordinate into a real one
-        # QM programs directly give angular frequency (2*PI is not needed)
-        # Higher frequencies give lower displacements and higher momentum.
-        # Therefore scale random_Q and random_P accordingly:
         Q /= factor
         P *= factor
-        # add potential energy of this mode to total potential energy
+        #
         Epot += 0.5 * mode.freq**2 * Q**2
         # scaling for crd, veloc sampling
         scale = np.copy(mode.displacements)
