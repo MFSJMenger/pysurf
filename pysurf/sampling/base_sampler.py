@@ -15,12 +15,20 @@ class SamplerFactory(Plugin):
     _is_plugin_factory = True
 
     condition = CrdCondition
+    _n_conditions = None
 
     @classmethod
     def _extend_user_input(cls, questions):
         questions.generate_cases("method", {name: method.colt_user_input
                                  for name, method in cls._methods.items()})
 
+    def get_number_of_conditions(self, n_max):            
+        if self._n_conditions is None:
+            return n_max
+        if self._n_conditions > n_max:
+            return n_max
+        return self._n_conditions
+            
 
 class CrdSamplerBase(SamplerFactory):
     """Basic sampler class"""

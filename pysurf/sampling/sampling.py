@@ -15,8 +15,8 @@ class Sampling(Colt):
         the sampler and reads and writes the conditions to the sampling database.
     """
     _user_input = """
-    # Number of Calculations
-    n_conditions = 100 :: int
+    # Maximium Number of Samples
+    n_conditions_max = 100 :: int
 
     method = :: str
 
@@ -80,19 +80,19 @@ class Sampling(Colt):
         else:
             self.logger = logger
 
-        self.sampler = sampler
+        if sampler is None:
+            logger.info(f"Loading sampler {config['method'].value}")
+            self.sampler = self._get_sampler(config['method'], start=self.nconditions)
+        else:
+            self.sampler = sampler
 
+        n_conditions = self.sampler.get_number_of_conditions(config['n_conditions_max'])
 
         # check for conditions
-        if self.nconditions < config['n_conditions']:
+        if self.nconditions < n_conditions:
             # setup sampler
-            if sampler is None:
-                logger.info(f"Loading sampler {config['method'].value}")
-                self.sampler = self._get_sampler(config['method'], start=self.nconditions)
-            else:
-                self.sampler = sampler
-            self.logger.info(f"Adding {config['n_conditions']-self.nconditions} additional entries to the database")
-            self.add_conditions(config['n_conditions'] - self.nconditions)
+            self.logger.info(f"Adding {n_conditions-self.nconditions} additional entries to the database")
+            self.add_conditions(n_conditions - self.nconditions)
 
     def add_conditions(self, nconditions, state=0):
         # TODO
