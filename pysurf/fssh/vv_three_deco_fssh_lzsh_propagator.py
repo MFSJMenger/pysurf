@@ -1,6 +1,6 @@
 from numpy import (isscalar, zeros, zeros_like, dot, 
                    array, ndarray, complex128, outer, diag, linalg, exp, 
-                   abs, imag, real, maximum, sqrt, cumsum, less, copy, sum, pi)
+                   abs, imag, real, maximum, sqrt, cumsum, less, copy, sum, pi, eye)
 from random import uniform
 from time import (time, ctime)
 from collections import namedtuple
@@ -154,7 +154,7 @@ class Propagator:
         h_mch = 0.5*(ene_old + ene_new)
         vk = 0.5*(vk_old + vk_new)
         h_total = diag(h_mch) - 1j*(vk) 
-        p_i = zeros_like(h_total) 
+        p_i = eye(h_total.shape[0], dtype=h_total.dtype) 
         for index in range(1,substeps+1):
             p_i = dot(p_i,self._prop_inter_i(ene_old, ene_new, vk_old, vk_new, index, substeps, dt))
         return p_i, h_total
