@@ -126,6 +126,27 @@ class Wigner(DynSamplerBase):
 
 
 def get_random(*args):
+    """Get random number in range
+
+    Args
+    ----
+
+    args: list(int), optional
+        if no args are given, return random number in bounds [0, 1)
+        if two args are given, return random number in bounds [args[0], args[1])
+        else raise ValueError
+
+    Returns
+    -------
+    
+    random: float
+        random number within the defined bounds
+
+    Raises
+    ------
+
+    ValueError, if number of arguments not in [0, 2]
+    """
     if len(args) == 0:
         return random.random()
     if len(args) == 2:
@@ -163,10 +184,8 @@ def get_initial_condition(system, modes):
             # get random Q and P in the interval [-5, +5]
             Q = get_random(-5, 5)
             P = get_random(-5, 5)
-            #
-            probability = wigner_gs(Q, P)
-            #
-            if probability > get_random():
+            # accept random numbers if np.exp(-(Q**2 + P**2)
+            if wigner_gs(Q, P) > get_random():
                 break  # coordinates accepted
 
         Q /= factor
@@ -181,13 +200,14 @@ def get_initial_condition(system, modes):
         crd += Q * scale
         veloc += P * scale
     #
-    # remove translational/rotational dofs
+    # TODO: remove translational/rotational dofs
     #
     return epot, DynSamplerBase.condition(crd, veloc, 0)
 
 
 def wigner_gs(Q, P):
-    """for a one-dimensional harmonic oscillator.
-       Q contains the dimensionless coordinate of the
-       oscillator and P contains the corresponding momentum."""
-    return np.exp(-Q**2.0) * np.exp(-P**2.0)
+    """For a one-dimensional harmonic oscillator:
+            Q: dimensionless coordinate
+            P: dimensionless momentum
+    """
+    return np.exp(-Q**2.0-P**2.0)
