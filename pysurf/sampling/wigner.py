@@ -1,5 +1,7 @@
 import numpy as np
-import numpy.random as random
+from numpy import random
+#
+from colt import Colt
 #
 from ..constants import U_TO_AMU, CM_TO_HARTREE
 from ..molden import MoldenParser, parse_molden
@@ -10,9 +12,8 @@ from ..system.atominfo import MASSES
 from ..system.atominfo import ATOMNAME_TO_ID
 from .normalmodes import NormalModes as nm
 from .normalmodes import Mode
-from .base_sampler import DynSamplerBase, DynCondition
+from .base_sampler import DynSamplerBase
 #
-from colt import Colt
 
 
 class Molden(Colt):
@@ -35,9 +36,10 @@ class Wigner(DynSamplerBase):
 
     @classmethod
     def _extend_user_input(cls, questions):
-        questions.generate_cases("from", {name: val.colt_user_input for name, val in cls._from.items()})
-        
-    
+        questions.generate_cases("from", {name: val.colt_user_input
+                                          for name, val in cls._from.items()})
+
+
     def __init__(self, system, modes, check=True, is_massweighted=False):
         """Initialize a new Wigner Sampling with a molecule class
            and a normal Mode class"""
@@ -50,7 +52,7 @@ class Wigner(DynSamplerBase):
     @classmethod
     def from_config(cls, config, start=None):
         """ """
-        #start keyword is not needed here, but has to be provided for DynSamplerBase 
+        #start keyword is not needed here, but has to be provided for DynSamplerBase
         if config['from'] == 'molden':
             return cls.from_molden(config['from']['moldenfile'])
         elif config['from'].value == 'model':
@@ -117,9 +119,8 @@ class Wigner(DynSamplerBase):
     def to_mass_weighted(self):
         if self.is_massweighted is True:
             return
-        else:
-            self.modes = nm.create_mass_weighted_normal_modes(self.modes, self.system)
-            self.is_massweighted = True
+        self.modes = nm.create_mass_weighted_normal_modes(self.modes, self.system)
+        self.is_massweighted = True
 
 
 def get_random(*args):
@@ -140,13 +141,17 @@ def get_initial_condition(system, modes):
     """Wigner sampling condition according to
 
        L. Sun, W. L. Hase J. Chem. Phys. 133, 044313 (2010).
+
+       parameters taken from SHARC in accordance to github.com/sharc-md
+       especially the bounds [-5, +5]
     """
-    Epot = 0.0
+    epot = 0.0
     #
     crd = np.copy(system.crd)
     veloc = np.zeros_like(system.crd, dtype=np.double)
     #
     for mode in modes:
+        # Factor is sqrt(angular freq)
         if mode.freq < 0.0:
             factor = np.sqrt(-1.0*mode.freq)
         else:
@@ -156,15 +161,16 @@ def get_initial_condition(system, modes):
             # get random Q and P in the interval [-5, +5]
             Q = get_random(-5, 5)
             P = get_random(-5, 5)
-            # 
+            #
             probability = wigner_gs(Q, P)
             #
             if probability > get_random():
                 break  # coordinates accepted
+
         Q /= factor
         P *= factor
         #
-        Epot += 0.5 * mode.freq**2 * Q**2
+        epot += 0.5 * mode.freq**2 * Q**2
         # scaling for crd, veloc sampling
         scale = np.copy(mode.displacements)
         for i, mass in enumerate(system.masses):
@@ -175,7 +181,7 @@ def get_initial_condition(system, modes):
     #
     # remove translational/rotational dofs
     #
-    return Epot, DynSamplerBase.condition(crd, veloc, 0)
+    return epot, DynSamplerBase.condition(crd, veloc, 0)
 
 
 def wigner_gs(Q, P):
