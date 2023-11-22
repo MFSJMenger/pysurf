@@ -1,6 +1,6 @@
 import numpy as np
 #
-from pysurf.colt import Colt
+from colt import Colt
 from pysurf.system import ATOMID_TO_NAME
 from pysurf.logger import Logger, get_logger
 #
@@ -13,7 +13,7 @@ from pyscf import gto, dft, tddft, grad
 class DFT(Colt):
     """ class which executes the DFT and TDDFT calculations using the PySCF package """
 
-    _questions = """
+    _user_input = """
     functional = :: str :: ['pbe0']
     """
 
@@ -114,7 +114,7 @@ class PySCF(AbinitioBase):
         corresponding classes
     """
 
-    _questions = """
+    _user_input = """
     basis = 631g*
     # Calculation Method
     method = DFT/TDDFT :: str :: [DFT/TDDFT]
@@ -127,12 +127,14 @@ class PySCF(AbinitioBase):
     methods = {'DFT/TDDFT': DFT}
 
     @classmethod
-    def _extend_questions(cls, questions):
-        questions.generate_cases("method", {name: method.questions
+    def _extend_user_input(cls, questions):
+        questions.generate_cases("method", {name: method.colt_user_input
                                              for name, method in cls.methods.items()})
 
     @classmethod
-    def from_config(cls, config, atomids, nstates):
+    def from_config(cls, config, atomids, nstates, nghost):
+        if nghost != 0:
+            raise ValueError("Number of ghost states has to be 0 for the PySCF interface")
         method = config['method'].value
         basis = config['basis']
         config_method = config['method']

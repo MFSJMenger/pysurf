@@ -106,3 +106,107 @@ MoldenParser = generate_filereader('MoldenParser', {
     'FrCoords': FrCoords,
     'FrNormCoords': FrNormCoords,
 })
+
+
+class FileIterator:
+
+    def __init__(self, filename):
+        with open(filename, 'r') as fh:
+            self.lines = fh.readlines()
+        self._current = 0
+        self._nele = len(self.lines)
+
+    def inc(self):
+        self._current += 1
+
+    def next(self):
+        if self._current < self._nele:
+            line = self.lines[self._current]
+            self._current += 1
+            return line
+        return None
+        
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        line = self.next()
+        if line is None:
+            raise StopIteration
+        return line
+
+    def peek(self, n=0):
+        number = self._current + n
+        if number < self._nele:
+            line = self.lines[number]
+            return line
+
+            
+def parse_freqs(fh):
+
+    freqs = []
+
+    while True:
+        line = fh.peek()
+        if line is None or '[' in line: 
+            break
+        fh.inc()
+        freqs.append(float(line))
+
+    return freqs
+
+
+def parse_vibration(fh):
+
+    vibrations = []
+    while True:
+        line = fh.peek()
+        if line is None or '[' in line or 'vibration' in line: 
+            break
+        fh.inc()
+        x, y, z = line.split()
+        vibrations.append([float(x), float(y), float(z)])
+    return vibrations
+
+
+def parse_vibrations(fh):
+
+    vibrations = []
+    while True:
+        line = fh.peek()
+        if 'vibration' in line:
+            fh.inc()
+            vibrations.append(parse_vibration(fh))
+        else:
+            break
+    return vibrations
+
+
+def parse_frcoords(fh):
+    coords = []
+    while True:
+        line = fh.peek()
+        if '[' in line or line is None:
+            break
+        atom, x, y, z = line.split()
+        coords.append([atom, float(x), float(y), float(z)])
+        fh.inc()
+    return coords
+
+
+def parse_molden(filename):
+
+    fh = FileIterator(filename)
+
+    for line in fh:
+        line = line.strip()
+        if line == '[FREQ]':
+            freqs = parse_freqs(fh)
+        elif line == '[FR-COORD]':
+            coords = parse_frcoords(fh)
+        elif line == '[FR-NORM-COORD]':
+            vibrations = parse_vibrations(fh)
+        #elif '[Atoms]' in line:
+        #    coords = parse_coords(line, fh)
+
+    return freqs, coords, vibrations

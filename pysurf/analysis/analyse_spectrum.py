@@ -10,11 +10,11 @@ from colt import Colt, from_commandline
 from qctools.converter import Converter, energy_converter
 
 class NoFurtherQuestions(Colt):
-    _questions = ""
+    _user_input = ""
 
 
 class Broadening(Colt):
-    _questions = """ 
+    _user_input = """ 
         method = Lorentzian :: str :: [Gaussian, Lorentzian]
         width = :: float
         energy_start = :: float
@@ -49,7 +49,7 @@ class Broadening(Colt):
 class AnalyseSpectrum(Colt):
     specfile = os.path.join('spectrum', 'spectrum.db') 
     
-    _questions="""
+    _user_input = """
     input_db = spectrum/spectrum.db :: existing_file
     energy_units = au :: str :: [au, eV]
     broadening = yes :: str :: [yes, no]
@@ -73,7 +73,7 @@ class AnalyseSpectrum(Colt):
             }
     
     @classmethod
-    def _extend_questions(cls, questions):
+    def _extend_user_input(cls, questions):
         questions.generate_cases('save_data', {name: mode for name, mode in cls._save_data.items() })
         questions.generate_cases('broadening', {name: mode.questions for name, mode in cls._broadening.items()})
         questions.generate_cases('plot_spectrum', {name: mode for name, mode in cls._plot_spectrum.items()})
@@ -85,7 +85,7 @@ class AnalyseSpectrum(Colt):
             config = cls.generate_input(inputfile, config=None)
         else:
             config = cls.generate_input(inputfile, config=inputfile)
-        quests = cls.generate_questions(config=inputfile)
+        quests = cls.generate_user_input(config=inputfile)
         config = quests.check_only(inputfile)
         
 

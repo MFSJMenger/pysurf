@@ -14,12 +14,12 @@ from .base_sampler import CrdCondition
 from .n_grid_iter import NGridIterator
 
 class Moldenfile(Colt):
-    _questions = """
+    _user_input = """
     moldenfile = :: existing_file
     """
 
 class NMSampler(CrdSamplerBase):
-    _questions = """
+    _user_input = """
     # Where do the coorindates come from? If it is a moldenfile, modes are converted into dimensionless 
     # normal modes. If they come from a model, they are used as they are.
     from = molden :: str :: [molden, model]
@@ -47,8 +47,8 @@ class NMSampler(CrdSamplerBase):
     _sign = 1
 
     @classmethod
-    def _extend_questions(cls, questions):
-        questions.generate_cases("from", {name: method.questions
+    def _extend_user_input(cls, questions):
+        questions.generate_cases("from", {name: method.colt_user_input
                                  for name, method in cls._from.items()})
         questions.generate_cases("select_nmodes", {name: value
                                  for name, value in cls._select_nmodes.items()})

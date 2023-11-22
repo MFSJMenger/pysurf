@@ -33,7 +33,7 @@ class XTBInterface(AbinitioBase):
 
     name = "XTB"
 
-    _questions = """
+    _user_input = """
     executable = xtb
     name = xtb calculation
     refgeom = :: existing_file
@@ -51,18 +51,19 @@ class XTBInterface(AbinitioBase):
         self.ifile = filename
 
     @classmethod
-    def from_config(cls, config, atomids, nstates):
+    def from_config(cls, config, atomids, nstates, nghost):
+        assert nghost == 0
         if nstates > 1:
             raise Exception("Only Groundstate calculations possible")
         return cls(config['executable'], config['name'], atomids, config['filename'])
     
     def get(self, request):
-        self.molecule.crd = request['crd']
+        self.molecule.crd = request.crd
         self._write_general_inputs()
         (en, dip), grad, _ = self._run_gradient()
-        request['gradient'][0] = grad
-        request.update({'energy': en,
-                        'dipol': dip, })
+        if 'gradient' in request:
+            request['gradient'][0] = grad.reshape((self.natoms, 3))
+        request.set('energy', en)
         return request
 
     def _write_general_inputs(self):

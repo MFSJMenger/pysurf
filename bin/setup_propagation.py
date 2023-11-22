@@ -14,7 +14,7 @@ class SetupPropagation(SetupBase):
     folder = 'prop'
     subfolder = 'traj'
 
-    _questions = """
+    _user_input = """
     # Number of trajectories for the propagation
     n_traj = -1 :: int
 

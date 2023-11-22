@@ -14,7 +14,7 @@ class Sampling(Colt):
     """ Sampling is the header class for the sampling routines. It asks the main questions, selects
         the sampler and reads and writes the conditions to the sampling database.
     """
-    _questions = """
+    _user_input = """
     # Number of Calculations
     n_conditions = 100 :: int
 
@@ -26,8 +26,8 @@ class Sampling(Colt):
     """
 
     @classmethod
-    def _extend_questions(cls, questions):
-        questions.generate_cases("method", {name: method.questions
+    def _extend_user_input(cls, questions):
+        questions.generate_cases("method", {name: method.colt_user_input
                                  for name, method in SamplerFactory._methods.items()})
 
     @classmethod

@@ -16,7 +16,7 @@ from colt import Colt
 
 
 class RunTrajectory(Colt):
-    _questions = """
+    _user_input = """
     # Total propagation time in fs
     time_final [fs] = 100 :: float                                                            
     
@@ -40,8 +40,8 @@ class RunTrajectory(Colt):
     """
 
     @classmethod
-    def _extend_questions(cls, questions):
-        questions.generate_cases("method", {name: method.questions
+    def _extend_user_input(cls, questions):
+        questions.generate_cases("method", {name: method.colt_user_input
                                  for name, method in PropagatorFactory._methods.items()})
 
     def __init__(self, config):
@@ -65,6 +65,6 @@ class RunTrajectory(Colt):
     
     @classmethod
     def from_inputfile(cls, inputfile):
-        quests = cls.generate_questions(config=inputfile)
+        quests = cls.generate_user_input(config=inputfile)
         config = quests.ask(inputfile)
         return cls(config)

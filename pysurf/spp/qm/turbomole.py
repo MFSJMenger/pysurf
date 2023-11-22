@@ -20,11 +20,11 @@ from ...system import Molecule
 
 
 class ADC2questions(Colt):
-    _questions = """
+    _user_input = """
     """
 
 class DFTquestions(Colt):
-    _questions = """
+    _user_input = """
     functional = :: str
     grid = m4 :: str
     """
@@ -167,7 +167,7 @@ $scfinstab rpas
 
 class Turbomole(AbinitioBase):
 
-    _questions = """
+    _user_input = """
     # Methode die angewendet werden soll
     method = ADC(2) :: str :: [ADC(2), DFT/TDDFT]
 
@@ -193,8 +193,8 @@ class Turbomole(AbinitioBase):
     implemented = ['energy', 'gradient', 'fosc']
 
     @classmethod
-    def _extend_questions(cls, questions):
-        questions.generate_cases("method", {name: method.questions for name, method in cls._method.items()})
+    def _extend_user_input(cls, questions):
+        questions.generate_cases("method", {name: method.colt_user_input for name, method in cls._method.items()})
         
     def __init__(self, config, atomids, nstates, nghost_states):
         self.logger = get_logger('tm_inter.log', 'turbomole_interface')

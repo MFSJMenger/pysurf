@@ -7,7 +7,7 @@ from pysurf.utils import exists_and_isfile
 from colt import Colt
 
 class PESTraj(Colt):
-    _questions = """
+    _user_input = """
     prop_db = prop.db :: existing_file
     
     #reference energy in atomic units

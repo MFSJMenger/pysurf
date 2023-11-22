@@ -9,7 +9,7 @@ from pysurf.database import PySurfDB
 from combine_dbs import CombineDBs
 
 class AccumulateDBs(Colt):
-    _questions = """
+    _user_input = """
         #Foldername of the main folder, e.g. spectrum or prop
         folder = spectrum :: file
 

@@ -17,7 +17,7 @@ class SamplerFactory(Plugin):
     condition = CrdCondition
     
     @classmethod
-    def _extend_questions(cls, questions):
+    def _extend_user_input(cls, questions):
         questions.generate_cases("method", {name: method.questions
                                  for name, method in cls._methods.items()})
 
@@ -25,10 +25,10 @@ class SamplerFactory(Plugin):
 class CrdSamplerBase(SamplerFactory):
     """Basic sampler class"""
 
-    extend_questions: "inherited"
+    extend_user_input: "inherited"
     #
     _register_plugin = False
-    _questions = "inherited"
+    _user_input = "inherited"
 
     @classmethod
     @abstractmethod
@@ -38,8 +38,8 @@ class CrdSamplerBase(SamplerFactory):
 class DynSamplerFactory(CrdSamplerBase):
     """Factory to store intial condition samplers"""
     # setup questions
-    questions = 'inherited'
-    extend_questions: 'inherited'
+    _colt_user_input = 'inherited'
+    extend_user_input: 'inherited'
     # setup plugin
     _plugins_storage = '_methods'
     _is_plugin_specialisation = True
@@ -49,9 +49,9 @@ class DynSamplerFactory(CrdSamplerBase):
     condition = DynCondition
 
     @classmethod
-    def _extend_questions(cls, questions):
+    def _extend_user_input(cls, questions):
         """ This class will not be inherited """
-        # Update _questions from Sampling by adding an additional question
+        # Update _user_input from Sampling by adding an additional question
         questions.add_questions_to_block("""
             # State on which trajectories start
             initial state = 0 :: int
@@ -64,7 +64,7 @@ class DynSamplerBase(DynSamplerFactory):
     """Base Class for Dynamics Conditions Sampler"""
 
     _register_plugin = False
-    questions = 'inherited'
+    _colt_user_input = 'inherited'
 
     @classmethod
     @abstractmethod

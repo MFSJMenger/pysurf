@@ -17,7 +17,7 @@ from scipy.optimize import minimize
 
 class Validation(Colt):
 
-    _questions = """
+    _user_input = """
     db =
     properties = :: list
     save_pes = __NONE__ :: str
@@ -27,7 +27,7 @@ class Validation(Colt):
 
     @classmethod
     def _extend_questions(cls, questions):
-        questions.generate_block("training", Training.questions)
+        questions.generate_block("training", Training.colt_user_input)
 
     @classmethod
     def from_config(cls, config):
@@ -49,7 +49,7 @@ class Validation(Colt):
 
 class Training(Colt):
 
-    _questions = """
+    _user_input = """
         spp = spp.inp :: existing_file
     """
 

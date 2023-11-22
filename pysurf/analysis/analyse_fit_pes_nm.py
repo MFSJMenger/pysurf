@@ -31,7 +31,7 @@ from qctools.converter import energy_converter
 
 class AnalyseFitPesNm(Colt):
 
-    _questions = """
+    _user_input = """
         spp = spp.inp :: existing_file
         savefile = :: str
         mode =  :: int
@@ -58,7 +58,7 @@ class AnalyseFitPesNm(Colt):
 
 
     @classmethod
-    def _extend_questions(cls, questions):
+    def _extend_user_input(cls, questions):
         questions.generate_cases('save_data', {name: mode for name, mode in cls._save_data.items() })
         questions.generate_cases('plot_pes', {name: mode for name, mode in cls._plot_pes.items()})
 
@@ -69,7 +69,7 @@ class AnalyseFitPesNm(Colt):
             config = cls.generate_input(inputfile, config=None)
         else:
             config = cls.generate_input(inputfile, config=inputfile)
-        quests = cls.generate_questions(config=inputfile)
+        quests = cls.generate_user_input(config=inputfile)
         config = quests.check_only(inputfile)
         
         plot_config={}
@@ -136,7 +136,7 @@ class AnalyseFitPesNm(Colt):
 
 
     def _get_spp_config(self, filename):
-        questions = SurfacePointProvider.generate_questions(presets="""
+        questions = SurfacePointProvider.generate_user_input(presets="""
                 use_db=yes :: yes
                 [use_db(yes)]
                 fit_only = yes :: yes

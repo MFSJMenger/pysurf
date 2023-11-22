@@ -11,7 +11,7 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = [ ]
+requirements = ['pycolt>=0.5.3', 'qctools>=0.3.0', 'netcdf4>=1.5', 'numpy>=1.21', 'scipy>=1.7', 'jinja2>=3.1']
 
 setup_requirements = ['pytest-runner', ]
 
@@ -19,8 +19,8 @@ test_requirements = ['pytest>=3', ]
 
 setup(
     author="Maximilian Menger, Johannes Ehrmaier",
-    author_email='menger.maximilian@gmail.com',
-    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*',
+    author_email='m.f.s.j.Menger@rug.nl',
+    python_requires='>=3.6',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
@@ -44,6 +44,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/mfsjmenger/pysurf',
-    version='0.1.0',
+    version='0.2.0',
     zip_safe=False,
 )

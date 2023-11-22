@@ -9,7 +9,7 @@ from colt import Colt
 
 
 class PESModel(Colt):
-    _questions = """
+    _user_input = """
     model = :: str
     mode = 0 :: int
     start_plot = -5 :: float
@@ -19,7 +19,7 @@ class PESModel(Colt):
     _plot_input = "plot_pes_model.inp"
     
     @classmethod
-    def _extend_questions(cls, questions):
+    def _extend_user_input(cls, questions):
         questions.generate_cases("model", {name: model.questions for name, model in ModelBase._models.items()})
 
     @classmethod

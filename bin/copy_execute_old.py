@@ -7,7 +7,7 @@ from pysurf.utils import SubfolderHandle
     
 class CopyExecute(Colt):
     
-    _questions = """
+    _user_input = """
         #Foldername of the main folder, e.g. spectrum or prop
         folder = spectrum :: file
 

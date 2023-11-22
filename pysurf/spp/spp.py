@@ -25,15 +25,15 @@ class AbinitioFactory(Plugin):
     _is_plugin_factory = True
     _plugins_storage = 'software'
 
-    _questions = """
+    _user_input = """
         software =
     """
 
     reader = None
 
     @classmethod
-    def _extend_questions(cls, questions):
-        questions.add_branching("software", {name: software.questions 
+    def _extend_user_input(cls, questions):
+        questions.add_branching("software", {name: software.colt_user_input
                                              for name, software in cls.software.items()})
 
 
@@ -43,13 +43,13 @@ class ModelFactory(Plugin):
     _is_plugin_factory = True
     _plugins_storage = '_models'
 
-    _questions = """
+    _user_input = """
         model =
     """
 
     @classmethod
-    def _extend_questions(cls, questions):
-        questions.generate_cases("model", {name: model.questions 
+    def _extend_user_input(cls, questions):
+        questions.generate_cases("model", {name: model.colt_user_input
                                            for name, model in cls._models.items()})
 
 
@@ -58,7 +58,7 @@ class SurfacePointProvider(Colt):
         to perform calculations of a given system at a specific coordinate.
     """
     # Main Questions for SPP
-    _questions = """
+    _user_input = """
         logging = debug :: str ::
         mode = ab-initio
         use_db = no
@@ -74,11 +74,11 @@ class SurfacePointProvider(Colt):
             }
 
     @classmethod
-    def _extend_questions(cls, questions):
+    def _extend_user_input(cls, questions):
         """ Extend the questions of the surface point provider using
             the questions of the `Abinitio` and `Model` """
-        questions.generate_cases("mode", {name: mode.questions for name, mode in cls._modes.items()})
-        questions.generate_cases("use_db", {name: mode.questions for name, mode in cls._database.items()})
+        questions.generate_cases("mode", {name: mode.colt_user_input for name, mode in cls._modes.items()})
+        questions.generate_cases("use_db", {name: mode.colt_user_input for name, mode in cls._database.items()})
 
     @classmethod
     def from_config(cls, config, properties, nstates, natoms, *,
@@ -233,3 +233,35 @@ Implemented: {interface.implemented}
         self.logger.info(f"Interface {interface} provides all necessary properties")
 
 
+def get_spp(configfile, properties, nstates, natoms, *,
+        nghost_states=0, atomids=None, logger=None, checkonly=True):
+    """Initialize a Surface point provider from a config file 
+
+    Args
+    ----
+
+    configfile: str
+        name of the config file
+
+    properties: list(str)
+        list of properties the spp should be able to provide
+
+    nstates: int
+        Number of states
+
+    natoms: int
+        Number of atoms
+
+    nghost_states: int, optional
+        Number of ghost states
+
+    Kwargs
+    ------
+
+    atomids: list
+        atomids of the system
+
+
+    """
+    return SurfacePointProvider.from_questions(properties, nstates, natoms, nghost_states=nghost_states, atomids=atomids,
+                                               config=configfile, checkonly=checkonly)

@@ -15,7 +15,7 @@ class CollectSpectrum(SubfolderHandle, Colt):
     file = 'init.db'
     props = ['energy', 'fosc', 'crd']
     
-    _questions = """
+    _user_input = """
     """
     """ Class to collect and evaluate spectral information from the single point calculations
         
