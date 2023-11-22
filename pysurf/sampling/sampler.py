@@ -29,7 +29,7 @@ class Sampler(Colt):
 
     @classmethod
     def _extend_user_input(cls, questions):
-        questions.generate_cases("method", {name: method.questions
+        questions.generate_cases("method", {name: method.colt_user_input
                                  for name, method in SamplerFactory._methods.items()})
 
     @classmethod
@@ -41,9 +41,7 @@ class Sampler(Colt):
     def from_inputfile(cls, inputfile):
         # Generate the config
         config = cls.generate_input(inputfile, config=inputfile)
-        return cls.from_config(config)    
-
-
+        return cls.from_config(config)
 
     def __init__(self, config, sampler, logger=None):
         """ Sampling always goes with a database, if not needed use Sampler class
@@ -76,7 +74,7 @@ class Sampler(Colt):
     @staticmethod
     def _get_sampler(config):
         return SamplerFactory._methods[config.value].from_config(config)
-    
+
     @property
     def equilibrium(self):
         return self.sampler.get_init()

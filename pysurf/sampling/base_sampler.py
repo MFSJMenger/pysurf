@@ -8,17 +8,17 @@ DynCondition = namedtuple("DynCondition", ['crd', 'veloc', 'state'])
 
 
 class SamplerFactory(Plugin):
-    """ Factory for samplers, which provide only coordinates. It is also the underlying class for 
+    """ Factory for samplers, which provide only coordinates. It is also the underlying class for
         DynSamplingFactory, which is an extension for samplers with velocities and initial states.
     """
     _plugins_storage = '_methods'
     _is_plugin_factory = True
 
     condition = CrdCondition
-    
+
     @classmethod
     def _extend_user_input(cls, questions):
-        questions.generate_cases("method", {name: method.questions
+        questions.generate_cases("method", {name: method.colt_user_input
                                  for name, method in cls._methods.items()})
 
 
@@ -56,7 +56,7 @@ class DynSamplerFactory(CrdSamplerBase):
             # State on which trajectories start
             initial state = 0 :: int
         """)
-        questions.generate_cases("method", {name: method.questions
+        questions.generate_cases("method", {name: method.colt_user_input
                                  for name, method in cls._methods.items()})
 
 
