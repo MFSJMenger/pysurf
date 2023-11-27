@@ -1,0 +1,4 @@
+
+[submodule "modules/hoax"]
+	path = modules/hoax
+	url = https://github.com/AlbertThie/HOAX.git

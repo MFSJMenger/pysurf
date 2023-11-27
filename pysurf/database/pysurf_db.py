@@ -22,7 +22,7 @@ class PySurfDB(Database):
             'three': 3,
             'one': 1,
     }
-    
+
     _dimensions_model = {
             'frame': 'unlimited',
             'nstates': None,
@@ -30,7 +30,7 @@ class PySurfDB(Database):
             'nactive': None,
             'one': 1,
     }
-    
+
     _variables_molecule = DatabaseGenerator("""
         [variables]
         crd_equi  = double :: (natoms, three)
@@ -77,11 +77,11 @@ class PySurfDB(Database):
         nacs      = double :: (frame, nstates, nstates, nmodes)
     """)['variables']
 
-    properties = ['energy', 'gradient', 'fosc', 
+    properties = ['energy', 'gradient', 'fosc',
                  'ekin', 'epot', 'etot', 'nacs',
-                 'veloc', 'accel', 'currstate'] 
+                 'veloc', 'accel', 'currstate']
 
-                   
+
 
     @classmethod
     def generate_database(cls, filename, data=None, dimensions=None, units=None, attributes=None, descriptition=None, model=False, sp=False):
@@ -106,7 +106,7 @@ class PySurfDB(Database):
     def saved_properties(self):
         return [prop for prop in self.properties
                 if prop in self]
-    
+
     @cached_property
     def masses(self):
         if 'masses' in self:
@@ -195,8 +195,9 @@ class PySurfDB(Database):
         if model is False:
             self.set('atomids', system.atomids)
         self.set('masses', system.masses)
-        self.set('modes_equi', np.array([mode.displacements for mode in modes]))
-        self.set('freqs_equi', np.array([mode.freq for mode in modes]))
+        if modes is not None:
+            self.set('modes_equi', np.array([mode.displacements for mode in modes]))
+            self.set('freqs_equi', np.array([mode.freq for mode in modes]))
         # add equilibrium values
         self.set('crd_equi', system.crd)
 
@@ -205,11 +206,11 @@ class PySurfDB(Database):
         out = {'variables': {}, 'dimensions': {}}
         varis = out['variables']
         dims = out['dimensions']
-        
-        if model is True: 
+
+        if model is True:
             refvar = cls._variables_model
             refdim = cls._dimensions_model
-        else: 
+        else:
             refvar = cls._variables_molecule
             refdim = cls._dimensions_molecule
 
@@ -234,4 +235,3 @@ class PySurfDB(Database):
             if value == 'unlimited' and single_point is True:
                 dims[dim] = 1
         # TODO: modify dimensions for the case db, etc
-    

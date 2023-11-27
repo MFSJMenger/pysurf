@@ -35,10 +35,12 @@ class SamplingDB(PySurfDB):
             config['model'] = False
         else:
             config['model'] = True
+        #
         if 'veloc' in info['variables']:
             dynsampling = True
         else:
             dynsampling = False
+        #
         if info['dimensions']['frame'] == 1:
             sp = True
         else:
@@ -51,7 +53,7 @@ class SamplingDB(PySurfDB):
         getinit = sampler.get_init()
 
         system = getinit['system']
-        modes = getinit['modes']
+
         if isinstance(system, Model):
             model = True
         else:
@@ -60,15 +62,26 @@ class SamplingDB(PySurfDB):
             dynsampling = True
         else:
             dynsampling = False
-        nmodes = len(modes)
-        
+
+        modes = getinit.get('modes', None)
+        if modes is not None:
+            nmodes = len(modes)
+
         if model is False:
             natoms = system.natoms
-            variables = ['model', 'crd_equi', 'masses', 'atomids', 'modes_equi', 'freqs_equi', 'crd', 'currstate']
-            dimensions = {'natoms': natoms, 'nmodes': nmodes}
+            if modes is not None:
+                variables = ['model', 'crd_equi', 'masses', 'atomids', 'modes_equi', 'freqs_equi', 'crd', 'currstate']
+                dimensions = {'natoms': natoms, 'nmodes': nmodes}
+            else:
+                variables = ['model', 'crd_equi', 'masses', 'atomids', 'crd', 'currstate']
+                dimensions = {'natoms': natoms}
         else:
-            variables = ['model', 'crd_equi', 'masses', 'modes_equi', 'freqs_equi', 'crd', 'currstate']
-            dimensions = {'nmodes': nmodes}
+            if modes is not None:
+                variables = ['model', 'crd_equi', 'masses', 'modes_equi', 'freqs_equi', 'crd', 'currstate']
+                dimensions = {'nmodes': nmodes}
+            else:
+                variables = ['model', 'crd_equi', 'masses', 'crd', 'currstate']
+                dimensions = {}
         if dynsampling:
             variables += ['veloc']
         db = cls.generate_database(config['sampling_db'], data=variables, dimensions=dimensions, model=model)
@@ -80,7 +93,7 @@ class SamplingDB(PySurfDB):
         db = cls.generate_database(dbfilename, data=variables, dimensions=dimensions, model=model, sp=sp)
         db.add_reference_entry(system, modes, model)
         return db
-    
+
     def append_condition(self, cond):
         self.append('crd', cond.crd)
         if self.dynsampling:
