@@ -137,7 +137,7 @@ class Propagator:
             for i in range(self.nstates):
                 g_diag.update({i:dot(u.T.conj()[i,:],u[:,i]).real*g_mch[i]})
             return g_diag
-        elif self.prob_name in  ("tully", "lz"):
+        elif self.prob_name in  ("tully","lz","lz_nacs"):
             return g_mch
 
     def _interpolator(self, new, old, index, substeps):
@@ -292,8 +292,8 @@ class Propagator:
             grad_new = ene_cou_grad.grad 
             result = namedtuple("result","probs grad_new tully") 
             return result(probs, grad_new, tully)
-        elif self.prob_name == "lz":
-            ene_new = ene_cou_grad.ene
+        elif self.prob_name == "lz" or self.prob_name == "lz_nacs":
+            #ene_new = ene_cou_grad.ene
             lz = self.lz_select(state, dt)
             grad_new = ene_cou_grad.grad 
             result = namedtuple("result","grad_new lz") 
@@ -379,10 +379,14 @@ class RescaleVelocity:
         if self.rescale_vel == "nacs" ==  self.coupling:
             self.nac_new = ene_cou_grad.nac
             self.nac_old = state.nac
+        elif self.rescale_vel == "nacs" and self.coupling =="semi_coup":
+            self.nac_old = ene_cou_grad.nac
 
     def direction(self, vel, state_new):
         if self.rescale_vel == "nacs" ==  self.coupling:
             return (0.5)*(self.nac_old[state_new,self.state_old] + self.nac_new[state_new,self.state_old])
+        elif self.rescale_vel == "nacs" and self.coupling =="semi_coup":
+            return self.nac_old[state_new,self.state_old]
         elif self.rescale_vel == "momentum":
             p = zeros(vel.shape)
             for i, m in enumerate(self.mass):
@@ -463,6 +467,9 @@ class SurfaceHopping(BornOppenheimer):
         elif self.coupling == "non_coup" and self.prob == "lz":
             needed_properties = ["energy", "gradient"]
             self.spp = SurfacePointProvider.from_questions(["energy","gradient"], self.nstates, self.natoms, config ="spp.inp", atomids = state.atomids)
+        elif self.coupling == "semi_coup" and self.prob == "lz_nacs":
+            needed_properties = ["energy", "gradient", "nacs"]
+            self.spp = SurfacePointProvider.from_questions(["energy","gradient","nacs"], self.nstates, self.natoms, config ="spp.inp", atomids = state.atomids)
 
     def get_gradient(self, crd, curr_state):
         result = self.spp.request(crd, ['gradient'], states=[curr_state])
@@ -479,6 +486,9 @@ class SurfaceHopping(BornOppenheimer):
         elif self.coupling == "wf_overlap":
             result = self.spp.request(crd, ['wf_overlap'])
             return result['wf_overlap']
+        elif self.coupling == "semi_coup":
+            result = self.spp.request(crd, ['nacs'])
+            return result['nacs']
             
     def get_ene_cou_grad(self, crd, curr_state):
         grad = self.get_gradient(crd, curr_state) 
@@ -492,7 +502,7 @@ class SurfaceHopping(BornOppenheimer):
             wf_ov = self.get_coupling(crd)
             ene_cou_grad = namedtuple("ene_cou_grad", "ene u wf_ov grad")
             return ene_cou_grad(ene, u, wf_ov, grad)
-        elif self.coupling == "non_coup":
+        elif self.coupling in ("non_coup", "semi_coup"):
             ene_cou_grad = namedtuple("ene_cou_grad", "ene grad")
             return ene_cou_grad(ene, grad)
 
@@ -542,7 +552,7 @@ class SurfaceHopping(BornOppenheimer):
             state.u = ene_cou_grad.u
             state.vk = ene_cou_grad.wf_ov 
             state.rho = propagator.elec_density(state)
-        elif self.coupling == "non_coup":
+        elif self.coupling in ("non_coup", "semi_coup"):
             state.u = None 
             state.vk = None 
         state.ekin = self.cal_ekin(state.mass, state.vel)
@@ -553,7 +563,7 @@ class SurfaceHopping(BornOppenheimer):
         att = None
         succ = None
         aleatory = uniform(0,1)
-        if self.coupling != "non_coup":
+        if self.coupling != "non_coup" and self.prob == "tully":
             acc_probs = cumsum(probs)
             total = sum(acc_probs)
             if total > 1.0:
@@ -580,7 +590,7 @@ class SurfaceHopping(BornOppenheimer):
             state.instate = state_new
             sur_hop = namedtuple("sur_hop", "aleatory acc_probs state_new hop att succ")
             return sur_hop(aleatory, acc_probs[state_new], state_new, hop, att, succ)
-        elif self.coupling == "non_coup":
+        elif self.coupling == "non_coup" and self.prob == "lz":
             iselected = probs.iselected 
             prob = probs.prob
             if prob > aleatory and iselected is not None:
@@ -594,19 +604,37 @@ class SurfaceHopping(BornOppenheimer):
             state.instate = state_new
             sur_hop = namedtuple("sur_hop", "aleatory prob state_new")
             return sur_hop(aleatory, prob, state_new)
+        elif self.coupling == "semi_coup" and self.prob == "lz_nacs":
+            iselected = probs.iselected 
+            prob = probs.prob
+            if prob > aleatory and iselected is not None:
+                state_new = iselected
+                #request nacs to do the velocity rescaling in nac's direction
+                lz_nac = self.get_coupling(state.crd) 
+                ene_nac = namedtuple("ene_nac", "ene nac")
+                rescale = RescaleVelocity(state, ene_nac(ene_cou_grad.ene,lz_nac))
+                hop =  rescale.rescale_velocity(state, iselected) 
+                if hop == "not":
+                    state_new = state.instate
+            else:
+                state_new = state.instate
+            state.instate = state_new
+            sur_hop = namedtuple("sur_hop", "aleatory prob state_new")
+            return sur_hop(aleatory, prob, state_new)
             
 
     def new_surface(self, state, results, crd_new, t, dt):
         ene_cou_grad = self.get_ene_cou_grad(crd_new, state.instate)
-        if self.coupling == "non_coup":
+        if self.coupling in ("non_coup", "semi_coup"):
+            #LZ scheme or LZ plus nacs scheme
             vk_old = None 
             self.vel_old = state.vel
             propagator = Propagator(state)
             old_state = state.instate
             ise_prop = propagator.new_prob_grad(state, vk_old, ene_cou_grad, dt)
-            #ise_prop = propagator.lz_select(state,dt)
             sur_hop = self.surface_hopping(state, ene_cou_grad, ise_prop.lz)
-        elif self.coupling != "non_coup":
+        elif self.coupling in ("nacs", "wf_overlap"):
+            #Tully scheme
             vk_old = self.vk_coupl_matrix(state.nac,self.vel_old)
             self.vel_old = state.vel
             propagator = Propagator(state)
@@ -618,7 +646,7 @@ class SurfaceHopping(BornOppenheimer):
         state.epot = state.ene[state.instate]
         results.save_db(t,state) #save variables in database
         results.print_var(t, dt, sur_hop, state) #printing variables 
-        if self.coupling == "non_coup":
+        if self.coupling == "non_coup" or self.coupling == "semi_coup":
             ene_cou_grad = self.get_ene_cou_grad(crd_new, state.instate)
             return ene_cou_grad.grad        
         state.u = ene_cou_grad.u
@@ -651,9 +679,9 @@ class State(Colt):
     states = 0 1 :: ilist
     ncoeff = 0.0 1.0 :: flist
     # diagonal probability is not working yet
-    prob = tully :: str :: tully, lz     
+    prob = tully :: str :: tully, lz, lz_nacs     
     rescale_vel = momentum :: str :: momentum, nacs 
-    coupling = nacs :: str :: nacs, wf_overlap, non_coup
+    coupling = nacs :: str :: nacs, wf_overlap, non_coup, semi_coup
     method = Surface_Hopping :: str :: Surface_Hopping, Born_Oppenheimer  
     decoherence = EDC :: str :: EDC, IDC_A, IDC_S, No_DC 
     [substeps(true)]
@@ -682,8 +710,9 @@ class State(Colt):
         self.prob = prob
         self.rescale_vel = rescale_vel
         self.coupling = coupling
-        if self.rescale_vel == "nacs" and self.coupling != "nacs":
-            raise SystemExit("Wrong coupling method or wrong rescaling velocity approach")
+        if self.rescale_vel == "nacs":
+            if self.coupling in ("wf_overlap, non_coup"):
+                raise SystemExit("Wrong coupling method or wrong rescaling velocity approach")
         self.method = method
         self.decoherence = decoherence
         if config['substeps'] == "true":
@@ -774,7 +803,7 @@ class PrintResults:
                 db = PySurfDB.generate_database("results.db", data=["crd","veloc","energy","time","ekin","epot","etot","fosc","currstate"], dimensions ={"natoms":natoms, "nstates":nstates}, model = model)
             db.set("currstate",state.instate)
             db.set("fosc",self.norm_coeff(state.ncoeff))
-        elif state.method == "Surface_Hopping" and prob == "lz":
+        elif state.method == "Surface_Hopping" and prob in ("lz","lz_nacs"):
             if model:
                 db = PySurfDB.generate_database("results.db", data=["crd","veloc","energy","time","ekin","epot","etot","currstate"], dimensions ={"nmodes":nmodes, "nstates":nstates}, model = model)
             else:
@@ -864,7 +893,7 @@ class PrintResults:
         if state.prob == "tully":
             var = var(int(t/dt),t,state.ekin,state.epot,state.ekin + state.epot,\
                     sur_hop.acc_probs,sur_hop.aleatory,state.instate)
-        elif state.prob == "lz":
+        elif state.prob in ("lz","lz_nacs"):
             var = var(int(t/dt),t,state.ekin,state.epot,state.ekin + state.epot,\
                     sur_hop.prob,sur_hop.aleatory,state.instate)
         self.gen_results.write(f"{var.steps:>8.0f} {var.t:>12.2f} {var.ekin:>15.3f} {var.epot:>17.4f}"\
@@ -920,5 +949,17 @@ if __name__=="__main__":
         result_2 = DY.run()
     except SystemExit as err:
         print("An error:", err) 
+
+
+    #surf_hopp = SurfaceHopping(elec_state)
+    #ene = surf_hopp.get_energy(elec_state.crd) 
+    #lz_nac = surf_hopp.get_coupling(elec_state.crd) 
+    #print("crd",elec_state.crd)
+    #print("nac",elec_state.nac)
+    #print("crd",elec_state.crd)
+    #print("ene",ene)
+    #print("nac",lz_nac)
+    #ene_nac = namedtuple("ene_nac", "ene nac")
+    #ene_nac(ene_cou_grad.ene,lz_nac)
 
     

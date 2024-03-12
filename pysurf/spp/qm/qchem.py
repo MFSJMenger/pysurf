@@ -262,7 +262,7 @@ class QChem(AbinitioBase):
     mem_static = 4000 :: int
     mem_total = 16000 :: int
     sym_ignore = true :: bool
-    couplings = NACs :: str :: NACs, wf_overlap
+    couplings = nacs :: str :: nacs, wf_overlap
     spin_flip = :: str
     [method(tddft)]
     exchange = pbe0 :: str
@@ -476,7 +476,7 @@ class QChem(AbinitioBase):
         
 
     def _do_energy(self, request):
-        if self.couplings == "NACs":
+        if self.couplings in ("nacs","semi_coup"):
             settings = UpdatableDict(self.settings, self.excited_state_settings)
             settings['jobtype'] = 'sp'
             if self.spin_flip != True:

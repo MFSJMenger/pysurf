@@ -18,9 +18,9 @@ class State(Colt):
     states = 0 1 :: ilist
     ncoeff = 0.0 1.0 :: flist
     # diagonal probability is not working yet
-    prob = tully :: str :: tully, diagonal, lz    
+    prob = tully :: str :: tully, lz, lz_nacs    
     rescale_vel = momentum :: str :: momentum, nacs 
-    coupling = nacs :: str :: nacs, wf_overlap, non_coup 
+    coupling = nacs :: str :: nacs, wf_overlap, non_coup, semi_coup 
     method = Surface_Hopping :: str :: Surface_Hopping, Born_Oppenheimer  
     decoherence = EDC :: str :: EDC, IDC_A, IDC_S, No_DC 
     [substeps(true)]
@@ -49,8 +49,9 @@ class State(Colt):
         self.prob = prob
         self.rescale_vel = rescale_vel
         self.coupling = coupling
-        if self.rescale_vel == "nacs" and self.coupling != "nacs":
-            raise SystemExit("Wrong coupling method or wrong rescaling velocity approach")
+        if self.rescale_vel == "nacs":
+            if self.coupling in ("wf_overlap, non_coup"):
+                raise SystemExit("Wrong coupling method or wrong rescaling velocity approach")
         self.method = method
         self.decoherence = decoherence
         if config['substeps'] == "true":
