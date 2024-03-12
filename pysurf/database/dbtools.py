@@ -117,9 +117,9 @@ class DatabaseGenerator(Generator):
         """select type"""
         types = {
             'int': np.int64,
-            'float': np.float,
+            'float': np.float64,
             'double': np.double,
-            'complex': np.complex,
+            'complex': np.complex_,
         }
         typ = typ.strip().lower()
         

@@ -6,7 +6,7 @@ from colt import from_commandline
 db = :: file
 rm_entry = :: int
 """)
-def remove_entry_command(db, rm_entry)
+def remove_entry_command(db, rm_entry):
     remove_entry(db, rm_entry)
 
 def remove_entry(dbfile, rm_entry):
