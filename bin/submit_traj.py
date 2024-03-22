@@ -6,11 +6,9 @@ class SubmitTrajectories:
     def read_sampling(self):
         prop = open("sampling.inp", 'r+')
         for line in prop:
-            if "model = Tully_1" in line:
+            if "model = " in line:
                 model = str(line.split()[2])
-            elif "model = LVC" in line:
-                model = str(line.split()[2])
-            else:
+            elif "from = molden" in line:
                 model = "molecule"
         return model 
 
