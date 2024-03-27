@@ -35,12 +35,12 @@ class SetupPropagation(SetupBase):
     # Decide whether database for the propagation should be copied to the trajectory folder
     copy_db = none :: str
 
-    # Run LZ or FSSH 
-    tsh_method =  :: str :: FSSH, LZ
+    ## Run LZ or FSSH 
+    #tsh_method =  :: str :: FSSH, LZ
     """
 
     def __init__(self, config):
-        self.tsh_method = config['tsh_method']
+        #self.tsh_method = config['tsh_method']
         """ Class to create initial conditions due to user input. Initial conditions are saved 
             in a file for further usage.
         """
@@ -69,10 +69,10 @@ class SetupPropagation(SetupBase):
         #Make sure that inputfile for RunTrajectory exists and is complete
         if exists_and_isfile(config['prop']): lconfig = config['prop']
         else: lconfig = None
-        if self.tsh_method == 'FSSH':
-            State.from_questions(config = "prop.inp") 
-        elif self.tsh_method == 'LZ':
-            RunTrajectory.generate_input(config['prop'], config=lconfig)
+        #if self.tsh_method == 'FSSH':
+        #    State.from_questions(config = "prop.inp") 
+        #elif self.tsh_method == 'LZ':
+        #    RunTrajectory.generate_input(config['prop'], config=lconfig)
         #
         if config['n_traj'] == -1:
             ntraj = len(sampling._db)
@@ -100,10 +100,10 @@ class SetupPropagation(SetupBase):
         if config['copy_db'] != 'none':
             copy(config['copy_db'], foldername)
 
-        if self.tsh_method == 'FSSH':
-            initname = os.path.join(foldername, 'sampling.db')
-        elif self.tsh_method == 'LZ':
-            initname = os.path.join(foldername, 'init.db')
+        #if self.tsh_method == 'FSSH':
+        #    initname = os.path.join(foldername, 'sampling.db')
+        #elif self.tsh_method == 'LZ':
+        #    initname = os.path.join(foldername, 'init.db')
         #setup new database 
         new_sampling = Sampling.create_db(initname, sampling.info['variables'], sampling.info['dimensions'], sampling.system, sampling.modes, model=sampling.model, sp=True)
         #copy condition to new db
