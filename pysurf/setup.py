@@ -1,7 +1,9 @@
 from abc import abstractmethod
+
 #
 from .utils import SubfolderHandle
 from .logger import get_logger
+
 #
 from colt import Colt
 
@@ -25,11 +27,11 @@ class SetupBase(Colt, SubfolderHandle):
             self.logger = logger
 
     def setup_folders(self, lst, *args, **kwargs):
-        self.logger.info(f'Start setting up folders\n')
+        self.logger.info(f"Start setting up folders\n")
         for idx, folder in self.setupiter(lst):
-            self.logger.info(f'Create folder {folder}\n')
+            self.logger.info(f"Create folder {folder}\n")
             self.setup_folder(idx, folder, *args, **kwargs)
 
-    @abstractmethod                
+    @abstractmethod
     def setup_folder(self, number, foldername, *args, **kwargs):
         """fill the folder with data"""

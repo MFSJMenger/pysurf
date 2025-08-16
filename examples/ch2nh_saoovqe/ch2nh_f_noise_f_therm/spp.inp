@@ -1,0 +1,22 @@
+logging = debug
+mode = ab-initio
+use_db = no
+
+[mode(ab-initio)]
+software = INTSAOOVQE
+
+[mode(ab-initio)::software(INTSAOOVQE)]
+chg = 0
+mult = 1
+basis = cc-pvdz
+nelec_active = 4
+frozen_indices = 6
+active_indices = 6, 9
+virtual_indices = 9, 43
+do_oo_process = True
+noise = False
+
+[mode(ab-initio)::software(INTSAOOVQE)::noise(False)]
+add_noise = False
+
+[use_db(no)]

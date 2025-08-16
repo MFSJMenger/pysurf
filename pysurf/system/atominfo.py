@@ -116,7 +116,7 @@ ATOMNAME_TO_ID = {
     "Mc": 115,
     "Lv": 116,
     "Ts": 117,
-    "Og": 118
+    "Og": 118,
 }
 
 ATOMID_TO_NAME = {
@@ -237,7 +237,7 @@ ATOMID_TO_NAME = {
     115: "Mc",
     116: "Lv",
     117: "Ts",
-    118: "Og"
+    118: "Og",
 }
 
 MASSES = {
@@ -455,5 +455,5 @@ MASSES_AU = {
 
 def get_atom_from_mass(mass):
     for atom in MASSES_AU:
-        if abs(MASSES_AU[atom]-mass) < 0.1:
+        if abs(MASSES_AU[atom] - mass) < 0.1:
             return ATOMID_TO_NAME[atom]

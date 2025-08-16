@@ -3,20 +3,20 @@ from .base_propagator import SHPropagatorBase
 
 
 def get_data(spp, crd):
-    res = spp.get({'crd': crd, 'mass': None, 'gradient': None, 'energy': None})
+    res = spp.get({"crd": crd, "mass": None, "gradient": None, "energy": None})
     return res
 
 
 def calc_ekin(masses, veloc):
     ekin = 0.0
     for i, mass in enumerate(masses.flatten()):
-        ekin += 0.5*mass*veloc.flatten()[i]*veloc.flatten()[i]
+        ekin += 0.5 * mass * veloc.flatten()[i] * veloc.flatten()[i]
     return ekin
 
 
 class LandauZener(SHPropagatorBase):
 
-    properties = ['energy', 'gradient']
+    properties = ["energy", "gradient"]
 
     def __init__(self, spp_inp, natoms, nstates, atomids):
         """setup surface hopping base"""
@@ -25,37 +25,37 @@ class LandauZener(SHPropagatorBase):
     def run(self, initcond, nsteps, dt):
         """actual surface hopping run"""
         # these here should got from init
-        e_curr = self.storage['energy'].current
-        e_prev_step =  self.storage['energy'].prev
-        e_two_step_prev =  self.storage['energy'].twoprev
+        e_curr = self.storage["energy"].current
+        e_prev_step = self.storage["energy"].prev
+        e_two_step_prev = self.storage["energy"].twoprev
         # set starting crd
-        crd = self.storage['crd']
+        crd = self.storage["crd"]
         #
-        v = self.storage['veloc']
+        v = self.storage["veloc"]
         # start
         data = get_data(spp, crd)
-        nstates = len(data['energy'])
-        a = self.get_acceleration(data['gradient'][iactive], data['mass'])
+        nstates = len(data["energy"])
+        a = self.get_acceleration(data["gradient"][iactive], data["mass"])
         #
         if self.irestart is False:
             # setup
-            e_curr = data['energy']
+            e_curr = data["energy"]
             for istep in range(2):
                 # If not restart, first 2 steps are just to save energy!
                 crd, v, a, data = self._propagation_step(crd, v, a, dt)
                 if e_prev_step is None:
                     e_prev_step = e_curr
-                    e_curr = data['energy']
+                    e_curr = data["energy"]
                     continue
                 e_two_step_prev = e_prev_step
                 e_prev_step = e_curr
-                e_curr = data['energy']
+                e_curr = data["energy"]
         else:
             raise Exception("not implemented!")
         # TODO: that should be removed!
-        save = Save('prop.db', data)
+        save = Save("prop.db", data)
         # check whether ab initio calculation
-        save.add_mass(data['mass'])
+        save.add_mass(data["mass"])
         #
         for istep in range(nsteps):
             # 1) write step info
@@ -64,16 +64,17 @@ class LandauZener(SHPropagatorBase):
             # update energy
             e_two_step_prev = e_prev_step
             e_prev_step = e_curr
-            e_curr = data['energy']
+            e_curr = data["energy"]
             # Landau Zener:
-            iselected = self.landau_zener(iactive, nstates, dt, 
-                    e_curr, e_prev_step, e_two_step_prev)
+            iselected = self.landau_zener(
+                iactive, nstates, dt, e_curr, e_prev_step, e_two_step_prev
+            )
             if iselected is not None:
                 # change active state
-                dE = data['energy'][iselected] - data['energy'][iactive]
-                ekin = calc_ekin(data['mass'], v)
+                dE = data["energy"][iselected] - data["energy"][iactive]
+                ekin = calc_ekin(data["mass"], v)
                 # TODO: all logging should be done automatically
-                if (dE > ekin):
+                if dE > ekin:
                     print(f"Too few energy -> no hop")
                 else:
                     iactive = iselected
@@ -81,8 +82,8 @@ class LandauZener(SHPropagatorBase):
                     # rescale velocity
                     v = self._rescale_velocity_along_v(ekin, dE, v)
                     # get new acceleration
-                    a = self.get_acceleration(data['gradient'][iactive], data['mass'])
-            ekin = calc_ekin(data['mass'], v)
+                    a = self.get_acceleration(data["gradient"][iactive], data["mass"])
+            ekin = calc_ekin(data["mass"], v)
             epot = e_curr[iactive]
             etot = ekin + epot
             print(iactive, ekin, epot, etot)
@@ -90,10 +91,10 @@ class LandauZener(SHPropagatorBase):
 
     def _propagation_step(self, crd, v, a, dt):
         crd = self.x_update(crd, v, a, dt)
-        data = get_data(spp, crd) 
+        data = get_data(spp, crd)
         # update acceleration
         a_old = a
-        a = self.get_acceleration(data['gradient'][iactive], data['mass'])
+        a = self.get_acceleration(data["gradient"][iactive], data["mass"])
         v = self.v_update(v, a_old, a, dt)
         return crd, v, a, data
 
@@ -106,11 +107,13 @@ class LandauZener(SHPropagatorBase):
         raise Exception("not implemented yet")
 
     @classmethod
-    def landau_zener_select(cls, iactive, nstates, dt, e_curr, e_prev_step, e_two_step_prev):
-        """"takes in the (adiabatic?) energies at
-            the current, the previous, and the two steps previous time step
+    def landau_zener_select(
+        cls, iactive, nstates, dt, e_curr, e_prev_step, e_two_step_prev
+    ):
+        """ "takes in the (adiabatic?) energies at
+        the current, the previous, and the two steps previous time step
 
-            select which state is the most likely to hop to
+        select which state is the most likely to hop to
         """
         iselected = None
         prop = -1.0
@@ -123,10 +126,12 @@ class LandauZener(SHPropagatorBase):
             d_prev_step = cls.compute_diff(e_prev_step, iactive, istate)
             d_curr = cls.compute_diff(e_curr, iactive, istate)
             # compute probability
-            if (cls.abs_gt(d_curr, d_prev_step) and
-                    cls.abs_gt(d_two_step_prev, d_prev_step)):
+            if cls.abs_gt(d_curr, d_prev_step) and cls.abs_gt(
+                d_two_step_prev, d_prev_step
+            ):
                 curr_hop_prob = cls.compute_landau_zener_probability(
-                                    dt, d_curr, d_prev_step, d_two_step_prev)
+                    dt, d_curr, d_prev_step, d_two_step_prev
+                )
                 if curr_hop_prob > prop:
                     prop = curr_hop_prob
                     iselected = istate
@@ -140,7 +145,7 @@ class LandauZener(SHPropagatorBase):
 
     @staticmethod
     def abs_gt(a, b):
-        if  isinstance(a, float) or isinstance(a, int):
+        if isinstance(a, float) or isinstance(a, int):
             return abs(a) > abs(b)
         return any(a[i] > b[i] for i in range(len(a)))
 
@@ -148,12 +153,11 @@ class LandauZener(SHPropagatorBase):
     def compute_landau_zener_probability(dt, d_curr, d_prev_step, d_two_step_prev):
         """compute landau zener sh probability between two states"""
         # compute the second derivative of the energy difference by time
-        finite_difference_grad = ((d_curr + d_two_step_prev - 2 * d_prev_step)
-                                  / dt**2)
+        finite_difference_grad = (d_curr + d_two_step_prev - 2 * d_prev_step) / dt**2
         # compute the hopping probability
-        return np.exp((-np.pi/2.0)  # pi/2
-                      * np.sqrt(d_prev_step**3
-                                / finite_difference_grad))
+        return np.exp(
+            (-np.pi / 2.0) * np.sqrt(d_prev_step**3 / finite_difference_grad)  # pi/2
+        )
 
     @staticmethod
     def compute_diff(e, i, j):
@@ -162,6 +166,6 @@ class LandauZener(SHPropagatorBase):
 
     def landau_zener_hop(self, prop):
         """Decide if Landom Zener Hop appears"""
-        if (prop > self.random()):
+        if prop > self.random():
             return True
         return False

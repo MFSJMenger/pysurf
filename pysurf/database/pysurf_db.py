@@ -1,5 +1,6 @@
 from functools import lru_cache
 import numpy as np
+
 #
 from ..utils import exists_and_isfile
 from .dbtools import DatabaseGenerator
@@ -14,24 +15,25 @@ def cached_property(func):
 class PySurfDB(Database):
 
     _dimensions_molecule = {
-            'frame': 'unlimited',
-            'natoms': None,
-            'nstates': None,
-            'nmodes': None,
-            'nactive': None,
-            'three': 3,
-            'one': 1,
+        "frame": "unlimited",
+        "natoms": None,
+        "nstates": None,
+        "nmodes": None,
+        "nactive": None,
+        "three": 3,
+        "one": 1,
     }
 
     _dimensions_model = {
-            'frame': 'unlimited',
-            'nstates': None,
-            'nmodes': None,
-            'nactive': None,
-            'one': 1,
+        "frame": "unlimited",
+        "nstates": None,
+        "nmodes": None,
+        "nactive": None,
+        "one": 1,
     }
 
-    _variables_molecule = DatabaseGenerator("""
+    _variables_molecule = DatabaseGenerator(
+        """
         [variables]
         crd_equi  = double :: (natoms, three)
         atomids   = int    :: (natoms)
@@ -48,14 +50,18 @@ class PySurfDB(Database):
         fosc      = double :: (frame, nstates)
         transmom  = double :: (frame, nstates, three)
         currstate = double :: (frame, one)
+        populations = double :: (frame, nstates)
         time      = double :: (frame, one)
         ekin      = double :: (frame, one)
         epot      = double :: (frame, one)
         etot      = double :: (frame, one)
         nacs      = double :: (frame, nstates, nstates, natoms, three)
-    """)['variables']
+        sts_mom   = double :: (frame, nstates, nstates)
+    """
+    )["variables"]
 
-    _variables_model = DatabaseGenerator("""
+    _variables_model = DatabaseGenerator(
+        """
         [variables]
         crd_equi  = double :: (nmodes)
         freqs_equi= double :: (nmodes)
@@ -68,6 +74,7 @@ class PySurfDB(Database):
         accel     = double :: (frame, nmodes)
         energy    = double :: (frame, nstates)
         gradient  = double :: (frame, nactive, nmodes)
+        populations = double :: (frame, nstates)
         fosc      = double :: (frame, nstates)
         currstate = double :: (frame, one)
         time      = double :: (frame, one)
@@ -75,16 +82,34 @@ class PySurfDB(Database):
         epot      = double :: (frame, one)
         etot      = double :: (frame, one)
         nacs      = double :: (frame, nstates, nstates, nmodes)
-    """)['variables']
+    """
+    )["variables"]
 
-    properties = ['energy', 'gradient', 'fosc',
-                 'ekin', 'epot', 'etot', 'nacs',
-                 'veloc', 'accel', 'currstate']
-
-
+    properties = [
+        "energy",
+        "gradient",
+        "fosc",
+        "ekin",
+        "epot",
+        "etot",
+        "nacs",
+        "veloc",
+        "accel",
+        "currstate",
+    ]
 
     @classmethod
-    def generate_database(cls, filename, data=None, dimensions=None, units=None, attributes=None, descriptition=None, model=False, sp=False):
+    def generate_database(
+        cls,
+        filename,
+        data=None,
+        dimensions=None,
+        units=None,
+        attributes=None,
+        descriptition=None,
+        model=False,
+        sp=False,
+    ):
         if dimensions is None:
             dimensions = {}
         if data is None:
@@ -94,47 +119,65 @@ class PySurfDB(Database):
         return cls(filename, settings)
 
     @classmethod
-    def load_database(cls, filename, data=None, dimensions=None, units=None, attributes=None, descriptition=None, model=False, sp=False, read_only=False):
+    def load_database(
+        cls,
+        filename,
+        data=None,
+        dimensions=None,
+        units=None,
+        attributes=None,
+        descriptition=None,
+        model=False,
+        sp=False,
+        read_only=False,
+    ):
         if read_only is True:
             return cls.load_db(filename)
         #
         if not exists_and_isfile(filename):
             raise Exception(f"Cannot load database {filename}")
-        return cls.generate_database(filename, data, dimensions, units, attributes, descriptition, model, sp)
+        return cls.generate_database(
+            filename, data, dimensions, units, attributes, descriptition, model, sp
+        )
 
     @cached_property
     def saved_properties(self):
-        return [prop for prop in self.properties
-                if prop in self]
+        return [prop for prop in self.properties if prop in self]
 
     @cached_property
     def masses(self):
-        if 'masses' in self:
-            return np.array(self['masses'])
+        if "masses" in self:
+            return np.array(self["masses"])
         return None
 
     @cached_property
     def modes(self):
-        if 'freqs_equi' in self and 'modes_equi' in self:
-            return [Mode(freq, mode) for freq, mode in zip(np.copy(self['freqs_equi']), np.copy(self['modes_equi']))]
+        if "freqs_equi" in self and "modes_equi" in self:
+            return [
+                Mode(freq, mode)
+                for freq, mode in zip(
+                    np.copy(self["freqs_equi"]), np.copy(self["modes_equi"])
+                )
+            ]
         return None
 
     @cached_property
     def molecule(self):
         if self.model:
             return None
-        if 'atomids' in self and 'crd_equi' in self and 'masses' in self:
-            return Molecule(np.copy(self['atomids']),
-                            np.copy(self['crd_equi']),
-                            np.copy(self['masses']))
+        if "atomids" in self and "crd_equi" in self and "masses" in self:
+            return Molecule(
+                np.copy(self["atomids"]),
+                np.copy(self["crd_equi"]),
+                np.copy(self["masses"]),
+            )
         return None
 
     @cached_property
     def model_info(self):
         if self.model:
-            if 'crd_equi' in self and 'masses' in self:
-                return ModelInfo(np.copy(self['crd_equi']),
-                                 np.copy(self['masses']))
+            if "crd_equi" in self and "masses" in self:
+                return ModelInfo(np.copy(self["crd_equi"]), np.copy(self["masses"]))
         return None
 
     @property
@@ -152,60 +195,62 @@ class PySurfDB(Database):
     def natoms(self):
         if self.model:
             return None
-        if 'natoms' in self:
-            return self.dimensions['natoms']
+        if "natoms" in self:
+            return self.dimensions["natoms"]
         return None
 
     @cached_property
     def nstates(self):
-        if 'nstates' in self.dimensions:
-            return self.dimensions['nstates']
+        if "nstates" in self.dimensions:
+            return self.dimensions["nstates"]
         return None
 
     @cached_property
     def nmodes(self):
-        if 'nmodes' in self.dimensions:
-            return self.dimensions['nmodes']
+        if "nmodes" in self.dimensions:
+            return self.dimensions["nmodes"]
         return None
 
     @cached_property
     def model(self):
-        if 'model' in self:
-            return bool(self['model'][0])
+        if "model" in self:
+            return bool(self["model"][0])
         return None
 
     def __len__(self):
-        if 'crd' in self:
-            return len(self['crd'])
+        if "crd" in self:
+            return len(self["crd"])
         return 0
 
     @classmethod
     def info_database(cls, filename):
         db = Database.load_db(filename)
-        info = {'variables':[]}
-        for var in set(cls._variables_molecule.keys()).union(set(cls._variables_model.keys())):
+        info = {"variables": []}
+        for var in set(cls._variables_molecule.keys()).union(
+            set(cls._variables_model.keys())
+        ):
             if var in db:
-                info['variables'] += [var]
-        info['dimensions'] = db._rep.dimensions
-        info['length'] = len(db['crd'])
+                info["variables"] += [var]
+        info["dimensions"] = db._rep.dimensions
+        info["length"] = len(db["crd"])
         return info
 
     def add_reference_entry(self, system, modes, model):
-        self.set('model', int(model))
+        self.set("model", int(model))
         if model is False:
-            self.set('atomids', system.atomids)
-        self.set('masses', system.masses)
+            self.set("atomids", system.atomids)
+        self.set("masses", system.masses)
         if modes is not None:
-            self.set('modes_equi', np.array([mode.displacements for mode in modes]))
-            self.set('freqs_equi', np.array([mode.freq for mode in modes]))
+            self.set("modes_equi", np.array([mode.displacements for mode in modes]))
+            self.set("freqs_equi", np.array([mode.freq for mode in modes]))
         # add equilibrium values
-        self.set('crd_equi', system.crd)
+        self.set("crd_equi", system.crd)
 
     @classmethod
     def _get_settings(cls, variables, model):
-        out = {'variables': {}, 'dimensions': {}}
-        varis = out['variables']
-        dims = out['dimensions']
+        out = {"variables": {}, "dimensions": {}}
+        varis = out["variables"]
+        dims = out["dimensions"]
 
         if model is True:
             refvar = cls._variables_model
@@ -228,10 +273,10 @@ class PySurfDB(Database):
 
     @classmethod
     def _prepare_settings(cls, settings, dimensions, model, single_point):
-        dims = settings['dimensions']
-        for dim, value in settings['dimensions'].items():
+        dims = settings["dimensions"]
+        for dim, value in settings["dimensions"].items():
             if value is None:
                 dims[dim] = dimensions[dim]
-            if value == 'unlimited' and single_point is True:
+            if value == "unlimited" and single_point is True:
                 dims[dim] = 1
         # TODO: modify dimensions for the case db, etc

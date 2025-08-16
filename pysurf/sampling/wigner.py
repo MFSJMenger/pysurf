@@ -1,11 +1,14 @@
 import numpy as np
 from numpy import random
+
 #
 from colt import Colt
+
 #
 from ..constants import U_TO_AMU, CM_TO_HARTREE
 from ..molden import MoldenParser, parse_molden
 from ..spp import ModelFactory
+
 #
 from ..system import Molecule
 from ..system.atominfo import MASSES
@@ -13,6 +16,7 @@ from ..system.atominfo import ATOMNAME_TO_ID
 from .normalmodes import NormalModes as nm
 from .normalmodes import Mode
 from .base_sampler import DynSamplerBase
+
 #
 
 
@@ -30,19 +34,20 @@ class Wigner(DynSamplerBase):
         from = :: str
     """
 
-    _from = {'molden' : Molden,
-             'model' : ModelFactory,
+    _from = {
+        "molden": Molden,
+        "model": ModelFactory,
     }
 
     @classmethod
     def _extend_user_input(cls, questions):
-        questions.generate_cases("from", {name: val.colt_user_input
-                                          for name, val in cls._from.items()})
-
+        questions.generate_cases(
+            "from", {name: val.colt_user_input for name, val in cls._from.items()}
+        )
 
     def __init__(self, system, modes, check=True, is_massweighted=False):
         """Initialize a new Wigner Sampling with a molecule class
-           and a normal Mode class"""
+        and a normal Mode class"""
         self.system = system
         self.modes = modes
         self.is_massweighted = is_massweighted
@@ -52,11 +57,11 @@ class Wigner(DynSamplerBase):
     @classmethod
     def from_config(cls, config, start=None):
         """ """
-        #start keyword is not needed here, but has to be provided for DynSamplerBase
-        if config['from'] == 'molden':
-            return cls.from_molden(config['from']['moldenfile'])
-        if config['from'].value == 'model':
-            model = ModelFactory.plugin_from_config(config['from']['model'])
+        # start keyword is not needed here, but has to be provided for DynSamplerBase
+        if config["from"] == "molden":
+            return cls.from_molden(config["from"]["moldenfile"])
+        if config["from"].value == "model":
+            model = ModelFactory.plugin_from_config(config["from"]["model"])
             return cls.from_model(model)
         raise Exception("only (molden, frequencies) implemented")
 
@@ -67,8 +72,7 @@ class Wigner(DynSamplerBase):
 
     def get_init(self):
         """Return all infos needed for the initial condition parser"""
-        return {'system': self.system,
-                'modes': self.modes}
+        return {"system": self.system, "modes": self.modes}
 
     def get_condition(self):
         """Return a single created initial condition"""
@@ -90,22 +94,28 @@ class Wigner(DynSamplerBase):
     @classmethod
     def from_molden(cls, filename, format=2):
         if format == 1:
-            molden = MoldenParser(filename, ['Info', 'Freqs', 'FrCoords', 'FrNormCoords'])
+            molden = MoldenParser(
+                filename, ["Info", "Freqs", "FrCoords", "FrNormCoords"]
+            )
         else:
             freqs, frcoords, frnorm = parse_molden(filename)
-            molden = {'FrCoords': frcoords,
-                      'Freqs': freqs,
-                      'FrNormCoords': frnorm,}
+            molden = {
+                "FrCoords": frcoords,
+                "Freqs": freqs,
+                "FrNormCoords": frnorm,
+            }
         # get molecule info
-        atoms = [atom for atom, _, _, _ in molden['FrCoords']]
+        atoms = [atom for atom, _, _, _ in molden["FrCoords"]]
         atomids = np.array([ATOMNAME_TO_ID[atom] for atom in atoms])
-        crd = np.array([[x, y, z] for _, x, y, z in molden['FrCoords']])
-        masses = np.array([MASSES[idx]*U_TO_AMU for idx in atomids])
+        crd = np.array([[x, y, z] for _, x, y, z in molden["FrCoords"]])
+        masses = np.array([MASSES[idx] * U_TO_AMU for idx in atomids])
         # create molecule
         molecule = Molecule(atomids, crd, masses)
         #
-        modes = [Mode(freq * CM_TO_HARTREE, np.array(molden['FrNormCoords'][imode]))
-                 for imode, freq in enumerate(molden['Freqs'])]
+        modes = [
+            Mode(freq * CM_TO_HARTREE, np.array(molden["FrNormCoords"][imode]))
+            for imode, freq in enumerate(molden["Freqs"])
+        ]
         #
         modes = nm.create_mass_weighted_normal_modes(modes, molecule)
         #
@@ -138,7 +148,7 @@ def get_random(*args):
 
     Returns
     -------
-    
+
     random: float
         random number within the defined bounds
 
@@ -163,10 +173,10 @@ def _get_random(lower, upper):
 def get_initial_condition(system, modes):
     """Wigner sampling condition according to
 
-       L. Sun, W. L. Hase J. Chem. Phys. 133, 044313 (2010).
+    L. Sun, W. L. Hase J. Chem. Phys. 133, 044313 (2010).
 
-       parameters taken from SHARC in accordance to github.com/sharc-md
-       especially the bounds [-5, +5]
+    parameters taken from SHARC in accordance to github.com/sharc-md
+    especially the bounds [-5, +5]
     """
     epot = 0.0
     #
@@ -176,7 +186,7 @@ def get_initial_condition(system, modes):
     for mode in modes:
         # Factor is sqrt(angular freq)
         if mode.freq < 0.0:
-            factor = np.sqrt(-1.0*mode.freq)
+            factor = np.sqrt(-1.0 * mode.freq)
         else:
             factor = np.sqrt(mode.freq)
         #
@@ -195,7 +205,7 @@ def get_initial_condition(system, modes):
         # scaling for crd, veloc sampling
         scale = np.copy(mode.displacements)
         for i, mass in enumerate(system.masses):
-            scale[i] *= 1.0/np.sqrt(mass)
+            scale[i] *= 1.0 / np.sqrt(mass)
         #
         crd += Q * scale
         veloc += P * scale
@@ -207,7 +217,7 @@ def get_initial_condition(system, modes):
 
 def wigner_gs(Q, P):
     """For a one-dimensional harmonic oscillator:
-            Q: dimensionless coordinate
-            P: dimensionless momentum
+    Q: dimensionless coordinate
+    P: dimensionless momentum
     """
-    return np.exp(-Q**2.0-P**2.0)
+    return np.exp(-(Q**2.0) - P**2.0)

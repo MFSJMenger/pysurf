@@ -11,6 +11,7 @@ from ..utils.strutils import split_str
 from ..spp import SurfacePointProvider
 from .base_propagator import PropagatorFactory
 from ..sampling import Sampling
+
 #
 from colt import Colt
 
@@ -41,28 +42,35 @@ class RunTrajectory(Colt):
 
     @classmethod
     def _extend_user_input(cls, questions):
-        questions.generate_cases("method", {name: method.colt_user_input
-                                 for name, method in PropagatorFactory._methods.items()})
+        questions.generate_cases(
+            "method",
+            {
+                name: method.colt_user_input
+                for name, method in PropagatorFactory._methods.items()
+            },
+        )
 
     def __init__(self, config):
-        self.logger = get_logger('prop.log', 'prop')
-        self.logger.header('PROPAGATION', config)
-        sampling = Sampling.from_db(config['initial condition'])
+        self.logger = get_logger("prop.log", "prop")
+        self.logger.header("PROPAGATION", config)
+        sampling = Sampling.from_db(config["initial condition"])
 
-        self.nsteps = int(np.ceil(config['time_final [fs]'] / config['timestep [fs]']))
+        self.nsteps = int(np.ceil(config["time_final [fs]"] / config["timestep [fs]"]))
 
-        self.logger.info('Start propagation of trajectory')
+        self.logger.info("Start propagation of trajectory")
 
-        #get propagator
-        propagator = PropagatorFactory._methods[config['method'].value](config['spp'], 
-                                                                        sampling,
-                                                                        config['n_states'],
-                                                                        nghost_states = config['nghost_states'],
-                                                                        #properties = config['properties'],
-                                                                        restart=config['restart'],
-                                                                        logger=self.logger)
-        propagator.run(self.nsteps, config['timestep [fs]']*fs2au)
-    
+        # get propagator
+        propagator = PropagatorFactory._methods[config["method"].value](
+            config["spp"],
+            sampling,
+            config["n_states"],
+            nghost_states=config["nghost_states"],
+            # properties = config['properties'],
+            restart=config["restart"],
+            logger=self.logger,
+        )
+        propagator.run(self.nsteps, config["timestep [fs]"] * fs2au)
+
     @classmethod
     def from_inputfile(cls, inputfile):
         quests = cls.generate_user_input(config=inputfile)

@@ -1,12 +1,15 @@
 from abc import abstractmethod
+
 #
 from scipy.spatial.distance import cdist, pdist
 import numpy as np
 
 from ..database.pysurf_db import PySurfDB
 from ..utils.osutils import exists_and_isfile
+
 # logger
 from ..logger import get_logger
+
 #
 from colt import Colt, Plugin
 from colt.obj import NoFurtherQuestions
@@ -14,6 +17,8 @@ from colt.obj import NoFurtherQuestions
 
 def internal(crd):
     return pdist(crd)
+
+
 #    return np.array([1.0/ele for ele in pdist(crd)])
 
 
@@ -23,7 +28,7 @@ def internal_coordinates(crds):
 
 class InterpolatorFactory(Plugin):
     _is_plugin_factory = True
-    _plugins_storage = 'interpolator'
+    _plugins_storage = "interpolator"
 
 
 class Interpolator(InterpolatorFactory):
@@ -43,31 +48,49 @@ class Interpolator(InterpolatorFactory):
 
     @classmethod
     def _extend_user_input(cls, questions):
-        questions.generate_cases("interpolator",
-                                 {name: interpolator.colt_user_input
-                                  for name, interpolator in cls.plugins.items()})
-    
+        questions.generate_cases(
+            "interpolator",
+            {
+                name: interpolator.colt_user_input
+                for name, interpolator in cls.plugins.items()
+            },
+        )
+
     @classmethod
     def setup_from_config(cls, config, db, properties, logger):
-        return InterpolatorFactory.plugin_from_config(config['interpolator'], db,
-                                                    properties,
-                                                    logger=logger,
-                                                    energy_only=config['energy_only'],
-                                                    weightsfile=config['weights_file'],
-                                                    crdmode=config['crdmode'],
-                                                    fit_only=config['fit_only'])
-    
+        return InterpolatorFactory.plugin_from_config(
+            config["interpolator"],
+            db,
+            properties,
+            logger=logger,
+            energy_only=config["energy_only"],
+            weightsfile=config["weights_file"],
+            crdmode=config["crdmode"],
+            fit_only=config["fit_only"],
+        )
+
     @classmethod
-    def from_config(cls, config, db, properties, logger, energy_only, weightsfile, crdmode, fit_only):
+    def from_config(
+        cls, config, db, properties, logger, energy_only, weightsfile, crdmode, fit_only
+    ):
         return cls(db, properties, logger, energy_only, weightsfile, crdmode, fit_only)
 
-    def __init__(self, db, properties, logger, energy_only=False, weightsfile=None, crdmode=False, fit_only=False):
+    def __init__(
+        self,
+        db,
+        properties,
+        logger,
+        energy_only=False,
+        weightsfile=None,
+        crdmode=False,
+        fit_only=False,
+    ):
         """important for ShepardInterpolator to set db first!"""
         #
         self.crds = None
         self.logger = logger
         self.db = db
-        self.nstates = self.db.get_dimension_size('nstates')
+        self.nstates = self.db.get_dimension_size("nstates")
         self.energy_only = energy_only
         self.fit_only = fit_only
         self.weightsfile = weightsfile
@@ -77,31 +100,33 @@ class Interpolator(InterpolatorFactory):
         self.crds = self.get_crd()
         #
         if energy_only is True:
-            properties = [prop for prop in properties if prop != 'gradient']
+            properties = [prop for prop in properties if prop != "gradient"]
         #
         if exists_and_isfile(weightsfile):
-            print('weightsfile', weightsfile)
-            self.interpolators = self.get_interpolators_from_file(weightsfile, properties)
+            print("weightsfile", weightsfile)
+            self.interpolators = self.get_interpolators_from_file(
+                weightsfile, properties
+            )
         else:
             self.interpolators, self.size = self.get_interpolators(db, properties)
         #
         if energy_only is True:
-            self.interpolators['gradient'] = self.finite_difference_gradient
+            self.interpolators["gradient"] = self.finite_difference_gradient
         # train the interpolator!
         self.train(weightsfile)
 
     def get_crd(self):
-        if self.crdmode == 'internal':
-            crds = internal_coordinates(np.copy(self.db['crd']))
+        if self.crdmode == "internal":
+            crds = internal_coordinates(np.copy(self.db["crd"]))
         else:
-            crds = np.copy(self.db['crd'])
+            crds = np.copy(self.db["crd"])
         return crds
 
     @abstractmethod
     def get(self, request):
         """fill request
 
-           Return request and if data is trustworthy or not
+        Return request and if data is trustworthy or not
         """
 
     @abstractmethod
@@ -125,7 +150,7 @@ class Interpolator(InterpolatorFactory):
         """load weights from file"""
 
     def train(self, filename=None, always=False):
-        if filename == '':
+        if filename == "":
             filename = None
         # train normally
         if exists_and_isfile(filename):
@@ -143,7 +168,7 @@ class Interpolator(InterpolatorFactory):
 
     def finite_difference_gradient(self, crd, request, dq=0.01):
         """compute the gradient of the energy  with respect to a crd
-           displacement using finite difference method
+        displacement using finite difference method
         """
         crd = request.crd
         grad = np.zeros((self.nstates, crd.size), dtype=float)
@@ -151,19 +176,19 @@ class Interpolator(InterpolatorFactory):
         shape = crd.shape
         crd.resize(crd.size)
         #
-        energy = self.interpolators['energy']
+        energy = self.interpolators["energy"]
         # do loop
         for i in range(crd.size):
             # first add dq
             crd[i] += dq
-            if self.crdmode == 'internal':
+            if self.crdmode == "internal":
                 crd_here = internal(crd.reshape(shape))
             else:
                 crd_here = crd
             en1 = energy(crd_here, request)
             # first subtract 2*dq
-            crd[i] -= 2*dq
-            if self.crdmode == 'internal':
+            crd[i] -= 2 * dq
+            if self.crdmode == "internal":
                 crd_here = internal(crd.reshape(shape))
             else:
                 crd_here = crd
@@ -171,7 +196,7 @@ class Interpolator(InterpolatorFactory):
             # add dq to set crd to origional
             crd[i] += dq
             # compute gradient
-            grad[:,i] = (en1 - en2)/(2.0*dq)
+            grad[:, i] = (en1 - en2) / (2.0 * dq)
         # return gradient
         crd.resize(shape)
         grad.resize((self.nstates, *shape))
@@ -180,8 +205,8 @@ class Interpolator(InterpolatorFactory):
 
 class DataBaseInterpolation(Colt):
     """This class handels all the interaction with the database and
-        the interface:
-        saves the data and does the interpolation
+    the interface:
+    saves the data and does the interpolation
     """
 
     _user_input = """
@@ -193,28 +218,36 @@ class DataBaseInterpolation(Colt):
         database = db.dat :: file
     """
 
-    _write_only = {
-                   'yes': NoFurtherQuestions,
-                   'no': Interpolator
-                  }
+    _write_only = {"yes": NoFurtherQuestions, "no": Interpolator}
+
     @classmethod
     def _extend_user_input(cls, questions):
-        questions.generate_cases("write_only", {name: mode.colt_user_input for name, mode in cls._write_only.items()})
-#        questions.generate_block("interpolator", Interpolator.questions)
+        questions.generate_cases(
+            "write_only",
+            {name: mode.colt_user_input for name, mode in cls._write_only.items()},
+        )
+
+    #        questions.generate_block("interpolator", Interpolator.questions)
 
     @classmethod
-    def from_config(cls, config, interface, natoms, nstates, properties, model=False, logger=None):
-        return cls(interface, config, natoms, nstates, properties, model=model, logger=logger)
+    def from_config(
+        cls, config, interface, natoms, nstates, properties, model=False, logger=None
+    ):
+        return cls(
+            interface, config, natoms, nstates, properties, model=model, logger=logger
+        )
 
-    def __init__(self, interface, config, natoms, nstates, properties, model=False, logger=None):
+    def __init__(
+        self, interface, config, natoms, nstates, properties, model=False, logger=None
+    ):
         """ """
         self.config = config
         if logger is None:
-            self.logger = get_logger('db.log', 'database', [])
+            self.logger = get_logger("db.log", "database", [])
         else:
             self.logger = logger
         #
-        self.write_only = config['write_only']
+        self.write_only = config["write_only"]
 
         #
         self._interface = interface
@@ -222,18 +255,20 @@ class DataBaseInterpolation(Colt):
         self.natoms = natoms
         self.nstates = nstates
         #
-        if config['properties'] is not None:
-            properties += config['properties']
-        properties += ['crd']
+        if config["properties"] is not None:
+            properties += config["properties"]
+        properties += ["crd"]
         # setup database
-        self._db = self._create_db(properties, natoms, nstates, model=model, filename=config['database'])
+        self._db = self._create_db(
+            properties, natoms, nstates, model=model, filename=config["database"]
+        )
         self._parameters = get_fitting_size(self._db)
-        properties = [prop for prop in properties if prop != 'crd']
+        properties = [prop for prop in properties if prop != "crd"]
         self.properties = properties
-        if config['write_only'] == 'no':
-            self.interpolator = Interpolator.setup_from_config(config['write_only'], self._db,
-                                                    properties,
-                                                    logger=self.logger)
+        if config["write_only"] == "no":
+            self.interpolator = Interpolator.setup_from_config(
+                config["write_only"], self._db, properties, logger=self.logger
+            )
             self.fit_only = self.interpolator.fit_only
             #
             if self.write_only is True and self.fit_only is True:
@@ -242,7 +277,6 @@ class DataBaseInterpolation(Colt):
             self.write_only = True
             self.fit_only = False
 
-
     def get_qm(self, request):
         """Get result of request and append it to the database"""
         #
@@ -250,7 +284,7 @@ class DataBaseInterpolation(Colt):
         #
         for prop, value in result.iter_data():
             self._db.append(prop, value)
-        self._db.append('crd', result.crd)
+        self._db.append("crd", result.crd)
         #
         self._db.increase
         return result
@@ -271,13 +305,17 @@ class DataBaseInterpolation(Colt):
         # maybe perform error msg/warning if fitted date is not trustable
         if self.fit_only is True:
             if is_trustworthy is False:
-                self.logger.warning('Interpolated result not trustworthy, but used as fit_only is True')
+                self.logger.warning(
+                    "Interpolated result not trustworthy, but used as fit_only is True"
+                )
             return result
         # do qm calculation
         if is_trustworthy is False:
-            self.logger.info('Interpolated result is not trustworthy and QM calculation is started')
+            self.logger.info(
+                "Interpolated result is not trustworthy and QM calculation is started"
+            )
             return self.get_qm(request)
-        self.logger.info('Interpolated result is trustworthy and returned')
+        self.logger.info("Interpolated result is trustworthy and returned")
         return result
 
     def read_last(self, request):
@@ -285,10 +323,20 @@ class DataBaseInterpolation(Colt):
             request.set(prop, self._db.get(prop, -1))
         return request
 
-    def _create_db(self, data, natoms, nstates, filename='db.dat', model=False):
+    def _create_db(self, data, natoms, nstates, filename="db.dat", model=False):
         if model is False:
-            return PySurfDB.generate_database(filename, data=data, dimensions={'natoms': natoms, 'nstates': nstates, 'nactive': nstates}, model=model)
-        return PySurfDB.generate_database(filename, data=data, dimensions={'nmodes': natoms, 'nstates': nstates, 'nactive': nstates}, model=model)
+            return PySurfDB.generate_database(
+                filename,
+                data=data,
+                dimensions={"natoms": natoms, "nstates": nstates, "nactive": nstates},
+                model=model,
+            )
+        return PySurfDB.generate_database(
+            filename,
+            data=data,
+            dimensions={"nmodes": natoms, "nstates": nstates, "nactive": nstates},
+            model=model,
+        )
 
 
 def get_fitting_size(db):
@@ -305,17 +353,14 @@ def get_fitting_size(db):
     return out
 
 
-
-
-
-def within_trust_radius(crd, crds, radius, metric='euclidean', radius_ci=None):
+def within_trust_radius(crd, crds, radius, metric="euclidean", radius_ci=None):
     is_trustworthy_general = False
     is_trustworthy_CI = False
     shape = crds.shape
     crd_shape = crd.shape
     crd.resize((1, crd.size))
     if len(shape) == 3:
-        crds.resize((shape[0], shape[1]*shape[2]))
+        crds.resize((shape[0], shape[1] * shape[2]))
     dist = cdist(crd, crds, metric=metric)
     crds.resize(shape)
     crd.resize(crd_shape)

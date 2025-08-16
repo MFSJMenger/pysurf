@@ -22,6 +22,9 @@ class SetupSpectrum(SetupBase):
 
     # Number of states
     nstates = :: int
+
+    # sampling input
+    sampling_input = sampling.inp :: existing_file
    
     #Properties that should be calculated
     properties = :: list(str), optional, alias=p
@@ -47,7 +50,18 @@ class SetupSpectrum(SetupBase):
         SetupBase.__init__(self, logger)
         #
         logger.info(f"Opening sampling database {config['sampling_db']}")
-        sampling = Sampling.from_db(config['sampling_db'], logger=logger)
+
+        sampling = Sampling.from_db(config['sampling_input'], config['sampling_db'], logger=logger)
+        sampling_config = Sampling.generate_user_input(config['sampling_input']).check_only()
+        self.sampling_input = config['sampling_input']
+        self.moldenfile = None
+        if sampling_config['method'] == 'Wigner':
+            if sampling_config['method']['from'] == 'molden':
+                self.moldenfile = sampling_config['method']['from']['moldenfile']
+
+
+        sampling = Sampling.from_db(config['sampling_input'], config['sampling_db'], logger=logger)
+
 
         if not exists_and_isfile(config['spp']):
             presets="""
@@ -79,6 +93,9 @@ class SetupSpectrum(SetupBase):
     def setup_folder(self, number, foldername, config, sampling):
         copy(config['spp'], foldername)
         copy(config['sp_calc'], foldername)
+        copy(self.sampling_input, foldername)
+        if self.moldenfile is not None:
+            copy(self.moldenfile, foldername)
 
         #name of new database
         initname = os.path.join(foldername, 'init.db')
@@ -89,7 +106,7 @@ class SetupSpectrum(SetupBase):
         dimensions['nstates'] = config['nstates']
         dimensions['nactive'] = config['nstates']
         #setup new database 
-        new_sampling = Sampling.create_db(initname, variables, dimensions, sampling.system, sampling.modes, model=sampling.model, sp=True)
+        new_sampling = Sampling.create_db(config['sampling_input'], initname, variables, dimensions, sampling.system, sampling.modes, model=sampling.model, sp=True)
         #copy condition to new db
         condition = sampling.get_condition(number)
         new_sampling.write_condition(condition, 0)

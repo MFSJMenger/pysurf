@@ -1,6 +1,8 @@
 from pysurf.workflow import engine
 
-workflow = engine.create_workflow("analyse_fit_pes_model", """
+workflow = engine.create_workflow(
+    "analyse_fit_pes_model",
+    """
 spp = spp_analysis("spp.inp")
 spp_calc = spp_calc("spp.inp", 5, 3, ['energy'])
 sampler = sampler("samplerinp")
@@ -21,6 +23,7 @@ style_dashed = combine_plotstyles(color, dashed)
 add_plot(plot, datasorted_calc)
 add_plot(plot, datasorted, style=style_dashed)
 show_plot(plot)
-""")
+""",
+)
 
 workflow.run()

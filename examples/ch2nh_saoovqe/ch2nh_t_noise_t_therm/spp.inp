@@ -1,0 +1,29 @@
+logging = debug
+mode = ab-initio
+use_db = no
+
+[mode(ab-initio)]
+software = INTSAOOVQE
+
+[mode(ab-initio)::software(INTSAOOVQE)]
+chg = 0
+mult = 1
+basis = cc-pvdz
+nelec_active = 4
+frozen_indices = 6
+active_indices = 6, 9
+virtual_indices = 9, 43
+do_oo_process = True
+noise = True
+
+[mode(ab-initio)::software(INTSAOOVQE)::noise(True)]
+mean = 0
+variance = 1.0e-8
+noise_energy_after_sa_vqe = True
+noise_before_orb_opt_phase = False
+noise_final_state_resolution = True
+noise_vqe_cost_function_energy = False
+noise_rdms_gradient = True
+noise_tdms_nacs = True
+
+[use_db(no)]

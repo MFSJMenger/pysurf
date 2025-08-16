@@ -22,7 +22,9 @@ class RequestGenerator:
         """add more sanity checks!"""
         properties = properties + self._request_always
         if states is None:
-            return Request(crd, properties, list(range(self.nstates)), same_crd=same_crd)
+            return Request(
+                crd, properties, list(range(self.nstates)), same_crd=same_crd
+            )
         return Request(crd, properties, states, same_crd=same_crd)
 
     def _request_all(self, crd, properties, states=None, same_crd=False):
@@ -55,13 +57,13 @@ class StateData:
 class Request(Mapping):
 
     def __init__(self, crd, properties, states, same_crd=False):
-        self._properties = {prop: None for prop in properties if prop != 'crd'}
+        self._properties = {prop: None for prop in properties if prop != "crd"}
         self.states = states
         self.crd = np.array(crd)
         self.same_crd = same_crd
         #
-        if 'gradient' in properties:
-            self._properties['gradient'] = StateData(states, self.crd.shape)
+        if "gradient" in properties:
+            self._properties["gradient"] = StateData(states, self.crd.shape)
 
     def set(self, name, value):
         """Ignore properties that are not requested!"""

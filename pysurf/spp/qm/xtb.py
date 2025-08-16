@@ -1,29 +1,30 @@
 import os
 import subprocess as sp
+
 #
 from . import AbinitioBase
-from ...fileparser import  read_geom
+from ...fileparser import read_geom
 from .xtbhelp import XTBReader
 from ...system import Molecule
 
 
 def run_interface(script, name):
-    print('############## Run section: ##############\nInterface %s call:' % name)
+    print("############## Run section: ##############\nInterface %s call:" % name)
     print(script)
-    error=sp.call(script, shell=True)
-    if error==0:
-        print('Finished!')
+    error = sp.call(script, shell=True)
+    if error == 0:
+        print("Finished!")
     else:
-        print('*** Something went wrong! ***')
+        print("*** Something went wrong! ***")
         print("Error count = %d" % error)
     return
 
 
 def write_content_to_file(fileName, content, options="w"):
-    """ write content to file [fileName]
+    """write content to file [fileName]
 
-        fileName = str, Name of the file to be read
-        content  = str, content written to the file
+    fileName = str, Name of the file to be read
+    content  = str, content written to the file
     """
     with open(fileName, options) as f:
         f.write(content)
@@ -40,14 +41,14 @@ class XTBInterface(AbinitioBase):
     filename = xtb_input.xyz
     """
 
-    implemented = ['energy', 'gradient']
+    implemented = ["energy", "gradient"]
 
     def __init__(self, executable, name, atomids, filename):
         self.natoms = len(atomids)
         self.molecule = Molecule(atomids, None)
         self.name = name
         self.executable = executable
-#        self.natoms, self.atomnames, self.coords = read_geom(refgeom)
+        #        self.natoms, self.atomnames, self.coords = read_geom(refgeom)
         self.ifile = filename
 
     @classmethod
@@ -55,15 +56,15 @@ class XTBInterface(AbinitioBase):
         assert nghost == 0
         if nstates > 1:
             raise Exception("Only Groundstate calculations possible")
-        return cls(config['executable'], config['name'], atomids, config['filename'])
-    
+        return cls(config["executable"], config["name"], atomids, config["filename"])
+
     def get(self, request):
         self.molecule.crd = request.crd
         self._write_general_inputs()
         (en, dip), grad, _ = self._run_gradient()
-        if 'gradient' in request:
-            request['gradient'][0] = grad.reshape((self.natoms, 3))
-        request.set('energy', en)
+        if "gradient" in request:
+            request["gradient"][0] = grad.reshape((self.natoms, 3))
+        request.set("energy", en)
         return request
 
     def _write_general_inputs(self):
@@ -75,9 +76,16 @@ class XTBInterface(AbinitioBase):
         return (self._read_xtb_energy_and_dipole("output_energy"), None, None)
 
     def _run_gradient(self):
-        command = "%s %s --grad --copy > output_gradient " % (self.executable,  self.ifile)
+        command = "%s %s --grad --copy > output_gradient " % (
+            self.executable,
+            self.ifile,
+        )
         run_interface(command, self.name)
-        output = (self._read_xtb_energy_and_dipole("output_gradient"), self._read_xtb_gradient("gradient"), None)
+        output = (
+            self._read_xtb_energy_and_dipole("output_gradient"),
+            self._read_xtb_gradient("gradient"),
+            None,
+        )
         self.clean_up()
         return output
 
@@ -85,10 +93,11 @@ class XTBInterface(AbinitioBase):
         (_, _), grad, _ = self._run_gradient()
         command = "%s %s --hess --copy > output_freq" % (self.executable, self.ifile)
         run_interface(command, self.name)
-        return (self._read_xtb_energy_and_dipole("output_freq"), 
-                grad, 
-                self._read_xtb_hessian("hessian"))
-
+        return (
+            self._read_xtb_energy_and_dipole("output_freq"),
+            grad,
+            self._read_xtb_hessian("hessian"),
+        )
 
     def clean_up(self):
         os.rename("gradient", "grad_old")
@@ -108,4 +117,9 @@ class XTBInterface(AbinitioBase):
 
     @classmethod
     def get_coordinates(cls, atomid, coords):
-        return "% 4s    % 14.10f   % 14.10f   % 14.10f \n"  % (atomid, coords[0], coords[1], coords[2])
+        return "% 4s    % 14.10f   % 14.10f   % 14.10f \n" % (
+            atomid,
+            coords[0],
+            coords[1],
+            coords[2],
+        )

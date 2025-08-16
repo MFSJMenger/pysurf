@@ -3,13 +3,15 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+
 #
 from colt import Colt
 from qctools.converter import energy_converter, length_converter, time_converter
 
+
 class Plot(Colt):
-    """ Plotting class for pysurf results. It uses Matplotlib to plot and Colt to 
-        handle the user input
+    """Plotting class for pysurf results. It uses Matplotlib to plot and Colt to
+    handle the user input
     """
 
     _user_input = """
@@ -31,14 +33,13 @@ class Plot(Colt):
         matplotlib style = :: str, optional
     """
 
-    _save_plot = {
-            'yes': "plot_file = plot.png :: file",
-            'no': ""
-            }
+    _save_plot = {"yes": "plot_file = plot.png :: file", "no": ""}
 
     @classmethod
     def _extend_user_input(cls, questions):
-        questions.generate_cases('save_plot', {name: mode for name, mode in cls._save_plot.items()})
+        questions.generate_cases(
+            "save_plot", {name: mode for name, mode in cls._save_plot.items()}
+        )
 
     @classmethod
     def from_inputfile(cls, inputfile):
@@ -54,28 +55,36 @@ class Plot(Colt):
                 Colt information according to the class questions
         """
         self.config = config
-        if config['matplotlib style'] is None:
-            #Hard coded matplotlib stylesheet
+        if config["matplotlib style"] is None:
+            # Hard coded matplotlib stylesheet
             style = os.path.dirname(os.path.abspath(__file__))
-            style = os.path.join(style, 'pysurf.mplstyle')
+            style = os.path.join(style, "pysurf.mplstyle")
         else:
-            style = config['matplotlib style']
+            style = config["matplotlib style"]
         try:
             plt.style.use(style)
         except:
             raise Exception(f"Matplotlib style {style} could not be set")
 
-        if config['rcparams'] is not None:
-            for key, value in config['rcparams'].items():
+        if config["rcparams"] is not None:
+            for key, value in config["rcparams"].items():
                 mpl.rcParams[key] = value
 
-
-    def line_plot(self, data, x_units_in, y_units_in, ax=None, line_props={}, save_plot=True, show_plot=True):
-        """ 
+    def line_plot(
+        self,
+        data,
+        x_units_in,
+        y_units_in,
+        ax=None,
+        line_props={},
+        save_plot=True,
+        show_plot=True,
+    ):
+        """
         function that plots the data in a line plot
 
         Args:
-            data, numpy array 
+            data, numpy array
                 size (:, 2), containing the x and y data for the plot.
 
             x_units_in, None or tuple:
@@ -95,7 +104,7 @@ class Plot(Colt):
 
             line_props, optional, dict:
                 dictionary containing the properties like linestyl, color, width, ... for the line plot. It will be used as is.
-                
+
 
         Output:
             ax, pyplot axes object:
@@ -103,27 +112,30 @@ class Plot(Colt):
 
         """
 
-
         config = self.config
-         
-        #Get converter for x-data
+
+        # Get converter for x-data
         if x_units_in is not None:
             try:
-                xconverter = globals()[x_units_in[0]+'_converter'].get_converter(x_units_in[1], config['x_units'])
+                xconverter = globals()[x_units_in[0] + "_converter"].get_converter(
+                    x_units_in[1], config["x_units"]
+                )
             except:
                 raise InputException("Converter or units not known")
         else:
             xconverter = lambda x: x
-        #Get converter for y-data
+        # Get converter for y-data
         if y_units_in is not None:
             try:
-                yconverter = globals()[y_units_in[0]+'_converter'].get_converter(y_units_in[1], config['y_units'])
+                yconverter = globals()[y_units_in[0] + "_converter"].get_converter(
+                    y_units_in[1], config["y_units"]
+                )
             except:
-                    raise InputException("Converter or units not known")
+                raise InputException("Converter or units not known")
         else:
             yconverter = lambda x: x
-        
-        #Convert data
+
+        # Convert data
         convdata = np.empty_like(data)
         convdata[:, 0] = xconverter(data[:, 0])
         convdata[:, 1] = yconverter(data[:, 1])
@@ -131,62 +143,64 @@ class Plot(Colt):
             fig = plt.figure()
             ax = fig.add_subplot(1, 1, 1)
 
-#        if config['title'] != None: ax.set_title(config['title'])
+        #        if config['title'] != None: ax.set_title(config['title'])
 
-
-        #set axis and axis label
-        lbl = r"{}".format(config['x_label'])
-        if config['x_label_unit']:
-            lbl += r" [{}]".format(config['x_units'])
+        # set axis and axis label
+        lbl = r"{}".format(config["x_label"])
+        if config["x_label_unit"]:
+            lbl += r" [{}]".format(config["x_units"])
         ax.set_xlabel(lbl)
- 
+
         scale = False
-        lim = [config['x_start']]
-        lim += [config['x_end']]
-        if None in lim: scale = True
+        lim = [config["x_start"]]
+        lim += [config["x_end"]]
+        if None in lim:
+            scale = True
         ax.set_xlim(*lim, auto=scale)
 
-        if config['x_units'] == 'a.u.':
-            ax.set_xticklabels('' for x in ax.get_xticks())
-        
-        lbl = r"{}".format(config['y_label'])
-        if config['y_label_unit']:
-            lbl += r" [{}]".format(config['y_units'])
+        if config["x_units"] == "a.u.":
+            ax.set_xticklabels("" for x in ax.get_xticks())
+
+        lbl = r"{}".format(config["y_label"])
+        if config["y_label_unit"]:
+            lbl += r" [{}]".format(config["y_units"])
         ax.set_ylabel(lbl)
-        
+
         scale = False
-        lim = [config['y_start']]
-        lim += [config['y_end']]
-        if None in lim: scale = True
+        lim = [config["y_start"]]
+        lim += [config["y_end"]]
+        if None in lim:
+            scale = True
         ax.set_ylim(*lim, auto=scale)
 
-        if config['y_units'] == 'a.u.':
-            ax.set_yticklabels('' for y in ax.get_yticks())
+        if config["y_units"] == "a.u.":
+            ax.set_yticklabels("" for y in ax.get_yticks())
 
-        #plot data
+        # plot data
         ax.plot(convdata[:, 0], convdata[:, 1], **line_props)
 
-        #legend
-        if config['legend'] is not None:
-            ax.legend(config['legend'])
+        # legend
+        if config["legend"] is not None:
+            ax.legend(config["legend"])
 
-        #save plot
-        if config['save_plot'] and save_plot:
-            plt.savefig(config['save_plot']['plot_file'])
+        # save plot
+        if config["save_plot"] and save_plot:
+            plt.savefig(config["save_plot"]["plot_file"])
 
-        #show plot
-        if config['show_plot'] and show_plot:
+        # show plot
+        if config["show_plot"] and show_plot:
             plt.show()
 
         return ax
 
-
-    def mesh_plot(self, data, x_units_in, y_units_in, ax=None, save_plot=True, show_plot=True):
-        """ 
+    def mesh_plot(
+        self, data, x_units_in, y_units_in, ax=None, save_plot=True, show_plot=True
+    ):
+        """
         function that plots the data in a mesh plot
 
         Args:
-            data, numpy array 
+            data, numpy array
                 size (:, 2), containing the x and y data for the plot.
 
             x_units_in, None or tuple:
@@ -206,7 +220,7 @@ class Plot(Colt):
 
             line_props, optional, dict:
                 dictionary containing the properties like linestyl, color, width, ... for the line plot. It will be used as is.
-                
+
 
         Output:
             ax, pyplot axes object:
@@ -214,27 +228,30 @@ class Plot(Colt):
 
         """
 
-
         config = self.config
-         
-        #Get converter for x-data
+
+        # Get converter for x-data
         if x_units_in is not None:
             try:
-                xconverter = globals()[x_units_in[0]+'_converter'].get_converter(x_units_in[1], config['x_units'])
+                xconverter = globals()[x_units_in[0] + "_converter"].get_converter(
+                    x_units_in[1], config["x_units"]
+                )
             except:
                 raise InputException("Converter or units not known")
         else:
             xconverter = lambda x: x
-        #Get converter for y-data
+        # Get converter for y-data
         if y_units_in is not None:
             try:
-                yconverter = globals()[y_units_in[0]+'_converter'].get_converter(y_units_in[1], config['y_units'])
+                yconverter = globals()[y_units_in[0] + "_converter"].get_converter(
+                    y_units_in[1], config["y_units"]
+                )
             except:
-                    raise InputException("Converter or units not known")
+                raise InputException("Converter or units not known")
         else:
             yconverter = lambda x: x
-        
-        #Convert data
+
+        # Convert data
         x = np.empty_like(data[0])
         y = np.empty_like(data[1])
         x = xconverter(data[0])
@@ -243,51 +260,52 @@ class Plot(Colt):
             fig = plt.figure()
             ax = fig.add_subplot(1, 1, 1)
 
-#        if config['title'] != None: ax.set_title(config['title'])
+        #        if config['title'] != None: ax.set_title(config['title'])
 
-
-        #set axis and axis label
-        lbl = r"{}".format(config['x_label'])
-        if config['x_label_unit']:
-            lbl += r" [{}]".format(config['x_units'])
+        # set axis and axis label
+        lbl = r"{}".format(config["x_label"])
+        if config["x_label_unit"]:
+            lbl += r" [{}]".format(config["x_units"])
         ax.set_xlabel(lbl)
- 
+
         scale = False
-        lim = [config['x_start']]
-        lim += [config['x_end']]
-        if None in lim: scale = True
+        lim = [config["x_start"]]
+        lim += [config["x_end"]]
+        if None in lim:
+            scale = True
         ax.set_xlim(*lim, auto=scale)
 
-        if config['x_units'] == 'a.u.':
-            ax.set_xticklabels('' for x in ax.get_xticks())
-        
-        lbl = r"{}".format(config['y_label'])
-        if config['y_label_unit']:
-            lbl += r" [{}]".format(config['y_units'])
+        if config["x_units"] == "a.u.":
+            ax.set_xticklabels("" for x in ax.get_xticks())
+
+        lbl = r"{}".format(config["y_label"])
+        if config["y_label_unit"]:
+            lbl += r" [{}]".format(config["y_units"])
         ax.set_ylabel(lbl)
-        
+
         scale = False
-        lim = [config['y_start']]
-        lim += [config['y_end']]
-        if None in lim: scale = True
+        lim = [config["y_start"]]
+        lim += [config["y_end"]]
+        if None in lim:
+            scale = True
         ax.set_ylim(*lim, auto=scale)
 
-        if config['y_units'] == 'a.u.':
-            ax.set_yticklabels('' for y in ax.get_yticks())
+        if config["y_units"] == "a.u.":
+            ax.set_yticklabels("" for y in ax.get_yticks())
 
-        #plot data
+        # plot data
         ax.pcolormesh(x, y, data[2])
 
-        #legend
-        if config['legend'] is not None:
-            ax.legend(config['legend'])
+        # legend
+        if config["legend"] is not None:
+            ax.legend(config["legend"])
 
-        #save plot
-        if config['save_plot'] and save_plot:
-            plt.savefig(config['save_plot']['plot_file'])
+        # save plot
+        if config["save_plot"] and save_plot:
+            plt.savefig(config["save_plot"]["plot_file"])
 
-        #show plot
-        if config['show_plot'] and show_plot:
+        # show plot
+        if config["show_plot"] and show_plot:
             plt.show()
 
         return ax

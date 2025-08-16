@@ -1,5 +1,5 @@
 import sys
-import os 
+import os
 import numpy as np
 
 from pysurf.database.database import Database
@@ -13,35 +13,37 @@ from pysurf.utils.constants import au2ev
 from colt import from_commandline
 
 
-
 def write_etot(ekin, epot, etot, step):
-    string = ''
-    string += 'step {0} : {1:8.4f}, {2:8.4f}, {3:8.4f}'.format(step, ekin, epot, etot)
-    string += '\n'
+    string = ""
+    string += "step {0} : {1:8.4f}, {2:8.4f}, {3:8.4f}".format(step, ekin, epot, etot)
+    string += "\n"
     return string
 
 
-@from_commandline("""
+@from_commandline(
+    """
 infile = prop.db :: file_exists
 outfile = etot.dat :: file
-""")
+"""
+)
 def get_etot_command(infile, outfile):
     get_etot(infile, outfile)
 
+
 def get_etot(infile, outfile):
-    if not(os.path.isfile(infile)):
-        print('Error: infile path does not exist! ' + infile)
+    if not (os.path.isfile(infile)):
+        print("Error: infile path does not exist! " + infile)
         exit()
-    
+
     db = Database.load_db(infile)
-    
-    
-    with open(outfile, 'w') as output:
-        output.write('ekin, epot, etot \n')
+
+    with open(outfile, "w") as output:
+        output.write("ekin, epot, etot \n")
         step = 0
-        for ekin, epot, etot in zip(db['ekin'], db['epot'], db['etot']):
+        for ekin, epot, etot in zip(db["ekin"], db["epot"], db["etot"]):
             output.write(write_etot(ekin[0], epot[0], etot[0], step))
             step += 1
-        
-if __name__=="__main__":
+
+
+if __name__ == "__main__":
     get_etot_command()

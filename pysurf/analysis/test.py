@@ -11,7 +11,8 @@ class Test(Colt):
         quests = cls.generate_input(inputfile, config=None)
         quests = cls.generate_user_input(config=inputfile)
         config = quests.check_only(inputfile)
-        print(config['testfloat'][1])
+        print(config["testfloat"][1])
 
-if __name__=="__main__":
-        Test.from_inputfile('test.inp')
+
+if __name__ == "__main__":
+    Test.from_inputfile("test.inp")

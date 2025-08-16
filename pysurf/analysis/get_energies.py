@@ -1,5 +1,5 @@
 import sys
-import os 
+import os
 import numpy as np
 
 from pysurf.database.database import Database
@@ -10,40 +10,44 @@ from pysurf.database.dbtools import load_database
 from pysurf.system.atominfo import get_atom_from_mass
 
 from pysurf.utils.constants import au2ev
+
 #
 from colt import from_commandline
 
 
-
 def write_energy(energy, step):
-    string = ''
-    string += '{0} '.format(step)
-    string += np.array2string(energy, separator=',   ', precision=5).strip(']').strip('[')
-    string += '\n'
+    string = ""
+    string += "{0} ".format(step)
+    string += (
+        np.array2string(energy, separator=",   ", precision=5).strip("]").strip("[")
+    )
+    string += "\n"
     return string
 
 
-@from_commandline("""
+@from_commandline(
+    """
 outfile = energy.dat :: file
 infile = prop.db :: file
-""")
+"""
+)
 def get_energies_command(infile, outfile):
     get_energies(infile, outfile)
 
+
 def get_energies(infile, outfile):
-    if not(os.path.isfile(infile)):
-        print('Error: infile path does not exist! ' + infile)
+    if not (os.path.isfile(infile)):
+        print("Error: infile path does not exist! " + infile)
         exit()
-    
+
     db = Database.load_db(infile)
-    
-    
-    with open(outfile, 'w') as output:
+
+    with open(outfile, "w") as output:
         step = 0
-        for energy in db['energy']:
+        for energy in db["energy"]:
             output.write(write_energy(energy, step))
             step += 1
-        
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     get_energies_command()

@@ -11,18 +11,18 @@ class SurfaceHoppingBase(ABC):
         The system is completely defined via the SPP model
         """
         # get spp input
-        spp_inp = self._parse_config(configfile) 
+        spp_inp = self._parse_config(configfile)
         # setup SPP
         self.spp = SurfacePointProvider(spp_inp)
         # setup trajectory
         self.irestart = self._init_trajectory()
         if self.irestart is True:
             self._restart_trajectory()
-         
+
     @abstractmethod
     def _parse_config(self, config):
         """parse the config file and do anything related
-           should return the input file for the spp
+        should return the input file for the spp
         """
         pass
 
@@ -35,7 +35,7 @@ class SurfaceHoppingBase(ABC):
     def _init_trajectory(self):
         """setup a new trajectory run, returns if restart or not!"""
         pass
-    
+
     @abstractmethod
     def _init_system(self):
         """method to setup the surface hopping run"""
@@ -55,7 +55,7 @@ class SurfaceHoppingBase(ABC):
     @staticmethod
     def x_update(crd, v, a, dt):
         """Currently we only support velocity verlet"""
-        crd += v*dt + 0.5*a*dt*dt
+        crd += v * dt + 0.5 * a * dt * dt
         return crd
 
     @staticmethod
@@ -65,10 +65,10 @@ class SurfaceHoppingBase(ABC):
 
     @staticmethod
     def get_acceleration(g, m):
-        return -g/m
+        return -g / m
 
     @staticmethod
     def _rescale_velocity_along_v(ekin, dE, v):
-        factor = (1. - dE/ekin)
+        factor = 1.0 - dE / ekin
         v *= np.sqrt(factor)
         return v

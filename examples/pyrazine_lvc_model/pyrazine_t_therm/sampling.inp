@@ -1,0 +1,12 @@
+n_conditions_max = 10
+method = Wigner
+sampling_db = sampling.db
+
+[method(Wigner)]
+from = model
+
+[method(Wigner)::from(model)]
+model = LVC
+
+[method(Wigner)::from(model)::model(LVC)]
+parameter_file = pyrmod6.inp

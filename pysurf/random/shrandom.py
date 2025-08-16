@@ -3,11 +3,12 @@ import numpy as np
 
 
 # This should be a Singleton class!
-# there can only exist ONE way to 
+# there can only exist ONE way to
 # generate random numbers!
 
+
 class RandomNumberGeneratorBase(ABC):
-    """"Python Class to generate random numbers"""
+    """ "Python Class to generate random numbers"""
 
     def __init__(self, seed=None):
         self.seed = seed

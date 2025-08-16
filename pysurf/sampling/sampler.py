@@ -1,22 +1,24 @@
 from abc import abstractmethod
 from collections import namedtuple
 from copy import deepcopy
+
 #
 import numpy as np
-#from pysurf.logger import get_logger
+
+# from pysurf.logger import get_logger
 from ..utils.osutils import exists_and_isfile
 from ..database.database import Database
 from ..database.dbtools import DBVariable
 from ..logger import Logger, get_logger
+
 #
 from ..system import Molecule
 from ..sampling.base_sampler import SamplerFactory
 from .base_sampler import DynCondition, CrdCondition
 from .normalmodes import Mode
+
 #
 from colt import Colt
-
-
 
 
 class Sampler(Colt):
@@ -29,12 +31,17 @@ class Sampler(Colt):
 
     @classmethod
     def _extend_user_input(cls, questions):
-        questions.generate_cases("method", {name: method.colt_user_input
-                                 for name, method in SamplerFactory._methods.items()})
+        questions.generate_cases(
+            "method",
+            {
+                name: method.colt_user_input
+                for name, method in SamplerFactory._methods.items()
+            },
+        )
 
     @classmethod
     def from_config(cls, config):
-        sampler = cls._get_sampler(config['method'])
+        sampler = cls._get_sampler(config["method"])
         return cls(config, sampler)
 
     @classmethod
@@ -44,18 +51,16 @@ class Sampler(Colt):
         return cls.from_config(config)
 
     def __init__(self, config, sampler, logger=None):
-        """ Sampling always goes with a database, if not needed use Sampler class
-        """
+        """Sampling always goes with a database, if not needed use Sampler class"""
 
         self.config = config
         self.sampler = sampler
         self._start = 0
 
         if logger is None:
-            self.logger = get_logger('sampler.log', 'sampler')
+            self.logger = get_logger("sampler.log", "sampler")
         else:
             self.logger = logger
-
 
     def get_condition(self, idx):
         return self.sampler.get_condition()

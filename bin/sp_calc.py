@@ -34,6 +34,8 @@ class SinglePointCalculation(Colt):
     properties = [energy, fosc] :: list
     # SPP inputfile
     spp = spp.inp :: file
+    # sampling inp
+    sampling_input = sampling.inp :: existing_file
     """
 
     def __init__(self, config, logger=None):
@@ -53,7 +55,7 @@ class SinglePointCalculation(Colt):
             self.logger = logger
         #
         self.logger.info(f"Taking information from {config['init_db']}")
-        sampling = Sampling.from_db(config['init_db'], logger=self.logger)
+        sampling = Sampling.from_db(config['sampling_input'], config['init_db'], logger=self.logger, sp=True)
 
         if not(exists_and_isfile(config['spp'])):
             spp_config = SurfacePointProvider.generate_input(config['spp'])
@@ -83,7 +85,7 @@ class SinglePointCalculation(Colt):
         
         with self.logger.info_block("SPP calculation"):
             res = spp.request(crd, config['properties'], states=[st for st in range(config['nstates'])])
-        
+
         self.logger.info(f"Writing results to: {config['init_db']}")
         for prop, value in res.iter_data():
             sampling.set(prop, value)
