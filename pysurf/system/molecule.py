@@ -26,4 +26,9 @@ class Molecule:
     def format(self, atomid, crd):                    
         if not isinstance(atomid, str):
             atomid = ATOMID_TO_NAME[atomid]
-        return "%s   %12.8f %12.8f %12.8f" % (atomid, crd[0], crd[1], crd[2])
+        return "%s   %12.12f %12.12f %12.12f" % (atomid, crd[0], crd[1], crd[2])
+
+    def bagel_xyz(self, atomid, crd):                    
+        if not isinstance(atomid, str):
+            atomid = ATOMID_TO_NAME[atomid]
+        return "{ \"atom\" : \"%s\" , \"xyz\" :  [%12.12f, %12.12f, %12.12f] }" % (atomid, crd[0], crd[1], crd[2]) 
